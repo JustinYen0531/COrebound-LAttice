@@ -1,0 +1,4 @@
+/**
+ * @file world_object_interaction.ts
+ * @description 負責世界內障礙物、礦物、反射鏡面、蒸汽閥、彈射葉瓣、引力漩渦等互動物件對小隊、怪物與子彈的作用。
+ */
