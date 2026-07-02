@@ -108,26 +108,89 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
     ```
 
 #### 2.2 有機世界成員 (Organic Set) —— 視覺：生命、森林、搏動
-有機世界的成員圖騰具有充滿生命張力的不規則流線型，彷彿活生生的森林生物。
+
+##### 🌿 Organic 世界統一美術規範 (Art Bible)
+* **核心理念**：
+  不是簡單的「植物人」或穿著植物裝飾的人類，而是**生命本身**。他們是介於植物、昆蟲、精靈、菌類之間的高階自然神祇，身體像活生生的森林生態系統，隨呼吸微微起伏。
+* **共通設計元素**：
+  * 不規則流線輪廓 (Organic Flow)
+  * 活體紋理 (Living Texture)
+  * 自然生長感 (Growth) & 緩慢呼吸感 (Breathing)
+  * 左右不完全對稱 (Natural Asymmetry)
+  * 柔和曲線 (Soft Curves)
+  * 半透明植物組織 (Translucent Botanical Tissue)
+  * 少量螢光 (Bioluminescence)
+* **身體材質黃金比例**：
+  * 🌿 **40% 植物**（葉、藤蔓、樹皮、樹根）
+  * 🍄 **30% 真菌／菌絲**（孢子囊、菌傘、菌絲網）
+  * 🪶 **20% 生命散播結構**（羽毛、花粉、種子、絨毛）
+  * ✨ **10% 生物冷光與能量流**
+
+##### 🌿 有機世界 AI 生圖指引 (AI Prompt Workflow)
+* **共用 Organic Prompt Base (固定)**：
+  ```text
+  masterpiece, best quality, highly detailed fantasy character concept art, humanoid nature spirit, elegant organic creature, full body, centered composition, transparent background, isolated character, flowing silhouette, living ecosystem, soft natural lighting, intricate botanical ornaments, no background, clean silhouette, mystical forest guardian, 
+  ```
+* **有機世界專屬 Style Base (固定加入)**：
+  ```text
+  body composed of living vines, leaves, bark, roots, fungi, feathers, pollen, organic flowing curves, asymmetrical natural growth, breathing living textures, bioluminescent accents, graceful pose, 
+  ```
+
+##### 🌿 成員詳細設定
+
 * **🛡️ 荊棘 (Thorn) - 護盾家族**
   * **視覺**：粗糙有彈性的木質樹皮，其上覆滿尖銳的荊棘。
   * **定位**：大範圍扇形防護，被敵人子彈碰撞時，能反饋少量的尖刺反彈傷害。
-  * **專屬附魔變異**：**【分裂 (Splinter)】**（護盾耗盡或被擊碎時，木質棘片飛散分裂為多個小衝擊波前進）
+  * **專屬附魔變異**：**【分裂 (Splinter)】**
+  * **角色概念 (Soul Concept)**：
+    他並非手拿實體盾牌的士兵，而是森林本身孕育出的守護神。他的身體宛如一棵仍然活著、緩慢呼吸的大古樹，肩膀與背部覆蓋著厚實粗糙的青苔樹皮，無數尖銳的荊棘沿著雙臂自然生長出來。古老的老樹根緊緊纏繞雙腳融入大地，當他矗立時，防禦不是刻意舉盾阻擋，而是植物與樹木受到感應時，極其自然地向外舒展生長。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Organic Base] + [有機 Style] + humanoid forest guardian, living bark armor, thick tree trunk body, thorn covered branches growing naturally from shoulders and arms, exposed roots wrapping the legs, moss and vines, ancient forest spirit, elegant asymmetrical botanical anatomy
+    ```
+
 * **💥 孢粉 (Spore) - 多發家族**
   * **視覺**：浮游在空中的絨毛羽片與微小的圓形浮游孢子。
   * **定位**：近距離呈極大散射角的扇形爆發，命中敵人時會留下短暫的生物標記。
-  * **專屬附魔變異**：**【擊殺連鎖 (Kill Chain)】**（擊殺敵方或地圖物件時，以該處為新生起點，再次對最近目標噴發同等威力 50% 的相同彈幕）
+  * **專屬附魔變異**：**【擊殺連鎖 (Kill Chain)】**
+  * **角色概念 (Soul Concept)**：
+    他不是一顆普通的毒蘑菇，而是由花粉、輕盈羽片與無數懸浮孢子共同匯聚而成的活體精靈。他的身體幾無實體骨架，由大量極其柔軟的羽狀纖維與絨毛結構交織漂浮而成。無數發光的細小孢子粒子如星塵般圍繞著他的全身，每一次移動、呼吸，都如同一朵在微風中悄然散開的蒲公英，漫天散播著森林的生命因子。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Organic Base] + [有機 Style] + humanoid pollen spirit, body formed from floating spores and soft feather-like fibers, dandelion aesthetic, glowing pollen particles, ethereal botanical creature, elegant floating posture, delicate organic textures
+    ```
+
 * **🎯 藤蔓 (Vine) - 直線家族**
   * **視覺**：一條快速向前蜿蜒伸展、帶有螺旋捲鬚的藤條。
-  * **定位**：直線刺穿首個目標，並在目標身上留下短暫的繞減速（20% 移速降低）。
-  * **專屬附魔變異**：**【追蹤 (Homing)】**（藤蔓像有生命蛇類般，在行進間具備每秒最大 30° 的自動轉向偏折力）
+  * **定位**：直線刺穿首個目標，並在目標身上留下短暫的纏繞減速（20% 移速降低）。
+  * **專屬附魔變異**：**【追蹤 (Homing)】**
+  * **角色概念 (Soul Concept)**：
+    他身上沒有纏繞藤蔓，因為他的整個身軀本身就是一株優雅舒展的藤蔓生命。他的四肢完全由不斷延伸、交錯扭轉的翠綠藤條所扭聚而成，全身找不到任何生硬的固定骨架。他的手臂如蟒蛇般靈活蜿蜒，末端優雅地抽出嫩芽與新生的卷鬚，所有動作都無比流暢柔韌，彷彿永遠能在廢墟中找到向上攀爬的新生方向。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Organic Base] + [有機 Style] + humanoid vine spirit, body entirely formed from twisting vines and tendrils, spiral growth patterns, curling plant shoots, flexible organic anatomy, elegant flowing movement, botanical guardian
+    ```
+
 * **💣 真菌 (Fungus) - 地雷家族**
   * **視覺**：不斷搏動、外表呈波浪狀的紅色活體真菌孢子囊。
   * **定位**：拋射並部署在地面，被踩踏時引爆，向四周噴灑擴散的劇毒菌落。
-  * **專屬附魔變異**：**【巨大化 (Gigantism)】**（孢子囊在地上吸收水分急遽膨大，碰撞感應半徑增加 45%，重量生命提升 50%）
+  * **專屬附魔變異**：**【巨大化 (Gigantism)】**
+  * **角色概念 (Soul Concept)**：
+    他是森林最古老、最神祕的分解者神明。他的身體由巨大的層疊菌傘、交織的菌絲與微微膨脹的孢子囊共同築成。幽綠色發光的菌絲像血管脈絡般密密麻麻地覆蓋全身，背後層層堆疊著色彩斑斕的巨大菌菇結構。他的身軀隨着森林的吐納進行有規律的搏動，宛如一座活著的、能自給自足的菌落母體。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Organic Base] + [有機 Style] + humanoid fungal entity, layered mushroom caps growing from the back, glowing mycelium veins across the body, breathing spore sacs, ancient decomposition spirit, organic asymmetrical anatomy, living colony aesthetic
+    ```
+
 * **⚡ 螢光 (Biolume) - 激光家族**
   * **視覺**：由無數微小的螢光孢子粒子匯聚而成的綠色生物冷光束。
   * **定位**：持續射擊時，光束的體積會隨著照射時間稍微膨脹。
+  * **角色概念 (Soul Concept)**：
+    他並非金屬製的雷射槍，而是森林黑夜中躍動的一縷生命之光。他的身體由半透明的植物纖維與純淨的冷光脈絡組成，體內流動著無數緩慢飄移的螢光孢子。他的雙手在充能時如同花朵一般優雅綻放，當射擊時，全身的生物光脈絡與花瓣心部會同步發亮起舞，宛如整片寂靜森林在黑夜中的一次深呼吸。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Organic Base] + [有機 Style] + humanoid bioluminescent forest spirit, translucent botanical body, glowing spores flowing inside plant veins, luminous flowers blooming from the hands, soft green natural light, elegant ethereal organic creature
+    ```
 
 #### 2.3 分形世界成員 (Fractal Set) —— 視覺：混沌、遞歸、自相似
 分形世界的成員圖騰展現無限延伸與递归嵌套的魔法奧秘。
