@@ -4,7 +4,7 @@
 
 ---
 
-## 成員與家族篇 (Members & Families)
+## 一、成員與家族篇 (Members & Families)
 
 在 **COrebound LAttence (COLA)** 中，除了引導移動與控制的隊長之外，小隊的火力輸出與彈道防禦主要依靠編入的**小隊成員**。
 小隊成員共計 **20 名**，分為 **5 個戰術家族**，並各自散落於 **4 個主題世界** 中。每個世界恰好擁有 5 名代表不同家族的成員。
@@ -53,10 +53,11 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
 
 ---
 
-### 3. 各世界成員詳細設定
+## 三、各世界成員詳細設定
 
-#### 2.1 幾何世界成員 (Geometry Set) —— 視覺：人工、科技、精準
+### 1. 幾何世界成員 (Geometry Set) —— 視覺：人工、科技、精準
 幾何世界的成員圖騰由完美的數學曲線與幾何形體組成，表現出冷靜的科技秩序。
+
 * **🛡️ 稜鏡 (Prism) - 護盾家族**
   * **視覺**：多重交錯的規則三角形，形成硬質透明的幾何玻璃擋板。
   * **定位**：利用規整的扇形偏轉，將敵方的彈道完美向外側滑移折射。
@@ -72,7 +73,7 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **定位**：一次性呈網格狀向前方散發多枚正方形的銳利碎片，適合中近距離覆蓋。
   * **專屬附魔變異**：**【收斂 (Focus)】**
   * **角色概念 (Soul Concept)**：
-    他並非傳統金屬結構 of 機器人，而是由數萬顆微小、懸浮的正方形與立方體晶片拼湊出的人形精靈。他的身體沒有固定的輪廓，隨著移動、重力與呼吸，無數的正方小方塊在地心引力中優雅地排列、崩解、漂移與重組。他前行時，整個身軀宛如一條流動的數學矩陣，充盈著奇異的數位空靈感。
+    他並非傳統金屬結構的機器人，而是由數萬顆微小、懸浮的正方形與立方體晶片拼湊出的人形精靈。他的身體沒有固定的輪廓，隨著移動、重力與呼吸，無數的正方小方塊在地心引力中優雅地排列、崩解、漂移與重組。他前行時，整個身軀宛如一條流動的數學矩陣，充盈著奇異的數位空靈感。
   * **AI 生圖 Prompt**：
     ```text
     [共用 Prompt Base] + [幾何 Style] + humanoid composed of countless floating cubes, modular body, voxel aesthetic, geometric matrix, elegant digital construct, floating square particles, mathematical symmetry, futuristic mystical being
@@ -101,15 +102,17 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **視覺**：沿著特定角度收縮、呈現圓錐狀的規則雷射光束。
   * **定位**：線性穿透，能對直線上的所有敵人造成均等的高頻率熱割傷害。
   * **角色概念 (Soul Concept)**：
-    他是一位披著光之羽衣的高維神官。他的衣襬並非實體布料，而是由錐狀的強烈雷射光線折射所構成的無定型光幔。他的肩膀裝配有類似望遠鏡的反射光路，而雙手則是兩枚純淨透亮的聚焦光學鏡片。他站在光暈中央，身後自然形成巨大、高熱的光錐，將散亂的幾何能量凝聚為極致的穿透光束。
+    他是一位披著光之羽衣的高維神官。他的衣襬並非實體布料，而是由錐狀的強烈雷射光線折射所構成的無定型光幔。他的肩膀裝配有類似望遠鏡的反射光路，而雙手則是兩枚純淨透亮的聚焦光學鏡片。他站在光暈中央，身後自然形成巨大、高熱的光錐，將散亂 of 幾何能量凝聚為極致的穿透光束。
   * **AI 生圖 Prompt**：
     ```text
     [共用 Prompt Base] + [幾何 Style] + humanoid light entity, cone shaped light projections, elegant luminous robes, optical lens motifs, sacred light geometry, concentrated laser aura, radiant futuristic priest
     ```
 
-#### 2.2 有機世界成員 (Organic Set) —— 視覺：生命、森林、搏動
+---
 
-##### 🌿 Organic 世界統一美術規範 (Art Bible)
+### 2. 有機世界成員 (Organic Set) —— 視覺：生命、森林、搏動
+
+#### 🌿 Organic 世界統一美術規範 (Art Bible)
 * **核心理念**：
   不是簡單的「植物人」或穿著植物裝飾的人類，而是**生命本身**。他們是介於植物、昆蟲、精靈、菌類之間的高階自然神祇，身體像活生生的森林生態系統，隨呼吸微微起伏。
 * **共通設計元素**：
@@ -126,7 +129,7 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * 🪶 **20% 生命散播結構**（羽毛、花粉、種子、絨毛）
   * ✨ **10% 生物冷光與能量流**
 
-##### 🌿 有機世界 AI 生圖指引 (AI Prompt Workflow)
+#### 🌿 有機世界 AI 生圖指引 (AI Prompt Workflow)
 * **共用 Organic Prompt Base (固定)**：
   ```text
   masterpiece, best quality, highly detailed fantasy character concept art, humanoid nature spirit, elegant organic creature, full body, centered composition, transparent background, isolated character, flowing silhouette, living ecosystem, soft natural lighting, intricate botanical ornaments, no background, clean silhouette, mystical forest guardian, 
@@ -136,19 +139,18 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   body composed of living vines, leaves, bark, roots, fungi, feathers, pollen, organic flowing curves, asymmetrical natural growth, breathing living textures, bioluminescent accents, graceful pose, 
   ```
 
-##### 🌿 成員詳細設定
+#### 🌿 成員詳細設定
 
 * **🛡️ 荊棘 (Thorn) - 護盾家族**
   * **視覺**：粗糙有彈性的木質樹皮，其上覆滿尖銳的荊棘。
   * **定位**：大範圍扇形防護，被敵人子彈碰撞時，能反饋少量的尖刺反彈傷害。
   * **專屬附魔變異**：**【分裂 (Splinter)】**
   * **角色概念 (Soul Concept)**：
-    他並非手拿實體盾牌的士兵，而是森林本身孕育出的守護神。他的身體宛如一棵仍然活著、緩慢呼吸的大古樹，肩膀與背部覆蓋著厚實粗糙的青苔樹皮，無數尖銳的荊棘沿著雙臂自然生長出來。古老的老樹根緊緊纏繞雙腳融入大地，當他矗立時，防禦不是刻意舉盾阻擋，而是植物與樹木受到感應時，極其自然地向外舒展生長。
+    他並非手拿實體盾牌的士兵，而是森林本身孕育出的守護神。 his 身體宛如一棵仍然活著、緩慢呼吸的大古樹，肩膀與背部覆蓋著厚實粗糙的青苔樹皮，無數尖銳的荊棘沿著雙臂自然生長出來。古老的老樹根緊緊纏繞雙腳融入大地，當他矗立時，防禦不是刻意舉盾阻擋，而是植物與樹木受到感應時，極其自然地向外舒展生長。
   * **AI 生圖 Prompt**：
     ```text
     [共用 Organic Base] + [有機 Style] + humanoid forest guardian, living bark armor, thick tree trunk body, thorn covered branches growing naturally from shoulders and arms, exposed roots wrapping the legs, moss and vines, ancient forest spirit, elegant asymmetrical botanical anatomy
     ```
-
 * **💥 孢粉 (Spore) - 多發家族**
   * **視覺**：浮游在空中的絨毛羽片與微小的圓形浮游孢子。
   * **定位**：近距離呈極大散射角的扇形爆發，命中敵人時會留下短暫的生物標記。
@@ -159,7 +161,6 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
     ```text
     [共用 Organic Base] + [有機 Style] + humanoid pollen spirit, body formed from floating spores and soft feather-like fibers, dandelion aesthetic, glowing pollen particles, ethereal botanical creature, elegant floating posture, delicate organic textures
     ```
-
 * **🎯 藤蔓 (Vine) - 直線家族**
   * **視覺**：一條快速向前蜿蜒伸展、帶有螺旋捲鬚的藤條。
   * **定位**：直線刺穿首個目標，並在目標身上留下短暫的纏繞減速（20% 移速降低）。
@@ -170,7 +171,6 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
     ```text
     [共用 Organic Base] + [有機 Style] + humanoid vine spirit, body entirely formed from twisting vines and tendrils, spiral growth patterns, curling plant shoots, flexible organic anatomy, elegant flowing movement, botanical guardian
     ```
-
 * **💣 真菌 (Fungus) - 地雷家族**
   * **視覺**：不斷搏動、外表呈波浪狀的紅色活體真菌孢子囊。
   * **定位**：拋射並部署在地面，被踩踏時引爆，向四周噴灑擴散的劇毒菌落。
@@ -181,7 +181,6 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
     ```text
     [共用 Organic Base] + [有機 Style] + humanoid fungal entity, layered mushroom caps growing from the back, glowing mycelium veins across the body, breathing spore sacs, ancient decomposition spirit, organic asymmetrical anatomy, living colony aesthetic
     ```
-
 * **⚡ 螢光 (Biolume) - 激光家族**
   * **視覺**：由無數微小的螢光孢子粒子匯聚而成的綠色生物冷光束。
   * **定位**：持續射擊時，光束的體積會隨著照射時間稍微膨脹。
@@ -192,30 +191,89 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
     [共用 Organic Base] + [有機 Style] + humanoid bioluminescent forest spirit, translucent botanical body, glowing spores flowing inside plant veins, luminous flowers blooming from the hands, soft green natural light, elegant ethereal organic creature
     ```
 
-#### 2.3 分形世界成員 (Fractal Set) —— 視覺：混沌、遞歸、自相似
-分形世界的成員圖騰展現無限延伸與递归嵌套的魔法奧秘。
+---
+
+### 3. 分形世界成員 (Fractal Set) —— 視覺：混沌、遞歸、自相似
+
+#### 🌌 Fractal 世界統一美術規範 (Art Bible)
+* **核心理念**：
+  `Every pattern wishes to become itself again.` (萬物都想再次成為自己)。
+  這裡不是自然生長，也不是工業組裝，而是**自相似遞歸複製**。玩家看到的不是枯燥的幾何數學式 (如 Koch Snowflake / Mandelbrot)，而是「魔法世界理解分形的方式」—— 世界上的一切都在重複自己。
+* **共通設計元素**：
+  * **細節即整體**：每一個細節都長得像整體。例如：一根角上還有無數小角，小角上還有更小角；花瓣又是一朵花，花瓣上的花心又是一朵花；一片羽毛的羽枝也是一根完整的羽毛。
+* **視覺規則 (Visual Rules)**：
+  * **Rule 1（重複次數）**：每個主要造型結構至少在視覺上重複遞歸 **3 次**。
+  * **Rule 2（尺寸依序縮小）**：每個遞歸重複結構的尺寸依序縮小（例如：`100% ➔ 50% ➔ 25% ➔ 12%`），形成層次嵌套感。
+  * **Rule 3（自然亂度）**：為避免機械感，自相似複製要包含自然亂度。例如：每個嵌套結構的偏轉角度、方向要略有不同，展現出魔法生命自發複製的生動美。
+
+#### 🌌 分形世界 AI 生圖指引 (AI Prompt Workflow)
+* **共用 Fractal Prompt Base (固定)**：
+  ```text
+  masterpiece, best quality, highly detailed fantasy character concept art, elegant humanoid fractal spirit, recursive geometry, self-similar patterns, infinitely nested ornaments, magical entity, centered composition, transparent background, isolated character, intricate recursive structures, glowing magical runes, recursive branches, impossible geometry, mystical elegance, 
+  ```
+* **分形世界專屬 Style Base (固定加入)**：
+  ```text
+  self-similar, recursive, nested, infinite, branching, spiral, recursive crystal, recursive lightning, recursive flowers, 
+  ```
+
+#### 🌌 成員詳細設定
+
 * **🛡️ 雪鏡 (Snowglass) - 護盾家族**
   * **視覺**：由無數個自相似科赫雪花結晶層層嵌套而成的水晶偏轉盾。
   * **定位**：護盾本身可藉由防禦判定觸發自相似碎裂，在破壞時朝周圍分裂出微型雪花碎片。
-  * **專屬附魔變異**：**【超廣角 (Wide Angle)】**（利用幾何分形的對稱橫向延展，使衝擊波角度大幅增加 30%）
+  * **專屬附魔變異**：**【超廣角 (Wide Angle)】**
+  * **角色概念 (Soul Concept)**：
+    他並非拿著雪花盾的人，而是由無數個不同尺寸的雪花冰晶共同凝聚而成的人形守護者。他那剔透的身體沒有固定的人類五官與皮膚——最大的雪花拼湊成他寬闊的肩膀，中等雪花層疊嵌套成精美貼合的冰甲片，更小雪花在甲面蔓延成細碎的防禦刻紋，甚至連眼眸的深處，都閃爍著微縮到極限的精微雪花。玩家拉近放大時，會震撼地發現他的每一寸肌理都是一片自相似的雪花。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Fractal Base] + [分形 Style] + humanoid crystalline guardian composed entirely of recursive snowflakes, every crystal contains smaller snowflakes, translucent magical glass body, infinitely nested ice geometry, elegant frozen spirit, glowing blue fractal ornaments
+    ```
 * **💥 Bifurcation (分叉) - 多發家族**
   * **視覺**：主彈藥向外分叉，且分叉端點又帶有更小端點的樹狀分形。
   * **定位**：射出的擴散子彈在行進途中，每顆會再度分裂出 2 顆更小的子彈，形成大面積密集彈幕。
-  * **專屬附魔變異**：**【連射 (Rapid Fire)】**（子彈呈分形般一輪接一輪自相似發射，首發後自動追加一輪 50% 彈幕）
+  * **專屬附魔變異**：**【連射 (Rapid Fire)】**
+  * **角色概念 (Soul Concept)**：
+    他的身軀是「分叉規律」的具象化，四肢與邊線具有無限生長、分裂的樹狀姿態。他的手臂向外自然分化為多條分支，而每一根手指末端又精細地分叉出更小的纖細指尖；他的頭髮與身後飄逸的披風，同樣在空氣中不斷地分叉、遞歸、延伸。玩家的視線順著他的肢體看去，永遠找不到終點，只看到無限分叉的優雅魔力流。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Fractal Base] + [分形 Style] + humanoid fractal entity with endlessly branching limbs, recursive tree structures, every branch splits into smaller branches, elegant magical silhouette, infinitely detailed recursive anatomy
+    ```
 * **🎯 閃電 (Lightning) - 直線家族**
   * **視覺**：沿著分形概率軌跡前進、不斷折返的電弧折線。
   * **定位**：彈道以極高頻率的折線前進，對碰撞目標造成麻痺。
-  * **專屬附魔變異**：**【煙火 (Firework)】**（電弧在行進時，向兩側以分形分叉射出微型電火花，造成主彈 25% 傷害）
+  * **專屬附魔變異**：**【煙火 (Firework)】**
+  * **角色概念 (Soul Concept)**：
+    他不是普通引導雷擊的人，他就是「雷電自相似規律」的化身。他的身軀沒有任何實體盔甲，所有貼身的長袍、紋理與肢體邊界，完全是由跳躍折返的雷電分枝交織而成。無數分形電脈絡與分裂的能量流在他的體內與光影邊緣中自相似地擴散與折返，使他站在戰場時，宛如一尊優雅、以光速自我複製的雷能雕像。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Fractal Base] + [分形 Style] + humanoid lightning spirit, body formed from recursive electric branches, fractal lightning veins, branching energy streams, glowing electrical anatomy, elegant magical being
+    ```
 * **💣 深淵 (Abyss) - 地雷家族**
   * **視覺**：緩慢旋轉、中心呈無限嵌套黑洞狀態的遞歸螺旋。
   * **定位**：靜止後會在原地產生微弱的引力拉扯，將周邊小圖騰緩慢向中心拉攏。
-  * **專屬附魔變異**：**【擦彈護體 (Interception Field)】**（在原地產生引力偏轉圈，使進入領域內的敵人和敵方子彈速度降低 35%）
+  * **專屬附魔變異**：**【擦彈護體 (Interception Field)】**
+  * **角色概念 (Soul Concept)**：
+    他是分形世界中最為深邃神祕的「遞歸黑洞」。他的身體如同一面能夠映射虛無的無底之鏡，鏡面裡站著另一個微縮的自己，而那個微縮自己的胸口中，又層層嵌套著更微縮的自己，無限延伸。他的胸口中央是一個緩慢旋轉的遞歸虛無螺旋，不論玩家如何凝視、放大，都永遠看不到底，只會隨着螺旋跌入無限層層重複嵌套的漆黑魔法深淵。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Fractal Base] + [分形 Style] + humanoid abyssal spirit, recursive black hole inside the chest, infinite nested silhouette, impossible recursive void, spiral darkness, elegant magical horror, infinitely repeating reflections
+    ```
 * **⚡ 極光 (Aurora) - 激光家族**
   * **視覺**：折射成多重稜鏡色彩、波狀起伏的絢麗光譜射線。
   * **定位**：發射出不穩定的多波段射線，對重疊位置的敵人造成多重元素判定。
+  * **角色概念 (Soul Concept)**：
+    他不是單純的彩色光束，他是「光束自我遞歸分裂」的奇蹟。他的身軀由多波段光譜絲帶層層繞而成，一道強烈的光芒投射在他身上時，光線會自發分裂成無數自相似的彩色射線，而每一道細微射線又在空氣中再次折射分裂。他前行時，身後拖曳著無限分裂極光構成的流動綢緞，如同將一整條自相似的極光霓虹披在肩頭。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Fractal Base] + [分形 Style] + humanoid aurora spirit, recursive light spectrum, endlessly splitting rainbow beams, fractal prism lights, magical luminous body, elegant flowing spectral ribbons
+    ```
 
-#### 2.4 機械世界成員 (Mechanical Set) —— 視覺：工業、齒輪、模組
-機械世界的成員圖騰具有硬朗、金屬感強烈且螺絲鉚釘密集的重工業機械結構。
+---
+
+### 4. 機械世界成員 (Mechanical Set) —— 視覺：工業、齒輪、模組
+
+幾何世界的成員圖騰具有硬朗、金屬感強烈且螺絲鉚釘密集的重工業機械結構。
+
 * **🛡️ 閘門 (Gate) - 護盾家族**
   * **視覺**：帶有厚重焊接鉚釘、散熱鰭片與重型液壓杆的鋼鐵護擋。
   * **定位**：以極大碰撞重量承受衝擊，可抵擋最猛烈的子彈碾壓。
