@@ -1,6 +1,6 @@
 # COrebound LAttence 成員圖鑑 (Member Guide)
 
-本文件詳細記載了 **COrebound LAttence (COLA)** 的成員與家族配置、美術設計原則，以及各個世界的成員視覺與 AI 生圖 Prompt。
+本文件詳細記載了 **COrebound LAttence (COLA)** 的成員與家族配置、美術設計原則，以及各個世界的成員視覺、定位與角色設計理念。
 
 ---
 
@@ -21,7 +21,7 @@
 
 ---
 
-## 二、成員美術設計共識與 AI 生圖管線 (Visual Art Direction & AI Pipeline)
+## 二、成員美術設計共識 (Visual Art Direction Consensus)
 
 為了確保 20 位小隊成員具有高度統一的美學品質，我們建立以下整個專案一體適用的美術開發共識：
 
@@ -34,18 +34,7 @@
 
 ---
 
-### 1. 角色共用 AI 生圖 Prompt Base (固定)
-以下 Prompt 包含了乾淨去背、立繪構圖、精緻幻想風與柔和邊緣光的固定設定，建議在後續生圖時直接作為基礎前綴：
-```text
-masterpiece, best quality, highly detailed fantasy character concept art, full body, centered composition, transparent background, isolated character, clean silhouette, no background, soft rim lighting, intricate ornamental details, game concept art, 
-```
-
-### 2. 共通負面 Prompt (Negative Prompt)
-```text
-background, scenery, environment, frame, border, watermark, logo, text, signature, cropped, blurry, low quality, realistic photo, extra limbs, duplicate body parts, deformed anatomy, messy composition
-```
-
-### 3. 四個世界美學與核心哲學總覽 (World Philosophies & Features Matrix)
+### 四個世界美學與核心哲學總覽 (World Philosophies & Features Matrix)
 
 | 世界 (World) | 美的來源 (Source of Beauty) | 身體特徵 (Body Features) |
 | :--- | :--- | :--- |
@@ -60,12 +49,7 @@ background, scenery, environment, frame, border, watermark, logo, text, signatur
 
 ### 1. 幾何世界成員 (Geometry Set) —— 視覺：人工、科技、精準
 
-##### 💎 幾何世界專屬 Prompt Style (Style Base)
-```text
-constructed from crystal, prism glass, geometric plates, sacred geometry, precise mathematical patterns, glowing edges, polygonal body, translucent material, hard surface design, clean angular silhouette, elegant humanoid mechanical guardian, 
-```
-
-##### 💎 成員詳細設定
+幾何世界的成員圖騰由完美的數學曲線與幾何形體組成，表現出冷靜的科技秩序。
 
 * **🛡️ 稜鏡 (Prism) - 護盾家族**
   * **視覺**：多重交錯的規則三角形，形成硬質透明的幾何玻璃擋板。
@@ -73,49 +57,33 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **專屬附魔變異**：**【反彈 (Repel)】**
   * **角色概念 (Soul Concept)**：
     一位由無數透明三角晶片拼貼而成的守護者，身體沒有真正的皮膚，而是由透明的折射稜鏡所構成，流光溢彩在晶體中輕盈穿梭，隨玩家視角變幻出七彩光暈。他的身邊懸浮漂浮著數片可自由旋轉、反射光芒的三角幾何盾片。他的動作無比優雅，如同在空中指揮光線的織光者，而非在泥濘中肉搏的戰士。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Prompt Base] + [幾何 Style] + humanoid prism guardian, body made of translucent crystal prisms, floating triangular glass shields orbiting around the body, sacred geometry patterns, elegant guardian, futuristic fantasy, transparent crystal armor, glowing refraction, symmetrical composition
-    ```
+
 * **💥 矩陣 (Matrix) - 多發家族**
   * **視覺**：無數微小的同心正方形組成的矩陣網格。
   * **定位**：一次性呈網格狀向前方散發多枚正方形的銳利碎片，適合中近距離覆蓋。
   * **專屬附魔變異**：**【收斂 (Focus)】**
   * **角色概念 (Soul Concept)**：
     他並非傳統金屬結構的機器人，而是由數萬顆微小、懸浮的正方形與立方體晶片拼湊出的人形精靈。他的身體沒有固定的輪廓，隨著移動、重力與呼吸，無數的正方小方塊在地心引力中優雅地排列、崩解、漂移與重組。他前行時，整個身軀宛如一條流動的數學矩陣，充盈著奇異的數位空靈感。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Prompt Base] + [幾何 Style] + humanoid composed of countless floating cubes, modular body, voxel aesthetic, geometric matrix, elegant digital construct, floating square particles, mathematical symmetry, futuristic mystical being
-    ```
+
 * **🎯 向量 (Vector) - 直線家族**
   * **視覺**：帶有極強指向性箭頭的粗線段射線。
   * **定位**：高速、精確度極高的高速單發直線子彈，彈道極為平直且不偏轉。
   * **專屬附魔變異**：**【狙擊 (Snipe)】**
   * **角色概念 (Soul Concept)**：
     他是幾何世界中最為純粹、極致簡潔的刺客。他的身體沒有任何多餘的弧度或花哨的裝飾，完全由筆直的鋒利直線、尖銳的箭型與流線型長槍結構所構成。他的四肢纖細修長，呈現出完美的空氣動力學幾何。他的站姿永遠維持著冷酷、毫無多餘動作的狙擊姿態，宛如一支隨時準備射穿深淵的幾何之箭。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Prompt Base] + [幾何 Style] + sleek humanoid made from sharp linear geometry, arrow shaped silhouette, aerodynamic body, elongated limbs, precise mathematical proportions, glowing directional lines, minimalistic futuristic warrior
-    ```
+
 * **💣 節點 (Node) - 地雷家族**
   * **視覺**：在重力網格上閃爍著藍光的正方形錨點。
   * **定位**：靜止時會朝四周拉伸出短暫的幾何射線雷區，對觸碰的敵方圖騰造成切割傷害。
   * **專屬附魔變異**：**【強化一擊 (Empowered Cast)】**
   * **角色概念 (Soul Concept)**：
     他是重力網格的網絡 keeper，一名將靈魂與網路錨點編織在一起的幾何法師。他的身邊永遠散落懸浮著數顆散發幽藍光芒的幾何光點——「節點」，這些節點彼此之間由纖細、明亮的光線編織相連。他前行時，雙手微張，身軀彷彿在控制著一張活生生的、有脈搏的立體幾何重力網絡。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Prompt Base] + [幾何 Style] + humanoid network keeper, glowing geometric nodes floating around the body, connected by luminous lines, grid architecture, mathematical anchor points, elegant technological mage
-    ```
+
 * **⚡ 光錐 (Lightcone) - 激光家族**
   * **視覺**：沿著特定角度收縮、呈現圓錐狀的規則雷射光束。
   * **定位**：線性穿透，能對直線上的所有敵人造成均等的高頻率熱割傷害。
   * **角色概念 (Soul Concept)**：
     他是一位披著光之羽衣的高維神官。他的衣襬並非實體布料，而是由錐狀的強烈雷射光線折射所構成的無定型光幔。他的肩膀裝配有類似望遠鏡的反射光路，而雙手則是兩枚純淨透亮的聚焦光學鏡片。他站在光暈中央，身後自然形成巨大、高熱的光錐，將散亂的幾何能量凝聚為極致的穿透光束。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Prompt Base] + [幾何 Style] + humanoid light entity, cone shaped light projections, elegant luminous robes, optical lens motifs, sacred light geometry, concentrated laser aura, radiant futuristic priest
-    ```
 
 ---
 
@@ -138,16 +106,6 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * 🪶 **20% 生命散播結構**（羽毛、花粉、種子、絨毛）
   * ✨ **10% 生物冷光與能量流**
 
-#### 🌿 有機世界 AI 生圖指引 (AI Prompt Workflow)
-* **共用 Organic Prompt Base (固定)**：
-  ```text
-  masterpiece, best quality, highly detailed fantasy character concept art, humanoid nature spirit, elegant organic creature, full body, centered composition, transparent background, isolated character, flowing silhouette, living ecosystem, soft natural lighting, intricate botanical ornaments, no background, clean silhouette, mystical forest guardian, 
-  ```
-* **有機世界專屬 Style Base (固定加入)**：
-  ```text
-  body composed of living vines, leaves, bark, roots, fungi, feathers, pollen, organic flowing curves, asymmetrical natural growth, breathing living textures, bioluminescent accents, graceful pose, 
-  ```
-
 #### 🌿 成員詳細設定
 
 * **🛡️ 荊棘 (Thorn) - 護盾家族**
@@ -156,49 +114,33 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **專屬附魔變異**：**【分裂 (Splinter)】**
   * **角色概念 (Soul Concept)**：
     他並非手拿實體盾牌的士兵，而是森林本身孕育出的守護神。他的身體宛如一棵仍然活著、緩慢呼吸的大古樹，肩膀與背部覆蓋著厚實粗糙的青苔樹皮，無數尖銳的荊棘沿著雙臂自然生長出來。古老的老樹根緊緊纏繞雙腳融入大地，當他矗立時，防禦不是刻意舉盾阻擋，而是植物與樹木受到感應時，極其自然地向外舒展生長。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Organic Base] + [有機 Style] + humanoid forest guardian, living bark armor, thick tree trunk body, thorn covered branches growing naturally from shoulders and arms, exposed roots wrapping the legs, moss and vines, ancient forest spirit, elegant asymmetrical botanical anatomy
-    ```
+
 * **💥 孢粉 (Spore) - 多發家族**
   * **視覺**：浮游在空中的絨毛羽片與微小的圓形浮游孢子。
   * **定位**：近距離呈極大散射角的扇形爆發，命中敵人時會留下短暫的生物標記。
   * **專屬附魔變異**：**【擊殺連鎖 (Kill Chain)】**
   * **角色概念 (Soul Concept)**：
     他不是一顆普通的毒蘑菇，而是由花粉、輕盈羽片與無數懸浮孢子共同匯聚而成的活體精靈。他的身體幾無實體骨架，由大量極其柔軟的羽狀纖維與絨毛結構交織漂浮而成。無數發光的細小孢子粒子如星塵般圍繞著他的全身，每一次移動、呼吸，都如同一朵在微風中悄然散開的蒲公英，漫天散播著森林的生命因子。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Organic Base] + [有機 Style] + humanoid pollen spirit, body formed from floating spores and soft feather-like fibers, dandelion aesthetic, glowing pollen particles, ethereal botanical creature, elegant floating posture, delicate organic textures
-    ```
+
 * **🎯 藤蔓 (Vine) - 直線家族**
   * **視覺**：一條快速向前蜿蜒伸展、帶有螺旋捲鬚的藤條。
   * **定位**：直線刺穿首個目標，並在目標身上留下短暫的纏繞減速（20% 移速降低）。
   * **專屬附魔變異**：**【追蹤 (Homing)】**
   * **角色概念 (Soul Concept)**：
-    他身上沒有纏繞藤蔓，因為他的整個身軀本身就是一株優雅舒展的藤蔓生命。他的四肢完全由不斷延伸、交錯扭轉的翠綠藤條所扭聚而成，全身找不到任何生硬的固定骨架。 his 手臂如蟒蛇般靈活蜿蜒，末端優雅地抽出嫩芽與新生的卷鬚，所有動作都無比流暢柔韌，彷彿永遠能在廢墟中找到向上攀爬的新生方向。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Organic Base] + [有機 Style] + humanoid vine spirit, body entirely formed from twisting vines and tendrils, spiral growth patterns, curling plant shoots, flexible organic anatomy, elegant flowing movement, botanical guardian
-    ```
+    他身上沒有纏繞藤蔓，因為他的整個身軀本身就是一株優雅舒展的藤蔓生命。 his 四肢完全由不斷延伸、交錯扭轉的翠綠藤條所扭聚而成，全身找不到任何生硬的固定骨架。他的手臂如蟒蛇般靈活蜿蜒，末端優雅地抽出嫩芽與新生的卷鬚，所有動作都無比流暢柔韌，彷彿永遠能在廢墟中找到向上攀爬的新生方向。
+
 * **💣 真菌 (Fungus) - 地雷家族**
   * **視覺**：不斷搏動、外表呈波浪狀的紅色活體真菌孢子囊。
   * **定位**：拋射並部署在地面，被踩踏時引爆，向四周噴灑擴散的劇毒菌落。
   * **專屬附魔變異**：**【巨大化 (Gigantism)】**
   * **角色概念 (Soul Concept)**：
     他是森林最古老、最神祕的分解者神明。他的身體由巨大的層疊菌傘、交織的菌絲與微微膨脹的孢子囊共同築成。幽綠色發光的菌絲像血管脈絡般密密麻麻地覆蓋全身，背後層層堆疊著色彩斑斕的巨大菌菇結構。他的身軀隨着森林的吐納進行有規律的搏動，宛如一座活著的、能自給自足的菌落母體。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Organic Base] + [有機 Style] + humanoid fungal entity, layered mushroom caps growing from the back, glowing mycelium veins across the body, breathing spore sacs, ancient decomposition spirit, organic asymmetrical anatomy, living colony aesthetic
-    ```
+
 * **⚡ 螢光 (Biolume) - 激光家族**
-  * **視覺**：由無數微小的螢光孢子粒子匯聚而成的綠色生物冷光束.
+  * **視覺**：由無數微小的螢光孢子粒子匯聚而成的綠色生物冷光束。
   * **定位**：持續射擊時，光束的體積會隨著照射時間稍微膨脹。
   * **角色概念 (Soul Concept)**：
     他並非金屬製的雷射槍，而是森林黑夜中躍動的一縷生命之光。他的身體由半透明的植物纖維與純淨的冷光脈絡組成，體內流動著無數緩慢飄移的螢光孢子。他的雙手在充能時如同花朵一般優雅綻放，當射擊時，全身的生物光脈絡與花瓣心部會同步發亮起舞，宛如整片寂靜森林在黑夜中的一次深呼吸。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Organic Base] + [有機 Style] + humanoid bioluminescent forest spirit, translucent botanical body, glowing spores flowing inside plant veins, luminous flowers blooming from the hands, soft green natural light, elegant ethereal organic creature
-    ```
 
 ---
 
@@ -215,16 +157,6 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **Rule 2（尺寸依序縮小）**：每個遞歸重複結構的尺寸依序縮小（例如：`100% ➔ 50% ➔ 25% ➔ 12%`），形成層次嵌套感。
   * **Rule 3（自然亂度）**：為避免機械感，自相似複製要包含自然亂度。例如：每個嵌套結構的偏轉角度、方向要略有不同，展現出魔法生命自發複製的生動美。
 
-#### 🌌 分形世界 AI 生圖指引 (AI Prompt Workflow)
-* **共用 Fractal Prompt Base (固定)**：
-  ```text
-  masterpiece, best quality, highly detailed fantasy character concept art, elegant humanoid fractal spirit, recursive geometry, self-similar patterns, infinitely nested ornaments, magical entity, centered composition, transparent background, isolated character, intricate recursive structures, glowing magical runes, recursive branches, impossible geometry, mystical elegance, 
-  ```
-* **分形世界專屬 Style Base (固定加入)**：
-  ```text
-  self-similar, recursive, nested, infinite, branching, spiral, recursive crystal, recursive lightning, recursive flowers, 
-  ```
-
 #### 🌌 成員詳細設定
 
 * **🛡️ 雪鏡 (Snowglass) - 護盾家族**
@@ -233,49 +165,33 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **專屬附魔變異**：**【超廣角 (Wide Angle)】**
   * **角色概念 (Soul Concept)**：
     他並非拿著雪花盾的人，而是由無數個不同尺寸的雪花冰晶共同凝聚而成的人形守護者。他那剔透的身體沒有固定的人類五官與皮膚——最大的雪花拼湊成他寬闊的肩膀，中等雪花層疊嵌套成精美貼合的冰甲片，更小雪花在甲面蔓延成細碎的防禦刻紋，甚至連眼眸的深處，都閃爍著微縮到極限的精微雪花。玩家拉近放大時，會震撼地發現他的每一寸肌理都是一片自相似的雪花。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Fractal Base] + [分形 Style] + humanoid crystalline guardian composed entirely of recursive snowflakes, every crystal contains smaller snowflakes, translucent magical glass body, infinitely nested ice geometry, elegant frozen spirit, glowing blue fractal ornaments
-    ```
+
 * **💥 Bifurcation (分叉) - 多發家族**
   * **視覺**：主彈藥向外分叉，且分叉端點又帶有更小端點的樹狀分形。
   * **定位**：射出的擴散子彈在行進途中，每顆會再度分裂出 2 顆更小的子彈，形成大面積密集彈幕。
   * **專屬附魔變異**：**【連射 (Rapid Fire)】**
   * **角色概念 (Soul Concept)**：
     他的身軀是「分叉規律」的具象化，四肢與邊線具有無限生長、分裂的樹狀姿態。他的手臂向外自然分化為多條分支，而每一根手指末端又精細地分叉出更小的纖細指尖；他的頭髮與身後飄逸的披風，同樣在空氣中不斷地分叉、遞歸、延伸。玩家的視線順著他的肢體看去，永遠找不到終點，只看到無限分叉的優雅魔力流。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Fractal Base] + [分形 Style] + humanoid fractal entity with endlessly branching limbs, recursive tree structures, every branch splits into smaller branches, elegant magical silhouette, infinitely detailed recursive anatomy
-    ```
+
 * **🎯 閃電 (Lightning) - 直線家族**
   * **視覺**：沿著分形概率軌跡前進、不斷折返的電弧折線。
   * **定位**：彈道以極高頻率的折線前進，對碰撞目標造成麻痺。
   * **專屬附魔變異**：**【煙火 (Firework)】**
   * **角色概念 (Soul Concept)**：
     他不是普通引導雷擊的人，他就是「雷電自相似規律」的化身。他的身軀沒有任何實體盔甲，所有貼身的長袍、紋理與肢體邊界，完全是由跳躍折返的雷電分枝交織而成。無數分形電脈絡與分裂的能量流在他的體內與光影邊緣中自相似地擴散與折返，使他站在戰場時，宛如一尊優雅、以光速自我複製的雷能雕像。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Fractal Base] + [分形 Style] + humanoid lightning spirit, body formed from recursive electric branches, fractal lightning veins, branching energy streams, glowing electrical anatomy, elegant magical being
-    ```
+
 * **💣 深淵 (Abyss) - 地雷家族**
   * **視覺**：緩慢旋轉、中心呈無限嵌套黑洞狀態的遞歸螺旋。
   * **定位**：靜止後會在原地產生微弱的引力拉扯，將周邊小圖騰緩慢向中心拉攏。
   * **專屬附魔變異**：**【擦彈護體 (Interception Field)】**
   * **角色概念 (Soul Concept)**：
     他是分形世界中最為深邃神祕的「遞歸黑洞」。他的身體如同一面能夠映射虛無的無底之鏡，鏡面裡站著另一個微縮的自己，而那個微縮自己的胸口中，又層層嵌套著更微縮的自己，無限延伸。他的胸口中央是一個緩慢旋轉的遞歸虛無螺旋，不論玩家如何凝視、放大，都永遠看不到底，只會隨着螺旋跌入無限層層重複嵌套的漆黑魔法深淵。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Fractal Base] + [分形 Style] + humanoid abyssal spirit, recursive black hole inside the chest, infinite nested silhouette, impossible recursive void, spiral darkness, elegant magical horror, infinitely repeating reflections
-    ```
+
 * **⚡ 極光 (Aurora) - 激光家族**
   * **視覺**：折射成多重稜鏡色彩、波狀起伏的絢麗光譜射線。
   * **定位**：發射出不穩定的多波段射線，對重疊位置的敵人造成多重元素判定。
   * **角色概念 (Soul Concept)**：
-    他不是單純的彩色光束，他是「光束自我遞歸分裂」的奇蹟。他的身軀由多波段光譜絲帶層層纏繞而成，一道強烈的光芒投射在他身上時，光線會自發分裂成無數自相似的彩色射線，而每一道細微射線又在空氣中再次折射分裂。他前行時，身後拖曳著無限分裂極光構成的流動綢緞，如同將一整條自相似的極光霓虹披在肩頭。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Fractal Base] + [分形 Style] + humanoid aurora spirit, recursive light spectrum, endlessly splitting rainbow beams, fractal prism lights, magical luminous body, elegant flowing spectral ribbons
-    ```
+    他不是單純的彩色光束，他是「光束自我遞歸分裂」的奇蹟。他的身軀由多波段光譜絲帶層層繞而成，一道強烈的光芒投射在他身上時，光線會自發分裂成無數自相似的彩色射線，而每一道細微射線又在空氣中再次折射分裂。他前行時，身後拖曳著無限分裂極光構成的流動綢緞，如同將一整條自相似的極光霓虹披在肩頭。
 
 ---
 
@@ -300,16 +216,6 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * 🔧 **20% 管線、液壓與關節 (Hydraulic / Cable)**（能量傳導線路與液壓伸縮組件）
   * ⚡ **15% 能源核心與發光結構 (Power Core)**（提供動力源與高熱電弧能量管）
 
-#### ⚙ 機械世界 AI 生圖指引 (AI Prompt Workflow)
-* **共用 Mechanical Prompt Base (固定)**：
-  ```text
-  masterpiece, best quality, highly detailed fantasy construct concept art, elegant humanoid mechanical guardian, full body, centered composition, transparent background, isolated character, clean silhouette, industrial machinery, modular mechanical anatomy, heavy metal plating, exposed gears, pistons, hydraulic cylinders, cooling fins, cables, brass, steel, copper, glowing power core, hard surface design, intricate engineering details, believable mechanical joints, game concept art, 
-  ```
-* **機械世界專屬 Style Base (固定加入)**：
-  ```text
-  industrial construct, modular machinery, functional engineering, exposed mechanisms, layered armor plates, mechanical precision, ancient industrial civilization, 
-  ```
-
 #### ⚙ 成員詳細設定
 
 * **🛡️ 閘門 (Gate) - 護盾家族**
@@ -317,11 +223,7 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **定位**：以極大碰撞重量承受衝擊，可抵擋最猛烈的子彈碾壓。
   * **專屬附魔變異**：**【風域 (Wind Zone)】**
   * **角色概念 (Soul Concept)**：
-    他不是拿著盾牌的重裝士兵，而是一扇活生生的厚重鋼鐵城門。他的身軀極度寬闊沉重，胸口處嵌著一道巨大的防爆閘門結構，背部裝配有一組巨大的重型液壓缸與散熱風箱。移動時，全身的液壓桿會隨著步伐同步進行沉重的伸縮，體內深處傳來齒輪與氣壓摩擦的轟鳴。他立於戰場，防禦並非源自英勇，而是因為他本身就是一座不可動搖的工業要塞。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Mechanical Base] + [機械 Style] + humanoid fortress construct, massive blast door chest, hydraulic pistons on the back, thick armored gate body, industrial guardian, heavy steel plates, gigantic mechanical shield integrated into the body, ancient industrial colossus
-    ```
+    防禦不是因為勇敢，而是因為他本來就是城門。他的身軀極度寬闊沉重，胸口處嵌著一道巨大的防爆閘門結構，背部裝配有一組巨大的重型液壓缸與散熱風箱。移動時，全身的液壓桿會隨著步伐同步進行沉重的伸縮，體內深處傳來齒輪與氣壓摩擦的轟鳴。他立於戰場，防禦並非源自英勇，而是因為他本身就是一座不可動搖的工業要塞。
 
 * **💥 彈片 (Shrapnel) - 多發家族**
   * **視覺**：飛散的破損齒輪片、滾針與鉚釘碎片。
@@ -329,10 +231,6 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **專屬附魔變異**：**【後座力 (Recoil)】**
   * **角色概念 (Soul Concept)**：
     他是一台永遠處於動態解體狀態的極致兵器。他的身體沒有完整的鋼鐵外殼，無數個精密的工業齒輪、銳利鉚釘、氣動刀片與高壓滾針，在一個磁力或蒸汽場的引導下圍繞著他的軀幹不停地進行高速旋轉、分離與崩壞。他矗立在戰場，如同一座永遠在崩解、卻永遠不會真正瓦解的移動崩壞工廠，不斷將金屬碎片朝四周狂暴釋放。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Mechanical Base] + [機械 Style] + humanoid fragmentation construct, floating gears, bolts, metal shards orbiting around the body, partially disassembled mechanical warrior, industrial debris constantly rotating, elegant destructive machinery
-    ```
 
 * **🎯 鋼針 (Needle) - 直線家族**
   * **視覺**：一根散發著冷光、帶有螺紋的工業鋼釘與活塞推進軌跡。
@@ -340,10 +238,6 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **專屬附魔變異**：**【爆炸 (Explosion)】**
   * **角色概念 (Soul Concept)**：
     他不是一位端著長槍的狙擊手，而是一部高速移動的精密 CNC 加工設備。他的身形極度俐落、修長，找不到任何多餘的弧度或多餘的零件。他的四肢由細長的气動活塞杆構成，雙肩滑軌化設計，雙手前端則是一根極其細長、散發着冷酷光學折射的精鋼巨針。他的每一次突刺與位移都極度精準、冰冷，不浪費任何一焦耳的機械能量。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Mechanical Base] + [機械 Style] + slender humanoid precision machine, industrial steel needle arms, linear guide rails, piston powered limbs, CNC inspired mechanical anatomy, elegant precision engineering, minimal industrial design
-    ```
 
 * **💣 發條 (Springtrap) - 地雷家族**
   * **視覺**：外露的嚙合齒輪、軸承與緊繃發條的鋸齒捕獸夾。
@@ -351,24 +245,16 @@ constructed from crystal, prism glass, geometric plates, sacred geometry, precis
   * **專屬附魔變異**：**【衝鋒 (Charge)】**
   * **角色概念 (Soul Concept)**：
     他是一座靜默矗立在黑暗中、將釋能拉扯到極限的發條陷阱。他的胸腔深處外露著一顆巨大、極度擰緊且蓄勢待發的合金發條；他的背部則裸露著無數隨時準備嚙合釋放的鋒利齒輪。他的全身關節與鋼纜在強大的機械張力下微微發抖，時刻呈現出緊繃的彈射姿態，令人凝視時，產生一種對狂暴彈力極度不安的視覺壓迫。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Mechanical Base] + [機械 Style] + humanoid spring powered construct, enormous exposed mainspring inside the chest, mechanical trap aesthetic, toothed gears, coiled steel mechanisms, tension loaded industrial body, ancient mechanical hunter
-    ```
 
 * **⚡ 電弧 (Arc) - 激光家族**
   * **視覺**：淡藍色、劈啪作響的高壓工業電弧焊接光束。
   * **定位**：高溫聚焦熔融光束，射擊時間越長，對單一目標的破防與傷害效果越強。
   * **角色概念 (Soul Concept)**：
-    他不是一把遠程雷射槍，而是一座一直在行走的高壓電焊工廠。他的雙肩裝配有排氣葉片與厚重散熱片，雙臂則是兩根高度氣密的高壓導電碳棒電極。他的核心動力源在體內激蕩著如熔融金屬般的藍白色高溫能量，每次動作、前行，他的關節與體表都會迸發出劈啪作響的高壓電弧、狂暴火花與滾滾淡黃色的焊接煙霧。
-  * **AI 生圖 Prompt**：
-    ```text
-    [共用 Mechanical Base] + [機械 Style] + humanoid arc reactor construct, industrial welding machine aesthetic, glowing electric arcs, exposed transformers, cooling fins, copper coils, high voltage mechanical guardian, elegant industrial engineering
-    ```
+    他不是一把遠程雷射槍，而是一座一直在行走的高壓電焊工廠。他的雙肩裝配有排氣葉片與厚重散熱片，雙臂則是兩根高度氣密的高壓導電碳棒電極。他的核心動力源在體內激蕩著如熔融金屬般的藍白色高溫能量，每次動作、前行， his 關節與體表都會迸發出劈啪作響的高壓電弧、狂暴火花與滾滾淡黃色的焊接煙霧。
 
 ---
 
-## 四、備用附魔變異庫 (Unassigned Enchantments)
+## 備用附魔變異庫 (Unassigned Enchantments)
 
 以下變異效果（附魔）目前未指派給任何初始成員，保留作為新成員解鎖、角色星級分支或後續版本的設計儲備：
 * **【著火 (Scorch)】（護盾家族）**：衝擊波掃過之處會留下無法熄滅的燃燒火焰地帶，造成持續傷害與領域限制。
