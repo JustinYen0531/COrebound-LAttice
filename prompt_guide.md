@@ -1,6 +1,6 @@
 # COrebound LAttence AI 生圖指南 (AI Prompt Guide)
 
-本文件收集了 **COrebound LAttence (COLA)** 中所有角色立繪、地圖環境物件以及世界地板材質的 AI 生圖 Prompts。這些 Prompts 專為 Stable Diffusion 或 Midjourney 等繪圖模型設計。
+本文件收集了 **COrebound LAttence (COLA)** 中所有角色立繪、地圖環境物件、世界地板材質以及 29 種敵方怪物的 AI 生圖 Prompts。這些 Prompts 專為 Stable Diffusion 或 Midjourney 等繪圖模型設計。
 
 ---
 
@@ -281,4 +281,135 @@ industrial construct, modular machinery, functional engineering, exposed mechani
 * **外圍：粗獷鏽蝕鋼網 (Industrial Grated Plating)**
   ```text
   masterpiece, best quality, highly detailed, top-down view, seamless tiling texture, dark grey industrial steel grating mesh floor, rusty metal texture, visible pneumatic copper pipes and small gears rotating underneath
+  ```
+
+---
+
+## 六、四大世界與最終 Boss 敵方圖騰生圖 Prompts (Enemy Totem Assets)
+本節 Prompts 專為生出敵方圓圈圖騰怪物設計。為了便於遊戲開發的切圖與去背，均設為 **isometric view, white background, isolated object, game asset**。圖騰美術為禪繞畫（Zentangle）抽象線條與圓圈花紋：
+
+### 1. 幾何世界怪物 (Geometry Enemies)
+* **01. 圓形 (Circle - T0)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat circular totem made of translucent blue glass with glowing neon concentric circle patterns, sacred geometry details, white background, isolated object
+  ```
+* **02. 三角形 (Triangle - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat triangular crystal totem, sharp glowing neon edges, precise mathematical lines, sacred geometry, white background, isolated object
+  ```
+* **03. 正方形 (Square - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a heavy square-shaped stone block with glowing blue grid lines, thick borders, solid geometric geometry, white background, isolated object
+  ```
+* **04. 正六角形 (Hexagon - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat hexagonal prism glass shield, glowing cellular honeycomb pattern inside, sacred geometry details, white background, isolated object
+  ```
+* **05. 彭羅斯三角 (Penrose Triangle - T2)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat double-ring totem containing an impossible penrose triangle made of glowing glass, sacred geometry Metatron cube engravings, white background, isolated object
+  ```
+* **06. 生命之花 (Flower of Life - T2)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat double-ring geometric totem, complex overlapping circles forming the flower of life pattern, glowing neon lines, white background, isolated object
+  ```
+* **07. 超立方體 (Tesseract - T3 Boss)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a massive three-ring geometric totem, animated rotating tesseract hypercube lines projected on flat rings, glowing laser matrix, white background, isolated object
+  ```
+
+### 2. 有機世界怪物 (Organic Enemies)
+* **08. 種子 (Seed - T0)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat seed-shaped organic pod, glowing warm green core, surrounded by fine radiating feather-like dandelion lines in Zentangle style, white background, isolated object
+  ```
+* **09. 葉脈 (Leaf Veins - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat organic leaf totem, branching green plant veins and glowing fibers, elegant asymmetrical botanical illustration, white background, isolated object
+  ```
+* **10. 苔蘚 (Moss - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat round patch of textured moss and tiny glowing lichen dots, soft organic forest green texture, white background, isolated object
+  ```
+* **11. 羽毛 (Feather - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat feather-shaped organic totem, repeating delicate botanical fiber lines, soft glowing rim light, white background, isolated object
+  ```
+* **12. 蟲巢 (Insect Nest - T2)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat double-ring biological totem, countless tiny organic honeycomb-like holes venting glowing spores, asymmetrical forest textures, white background, isolated object
+  ```
+* **13. 珊瑚 (Coral - T2)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat double-ring organic totem, calcified coral branch skeleton wrapping around the rings, bioluminescent accents, white background, isolated object
+  ```
+* **14. 根系系統 (Root System - T3 Boss)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a massive three-ring organic totem, interlocking ancient roots and twisting vines in a Zentangle pattern, glowing green canopy leaves, white background, isolated object
+  ```
+
+### 3. 分形世界怪物 (Fractal Enemies)
+* **15. 母圖形 (Mother Pattern - T0)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat crystal star generator totem, golden border, simple geometry, recursive fractal seeds glowing on corners, white background, isolated object
+  ```
+* **16. 初級分形 (First-order Fractal - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat five-pointed star with smaller identical stars branching from each point, glowing ice crystal lines, recursive fractal geometry, white background, isolated object
+  ```
+* **17. 科赫雪花 (Koch Snowflake - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat ice crystal snowflake, edges recursively branching into smaller triangles forming a Koch snowflake, glowing blue neon, white background, isolated object
+  ```
+* **18. 龍形曲線 (Dragon Curve - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat recursive curving folding line pattern, snake-like dragon curve geometry, infinite nested details, white background, isolated object
+  ```
+* **19. 謝爾賓斯基三角形 (Sierpinski Triangle - T2)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat double-ring triangular crystal shield, hollowed out recursive triangles in a Sierpinski pattern, glowing blue fractals, white background, isolated object
+  ```
+* **20. 希爾伯特曲線 (Hilbert Curve - T2)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat double-ring maze totem, glowing square-grid lines endlessly folding in a Hilbert curve fractal pattern, white background, isolated object
+  ```
+* **21. 無盡維度 (Infinite Recursion - T3 Boss)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a massive three-ring fractal totem, infinite nested self-similar geometric patterns, recursive black hole in the center, white background, isolated object
+  ```
+
+### 4. 機械世界怪物 (Mechanical Enemies)
+* **22. 軸承 (Bearing - T0)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat steel ball bearing totem, shiny metal balls in a circular brass track, industrial gear lines, white background, isolated object
+  ```
+* **23. 齒輪 (Gear - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat copper gear wheel with sharp outer teeth, exposed pinions, rotating industrial component, white background, isolated object
+  ```
+* **24. 螺帽 (Nut - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a heavy hexagonal steel bolt nut, textured thread grooves in the center hole, flat industrial design, white background, isolated object
+  ```
+* **25. 線圈 (Coil - T1)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat circular copper coil, tightly wrapped glowing orange wire, sparking electric arcs, industrial electrical motif, white background, isolated object
+  ```
+* **26. 活塞曲柄 (Piston & Crank - T2)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat double-ring mechanical totem, exposed sliding pistons and turning crank linkage, steam engine valves, white background, isolated object
+  ```
+* **27. 自動砲塔 (Sentry Turret - T2)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a flat double-ring industrial turret, heavy gun barrel, gears, bolts, armored shield, white background, isolated object
+  ```
+* **28. 超級工廠 (Super Factory - T3 Boss)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a massive three-ring industrial totem, conveyor belt tracks, steel structural girders, active steam vents and gears, white background, isolated object
+  ```
+
+### 5. 最終通關 Boss
+* **29. 核心晶格 (Core Lattice - T4 Final Boss)**
+  ```text
+  masterpiece, best quality, highly detailed 3D game asset, isometric view, a colossal four-ring sacred mandala totem, combining geometric blue quartz crystals, pulsing organic green leaves, golden recursive fractals, and heavy brass industrial gears, extremely intricate, white background, isolated object
   ```
