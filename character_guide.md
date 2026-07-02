@@ -89,29 +89,91 @@
 
 ---
 
-### 2. 各世界成員詳細設定
+## 二、成員美術設計共識與 AI 生圖管線 (Visual Art Direction & AI Pipeline)
+
+為了確保 20 位小隊成員具有高度統一的美學品質，我們建立以下整個專案一體適用的美術開發共識：
+
+* **非人類，而是圖騰生命 (Not Human, but Totems)**：
+  角色外觀**不要設計成穿機甲的人類**。他們是 **「神祇、精靈、構裝生物、圖騰生命」** —— 仍保有優美的人體姿態與比例魅力，但身體本質是由其所在世界的主題物質、幾何線條或能量流直接交織而成。
+* **視覺黃金律：70% 世界 + 30% 家族**：
+  * **世界決定身體 (Body - 佔比 70%)**：大視覺基調。例如幾何世界的角色身體永遠由幾何晶體、光學稜鏡或精準晶格構成。玩家一眼就能識別出「他是幾何世界的角色」。
+  * **家族決定武器與配備 (Weapon - 佔比 30%)**：戰術屬性的象徵。例如護盾家族身邊永遠環繞着防禦結構或裝甲片；多發家族身上則帶有分裂式彈艙或懸浮碎片模組。
+  * **角色決定靈魂 (Soul)**：透過優雅的站姿、特定的手勢、獨特的氣質與精緻點綴，塑造角色的獨立魅力與人格。
+
+---
+
+### 1. 角色共用 AI 生圖 Prompt Base (固定)
+以下 Prompt 包含了乾淨去背、立繪構圖、精緻幻想風與柔和邊緣光的固定設定，建議在後續生圖時直接作為基礎前綴：
+```text
+masterpiece, best quality, highly detailed character concept art, elegant fantasy creature, humanoid silhouette, mystical guardian, full body, centered composition, isolated character, transparent background, clean silhouette, no background, soft rim lighting, intricate ornamental details, black and white concept emphasis with subtle accent color, symmetrical visual language, high readability, unique silhouette, no text, no watermark, game concept art, collectible character illustration, 
+```
+
+### 2. 共通負面 Prompt (Negative Prompt)
+```text
+background, scenery, environment, frame, border, watermark, logo, text, signature, cropped, blurry, low quality, realistic photo, extra limbs, duplicate body parts, deformed anatomy, messy composition
+```
+
+### 3. 幾何世界專屬 Prompt Style (Style Base)
+幾何世界的角色，請務必在 Prompt 中加入以下風格基調詞，以確保材質與硬表面的科技秩序高度一致：
+```text
+constructed from crystal, prism glass, geometric plates, sacred geometry, precise mathematical patterns, glowing edges, polygonal body, translucent material, hard surface design, clean angular silhouette, 
+```
+
+---
+
+### 3. 各世界成員詳細設定
 
 #### 2.1 幾何世界成員 (Geometry Set) —— 視覺：人工、科技、精準
 幾何世界的成員圖騰由完美的數學曲線與幾何形體組成，表現出冷靜的科技秩序。
 * **🛡️ 稜鏡 (Prism) - 護盾家族**
   * **視覺**：多重交錯的規則三角形，形成硬質透明的幾何玻璃擋板。
   * **定位**：利用規整的扇形偏轉，將敵方的彈道完美向外側滑移折射。
-  * **專屬附魔變異**：**【反彈 (Repel)】**（利用光學玻璃鏡面物理折射，將敵方子彈反彈為己方攻擊）
+  * **專屬附魔變異**：**【反彈 (Repel)】**
+  * **角色概念 (Soul Concept)**：
+    一位由無數透明三角晶片拼貼而成的守護者，身體沒有真正的皮膚，而是由透明的折射稜鏡所構成，流光溢彩在晶體中輕盈穿梭，隨玩家視角變幻出七彩光暈。他的身邊懸浮漂浮著數片可自由旋轉、反射光芒的三角幾何盾片。他的動作無比優雅，如同在空中指揮光線的織光者，而非在泥濘中肉搏的戰士。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Prompt Base] + [幾何 Style] + humanoid prism guardian, body made of translucent crystal prisms, floating triangular glass shields orbiting around the body, sacred geometry patterns, elegant guardian, futuristic fantasy, transparent crystal armor, glowing refraction, symmetrical composition
+    ```
 * **💥 矩陣 (Matrix) - 多發家族**
   * **視覺**：無數微小的同心正方形組成的矩陣網格。
   * **定位**：一次性呈網格狀向前方散發多枚正方形的銳利碎片，適合中近距離覆蓋。
-  * **專屬附魔變異**：**【收斂 (Focus)】**（將散射的碎片向中心收攏，收縮擴散角並提升射程）
+  * **專屬附魔變異**：**【收斂 (Focus)】**
+  * **角色概念 (Soul Concept)**：
+    他並非傳統金屬結構的機器人，而是由數萬顆微小、懸浮的正方形與立方體晶片拼湊出的人形精靈。他的身體沒有固定的輪廓，隨著移動、重力與呼吸，無數的正方小方塊在地心引力中優雅地排列、崩解、漂移與重組。他前行時，整個身軀宛如一條流動的數學矩陣，充盈著奇異的數位空靈感。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Prompt Base] + [幾何 Style] + humanoid composed of countless floating cubes, modular body, voxel aesthetic, geometric matrix, elegant digital construct, floating square particles, mathematical symmetry, futuristic mystical being
+    ```
 * **🎯 向量 (Vector) - 直線家族**
   * **視覺**：帶有極強指向性箭頭的粗線段射線。
   * **定位**：高速、精確度極高的高速單發直線子彈，彈道極為平直且不偏轉。
-  * **專屬附魔變異**：**【狙擊 (Snipe)】**（子彈強度與重量隨飛行距離線性成長，越遠傷害與重量越高）
+  * **專屬附魔變異**：**【狙擊 (Snipe)】**
+  * **角色概念 (Soul Concept)**：
+    他是幾何世界中最為純粹、極致簡潔的刺客。他的身體沒有任何多餘的弧度或花哨的裝飾，完全由筆直的鋒利直線、尖銳的箭型與流線型長槍結構所構成。他的四肢纖細修長，呈現出完美的空氣動力學幾何。他的站姿永遠維持著冷酷、毫無多餘動作的狙擊姿態，宛如一支隨時準備射穿深淵的幾何之箭。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Prompt Base] + [幾何 Style] + sleek humanoid made from sharp linear geometry, arrow shaped silhouette, aerodynamic body, elongated limbs, precise mathematical proportions, glowing directional lines, minimalistic futuristic warrior
+    ```
 * **💣 節點 (Node) - 地雷家族**
   * **視覺**：在重力網格上閃爍著藍光的正方形錨點。
   * **定位**：靜止時會朝四周拉伸出短暫的幾何射線雷區，對觸碰的敵方圖騰造成切割傷害。
-  * **專屬附魔變異**：**【強化一擊 (Empowered Cast)】**（每發射 4 顆地雷，下一發自動變為一次性在網格上佈置多個節點）
+  * **專屬附魔變異**：**【強化一擊 (Empowered Cast)】**
+  * **角色概念 (Soul Concept)**：
+    他是重力網格的網絡 keeper，一名將靈魂與網路錨點編織在一起的幾何法師。他的身邊永遠散落懸浮著數顆散發幽藍光芒的幾何光點——「節點」，這些節點彼此之間由纖細、明亮的光線編織相連。他前行時，雙手微張，身軀彷彿在控制著一張活生生的、有脈搏的立體幾何重力網絡。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Prompt Base] + [幾何 Style] + humanoid network keeper, glowing geometric nodes floating around the body, connected by luminous lines, grid architecture, mathematical anchor points, elegant technological mage
+    ```
 * **⚡ 光錐 (Lightcone) - 激光家族**
   * **視覺**：沿著特定角度收縮、呈現圓錐狀的規則雷射光束。
   * **定位**：線性穿透，能對直線上的所有敵人造成均等的高頻率熱割傷害。
+  * **角色概念 (Soul Concept)**：
+    他是一位披著光之羽衣的高維神官。他的衣襬並非實體布料，而是由錐狀的強烈雷射光線折射所構成的無定型光幔。他的肩膀裝配有類似望遠鏡的反射光路，而雙手則是兩枚純淨透亮的聚焦光學鏡片。他站在光暈中央，身後自然形成巨大、高熱的光錐，將散亂的幾何能量凝聚為極致的穿透光束。
+  * **AI 生圖 Prompt**：
+    ```text
+    [共用 Prompt Base] + [幾何 Style] + humanoid light entity, cone shaped light projections, elegant luminous robes, optical lens motifs, sacred light geometry, concentrated laser aura, radiant futuristic priest
+    ```
 
 #### 2.2 有機世界成員 (Organic Set) —— 視覺：生命、森林、搏動
 有機世界的成員圖騰具有充滿生命張力的不規則流線型，彷彿活生生的森林生物。
