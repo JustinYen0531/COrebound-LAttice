@@ -286,7 +286,10 @@ industrial construct, modular machinery, functional engineering, exposed mechani
 ---
 
 ## 六、四大世界與最終 Boss 敵方圖騰生圖 Prompts (Enemy Totem Assets)
-本節 Prompts 專為生出敵方圓圈圖騰怪物設計。為了便於遊戲開發的切圖與去背，均設為 **isometric view, white background, isolated object, game asset**。圖騰美術為禪繞畫（Zentangle）抽象線條與圓圈花紋：
+> [!NOTE]
+> **開發實作註記 (Development Annotation)**
+> * 敵方怪物圖騰主要使用**禪繞畫直線**並利用**萬花筒方式（進行六個方位的 60 度對稱映射）**進行程序化/快速繪製實現。
+> * 本章節提供的精緻立繪 Prompts 專為後續開發時間充裕時，生成高品質怪獸立繪/宣傳配圖使用。
 
 ### 1. 幾何世界怪物 (Geometry Enemies)
 * **01. 圓形 (Circle - T0)**
