@@ -109,6 +109,11 @@ export function 渲染主畫面(容器: HTMLElement) {
       <li>結算頁：回大廳或再來一場</li>
     </ol>
     <p class="占位說明">這一版先把主流程接通，很多內容仍是骨架占位，但已經不是互相分離的孤島。</p>
+    <p class="占位說明" style="margin-top: 12px; margin-bottom: 0;">
+      <a href="/totem-preview.html" target="_blank" style="color: #ff8a3b; font-weight: bold; text-decoration: underline; cursor: pointer;">
+        🔗 點此開啟「圖騰全貌預覽 HTML 頁面 (totem-preview.html)」
+      </a>
+    </p>
   `;
   root.appendChild(進度摘要);
 
