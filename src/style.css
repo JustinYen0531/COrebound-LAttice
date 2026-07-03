@@ -1252,11 +1252,11 @@ button.禁用:hover {
   height: calc(var(--world-object-size, 720px) * 0.11);
   transform: translateX(-50%);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.96);
-  opacity: 0.58;
+  background: #ffffff;
+  opacity: 1;
   box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.96),
-    0 0 24px rgba(255, 255, 255, 0.14);
+    0 0 0 3px #ffffff,
+    0 0 24px rgba(255, 255, 255, 0.36);
   pointer-events: none;
   z-index: 1;
 }
@@ -1283,10 +1283,10 @@ button.禁用:hover {
   line-height: 1;
   display: block;
   filter:
-    drop-shadow(3px 0 0 rgba(255,255,255,0.96))
-    drop-shadow(-3px 0 0 rgba(255,255,255,0.96))
-    drop-shadow(0 3px 0 rgba(255,255,255,0.96))
-    drop-shadow(0 -3px 0 rgba(255,255,255,0.96))
+    drop-shadow(3px 0 0 #ffffff)
+    drop-shadow(-3px 0 0 #ffffff)
+    drop-shadow(0 3px 0 #ffffff)
+    drop-shadow(0 -3px 0 #ffffff)
     drop-shadow(0 8px 12px rgba(0,0,0,0.82));
 }
 .世界地圖層-物件-glyph-shadow {
@@ -1331,10 +1331,10 @@ button.禁用:hover {
 .世界地圖層-物件.靠近中 .世界地圖層-物件-glyph,
 .世界地圖層-物件.靠近中 .世界地圖層-物件-image {
   filter:
-    drop-shadow(3px 0 0 rgba(255,255,255,0.96))
-    drop-shadow(-3px 0 0 rgba(255,255,255,0.96))
-    drop-shadow(0 3px 0 rgba(255,255,255,0.96))
-    drop-shadow(0 -3px 0 rgba(255,255,255,0.96))
+    drop-shadow(3px 0 0 #ffffff)
+    drop-shadow(-3px 0 0 #ffffff)
+    drop-shadow(0 3px 0 #ffffff)
+    drop-shadow(0 -3px 0 #ffffff)
     drop-shadow(0 10px 16px rgba(0,0,0,0.82))
     drop-shadow(0 0 8px var(--accent));
   animation: 物件靠近脈動 1s ease-in-out infinite;
@@ -1367,10 +1367,10 @@ button.禁用:hover {
   height: var(--world-object-size, 240px);
   object-fit: contain;
   filter:
-    drop-shadow(4px 0 0 rgba(255,255,255,0.98))
-    drop-shadow(-4px 0 0 rgba(255,255,255,0.98))
-    drop-shadow(0 4px 0 rgba(255,255,255,0.98))
-    drop-shadow(0 -4px 0 rgba(255,255,255,0.98))
+    drop-shadow(4px 0 0 #ffffff)
+    drop-shadow(-4px 0 0 #ffffff)
+    drop-shadow(0 4px 0 #ffffff)
+    drop-shadow(0 -4px 0 #ffffff)
     drop-shadow(0 10px 16px rgba(0, 0, 0, 0.72));
   position: relative;
   z-index: 2;

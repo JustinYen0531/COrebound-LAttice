@@ -260,8 +260,8 @@ function buildEnvObjects(): EnvObjectInstance[] {
   const instances: EnvObjectInstance[] = [];
 
   for (const catalog of 環境物件圖鑑) {
-    // 資源礦物/環境機關體積較小，允許彼此靠近一點；障礙物體積較大，間距拉開避免視覺黏在一起。
-    const minDistance = catalog.category === "障礙物" ? 110 : 80;
+    // 圖像已放大，環境物件也必須保留明確空隙；空間不足時寧可少生成。
+    const minDistance = catalog.category === "障礙物" ? 420 : 360;
 
     for (let i = 0; i < catalog.count; i++) {
       const point = placePoint(
@@ -272,6 +272,7 @@ function buildEnvObjects(): EnvObjectInstance[] {
         random,
         minDistance,
       );
+      if (!point) continue;
       instances.push({
         id: `${catalog.id}_${i + 1}`,
         catalogId: catalog.id,

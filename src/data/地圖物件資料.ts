@@ -106,7 +106,9 @@ export const PLAZA_RADIUS = 520;
 export const NEAR_RADIUS = 70;
 
 const WORLD_HALF_SIZE = MAP_BOUNDS.maxX;
-const OBJECT_MIN_DISTANCE = 120;
+const OBJECT_MIN_DISTANCE = 420;
+const MAP_EDGE_CLEARANCE = 480;
+const DIVIDER_CLEARANCE = 420;
 
 const FURNACE_DISTRIBUTION: { family: Family; world: World }[] = [
   { family: "shield", world: "geometry" },
@@ -163,6 +165,39 @@ function createMapSeed(): number {
 
 function distance(a: { x: number; y: number }, b: { x: number; y: number }): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function distanceToSegment(point: DividerPoint, start: DividerPoint, end: DividerPoint): number {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared === 0) return distance(point, start);
+  const projection = ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared;
+  const t = Math.max(0, Math.min(1, projection));
+  return distance(point, { x: start.x + dx * t, y: start.y + dy * t });
+}
+
+function distanceToDivider(point: DividerPoint, divider: DividerPoint[]): number {
+  let nearest = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < divider.length - 1; i++) {
+    nearest = Math.min(nearest, distanceToSegment(point, divider[i], divider[i + 1]));
+  }
+  return nearest;
+}
+
+function isInsidePlacementSafeZone(
+  point: DividerPoint,
+  verticalDivider: DividerPoint[],
+  horizontalDivider: DividerPoint[],
+): boolean {
+  return (
+    point.x >= MAP_BOUNDS.minX + MAP_EDGE_CLEARANCE &&
+    point.x <= MAP_BOUNDS.maxX - MAP_EDGE_CLEARANCE &&
+    point.y >= MAP_BOUNDS.minY + MAP_EDGE_CLEARANCE &&
+    point.y <= MAP_BOUNDS.maxY - MAP_EDGE_CLEARANCE &&
+    distanceToDivider(point, verticalDivider) >= DIVIDER_CLEARANCE &&
+    distanceToDivider(point, horizontalDivider) >= DIVIDER_CLEARANCE
+  );
 }
 
 // ============================================================
@@ -323,22 +358,18 @@ export function placePoint(
   horizontalDivider: DividerPoint[],
   random: RandomSource,
   minDistance = OBJECT_MIN_DISTANCE,
-): { x: number; y: number } {
-  for (let attempt = 0; attempt < 80; attempt++) {
+): { x: number; y: number } | null {
+  for (let attempt = 0; attempt < 500; attempt++) {
     const point = samplePointInRegion(region, verticalDivider, horizontalDivider, random);
     if (
       usedPoints.every((used) => distance(used, point) >= minDistance) &&
-      Math.abs(point.x) <= WORLD_HALF_SIZE - 20 &&
-      Math.abs(point.y) <= WORLD_HALF_SIZE - 20
+      isInsidePlacementSafeZone(point, verticalDivider, horizontalDivider)
     ) {
       usedPoints.push(point);
       return point;
     }
   }
-
-  const fallback = samplePointInRegion(region, verticalDivider, horizontalDivider, random);
-  usedPoints.push(fallback);
-  return fallback;
+  return null;
 }
 
 function nudgePointIntoRegion(
@@ -373,27 +404,30 @@ function buildObjects(
 ): MapObject[] {
   const usedPoints: Array<{ x: number; y: number }> = [];
   const objects: MapObject[] = [];
-
-  objects.push({
-    id: "summon_cola",
-    kind: "召喚",
-    region: "plaza",
-    x: random.range(-80, 80),
-    y: random.range(-80, 80),
-    label: "COLA 裝配儀",
-    detail: "集滿四枚世界晶核印記後，插入印記召喚最終 Boss COLA。",
-    summonType: "cola",
-  });
-  usedPoints.push({ x: 0, y: 0 });
-
   const worlds: World[] = ["geometry", "organic", "fractal", "mechanical"];
+  const colaWorld = worlds[random.int(0, worlds.length - 1)];
+  const colaPoint = placePoint(usedPoints, colaWorld, verticalDivider, horizontalDivider, random, 520);
+
+  if (colaPoint) {
+    objects.push({
+      id: "summon_cola",
+      kind: "召喚",
+      region: colaWorld,
+      x: colaPoint.x,
+      y: colaPoint.y,
+      label: "COLA 裝配儀",
+      detail: "集滿四枚世界晶核印記後，插入印記召喚最終 Boss COLA。",
+      summonType: "cola",
+    });
+  }
+
   for (const world of worlds) {
     const zone = findZone(zones, world);
     const worldMembers = MEMBERS.filter((member) => member.world === world);
     const workbenchCount = world === "geometry" || world === "organic" ? 2 : 3;
 
-    const altarPoint = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 180);
-    objects.push({
+    const altarPoint = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 480);
+    if (altarPoint) objects.push({
       id: `altar_${world}`,
       kind: "召喚",
       region: world,
@@ -404,8 +438,8 @@ function buildObjects(
       summonType: "guardian",
     });
 
-    const shopPoint = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 180);
-    objects.push({
+    const shopPoint = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 480);
+    if (shopPoint) objects.push({
       id: `shop_${world}`,
       kind: "商店",
       region: world,
@@ -416,8 +450,8 @@ function buildObjects(
     });
 
     for (let i = 0; i < workbenchCount; i++) {
-      const point = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 165);
-      objects.push({
+      const point = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 440);
+      if (point) objects.push({
         id: `workbench_${world}_${i + 1}`,
         kind: "合成",
         region: world,
@@ -429,8 +463,8 @@ function buildObjects(
     }
 
     for (const member of worldMembers) {
-      const point = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 150);
-      objects.push({
+      const point = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 420);
+      if (point) objects.push({
         id: `statue_${member.id}`,
         kind: "雕像",
         region: world,
@@ -457,8 +491,9 @@ function buildObjects(
       verticalDivider,
       horizontalDivider,
       random,
-      180,
+      480,
     );
+    if (!point) continue;
     furnacesPerWorld[furnace.world] += 1;
 
     objects.push({
