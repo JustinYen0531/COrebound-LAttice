@@ -34,13 +34,14 @@
 - 角色數量與定位：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/角色圖鑑.md)
 - 怪物、Boss、材料數量：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/怪物圖鑑.md)
 - 可直接參考的 AI 生圖提示詞：[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)
+- 隊長專用共通 Prompt 與 `4 星` 版本提示詞：[隊長立繪_共通Prompt與四星提示詞.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/隊長立繪_共通Prompt與四星提示詞.md)
 - UI 視覺語言與頁面結構：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/玩家介面_UserFlow方案.md)
 
 ### 子資料夾用途
 
 - `images/characters/captains`
   - 放 `4` 位隊長的完整立繪
-  - 參考：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/角色圖鑑.md)、[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)
+  - 參考：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/角色圖鑑.md)、[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)、[隊長立繪_共通Prompt與四星提示詞.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/隊長立繪_共通Prompt與四星提示詞.md)
 
 - `images/characters/members`
   - 放第一版 `20` 名成員完整立繪
@@ -247,6 +248,7 @@
 目前最適合一起參考的規劃文件：
 
 - 視覺生成提示詞：[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)
+- 隊長一般版 / 四星版專用提示詞：[隊長立繪_共通Prompt與四星提示詞.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/隊長立繪_共通Prompt與四星提示詞.md)
 - 角色數量、技能、隊長設定：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/角色圖鑑.md)
 - 怪物、Boss、材料數量：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/怪物圖鑑.md)
 - 世界氣氛與美術基調：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/世界觀與視覺圖鑑.md)
