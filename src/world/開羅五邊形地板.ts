@@ -24,11 +24,8 @@
  * 本檔的五邊形頂點座標是自行用「邊走法」（依角度序列逐邊累加方向向量）算出並
  * 驗證封閉（首尾相接誤差為 0）。鋪磚方式採「邊反射 BFS」：
  * 從一片種子五邊形出發，對它的每一條邊把五邊形跨該邊鏡射過去，當作鄰居。
- * 因為開羅鑲嵌是邊對邊（face-to-face）鑲嵌，跨邊鏡射唯一決定鄰居，
- * 這樣鋪出來的每一條內部邊都恰好被 2 片共用、外緣邊恰好 1 片，
- * 程式已驗證（每條邊覆蓋次數只可能是 1 或 2，不會出現縫隙或重疊）。
- * 舊版用「4 片風車 + 正方形晶格 (√3,0)/(0,√3) 平移」，但那組晶格向量並非
- * 開羅鑲嵌真正的平移週期，會讓相鄰風車單元錯位、產生縫隙，因此改用邊反射。
+ * 用「邊覆蓋次數」Map 做去重——一條邊已有 2 片共用就不再延伸，保證不重疊。
+ * BFS queue 用 head pointer（而非 Array.shift()），避免 O(n²) 慢化。
  */
 
 export interface CairoPoint {
@@ -60,15 +57,22 @@ const DESIGN_PENTAGON: CairoPoint[] = [
   { x: -0.5, y: SQRT3 / 2 },
 ];
 
+/** 量化精度：確保 chain of reflections 後同一條邊仍能匹配。1e-4 足夠。 */
 const ROUND_PRECISION = 1e4;
 
 function quantize(value: number): number {
   return Math.round(value * ROUND_PRECISION) / ROUND_PRECISION;
 }
 
-/** 用量化後的重心座標做為「這一片五邊形」的去重鍵，容忍浮點誤差。 */
-function centerKey(center: CairoPoint): string {
-  return `${quantize(center.x)}|${quantize(center.y)}`;
+function pointKey(p: CairoPoint): string {
+  return `${quantize(p.x)},${quantize(p.y)}`;
+}
+
+/** 邊的 canonical key：端點量化後按字典序排列，確保兩片共用同一條邊時 key 相同。 */
+function edgeKey(a: CairoPoint, b: CairoPoint): string {
+  const ka = pointKey(a);
+  const kb = pointKey(b);
+  return ka < kb ? `${ka}|${kb}` : `${kb}|${ka}`;
 }
 
 function centroid(points: CairoPoint[]): CairoPoint {
@@ -101,8 +105,12 @@ function reflectAcrossLine(points: CairoPoint[], a: CairoPoint, b: CairoPoint): 
  * 用錯晶格會讓相鄰單元錯位；改從一片種子五邊形出發、跨每一條邊鏡射找鄰居，
  * 因為鑲嵌本身是邊對邊的，鄰居形狀由「跨邊鏡射」唯一決定，鋪出來必然無縫。
  *
- * latticeWorldSize 仍對外保留「大致磁磚密度」的語意：把它除以 √3 得到設計→世界
- * 的縮放，使五邊形長邊世界長度 ≈ latticeWorldSize/√3，視覺密度與舊版一致。
+ * 去重機制：維護一個 edgeCount Map，每放一片瓦片就把它的 5 條邊的計數 +1。
+ * 當某條邊計數達到 2（內部邊，已被兩片共用），就不再從這條邊延伸新鄰居。
+ * 外緣邊計數為 1，仍可延伸。
+ *
+ * 效能：BFS queue 用 head pointer 而非 Array.shift()（O(n) → O(1) dequeue），
+ * 總複雜度 O(n) 而非 O(n²)。
  */
 export function buildCairoField(
   bounds: { minX: number; maxX: number; minY: number; maxY: number },
@@ -111,7 +119,7 @@ export function buildCairoField(
   const scale = latticeSize / SQRT3;
   const latticeWorldSize = latticeSize;
 
-  // 在設計座標系下 BFS 鋪磚，目標範圍 = 世界 bounds ÷ scale（外加一格緩衝）。
+  // 在設計座標系下 BFS 鋪磚，目標範圍 = 世界 bounds ÷ scale（外加緩衝）。
   const margin = 2;
   const designMinX = bounds.minX / scale - margin;
   const designMaxX = bounds.maxX / scale + margin;
@@ -124,29 +132,41 @@ export function buildCairoField(
     center.y >= designMinY &&
     center.y <= designMaxY;
 
-  const tiles: CairoTile[] = [];
-  const placedKeys = new Set<string>();
+  // 邊覆蓋次數：1 = 外緣邊（仍可延伸），2 = 內部邊（已滿，不再延伸）
+  const edgeCount = new Map<string, number>();
+
+  function registerEdges(pts: CairoPoint[]): void {
+    for (let i = 0; i < pts.length; i += 1) {
+      const ek = edgeKey(pts[i], pts[(i + 1) % pts.length]);
+      edgeCount.set(ek, (edgeCount.get(ek) ?? 0) + 1);
+    }
+  }
+
+  // Head-pointer BFS queue：dequeue = ++head（O(1)），enqueue = push（amortized O(1)）。
+  // 避免 Array.shift() 的 O(n) 複雜度導致 ~20000 片瓦片時 queue 操作退化成 O(n²)。
   const queue: CairoPoint[][] = [];
+  let queueHead = 0;
+  const tiles: CairoTile[] = [];
 
   const seed = DESIGN_PENTAGON.map((p) => ({ x: p.x, y: p.y }));
-  placedKeys.add(centerKey(centroid(seed)));
-  queue.push(seed);
+  registerEdges(seed);
   tiles.push({ points: seed, center: centroid(seed) });
+  queue.push(seed);
 
-  // 廣度優先擴張：跨每一條邊鏡射出鄰居。為避免無限擴張，
-  // 只有「重心還在設計目標範圍內」的鄰居才繼續當作擴張來源；
-  // 範圍外的鄰居仍記錄進 tiles（用來填滿 clip 外緣），但不再延伸。
-  while (queue.length > 0) {
-    const current = queue.shift()!;
+  while (queueHead < queue.length) {
+    const current = queue[queueHead++];
     for (let i = 0; i < current.length; i += 1) {
       const a = current[i];
       const b = current[(i + 1) % current.length];
+      const ek = edgeKey(a, b);
+      // 內部邊（已被 2 片共用）不再延伸鄰居。
+      if ((edgeCount.get(ek) ?? 0) >= 2) continue;
       const neighbor = reflectAcrossLine(current, a, b);
+      registerEdges(neighbor);
       const neighborCenter = centroid(neighbor);
-      const key = centerKey(neighborCenter);
-      if (placedKeys.has(key)) continue;
-      placedKeys.add(key);
       tiles.push({ points: neighbor, center: neighborCenter });
+      // 只有重心還在設計目標範圍內的才繼續延伸；範圍外的仍記錄進 tiles，
+      // 用來填滿 clip-path 外緣的邊界瓦片。
       if (withinDesignBounds(neighborCenter)) {
         queue.push(neighbor);
       }

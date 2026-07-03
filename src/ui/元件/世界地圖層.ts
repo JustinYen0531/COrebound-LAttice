@@ -872,7 +872,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
  * 跟艾雪鳥地板一樣不需要「先生成固定拼塊再找縮放比例覆蓋區域」，直接用晶格步幅
  * 算出需要幾格即可。
  */
-function createMechanicalCairoFloor(host: SVGSVGElement): CairoPoint[][] {
+function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const mechanicalPolygon = buildRegionPolygons().mechanical;
   const mechanicalPath = polygonToPath(mechanicalPolygon, (point) => point);
@@ -887,42 +887,47 @@ function createMechanicalCairoFloor(host: SVGSVGElement): CairoPoint[][] {
   clipPath.appendChild(clipShape);
   definitions.appendChild(clipPath);
 
-  // 注意：這裡刻意用 patternUnits="userSpaceOnUse" 搭配「固定世界座標尺寸」，
-  // 不用 objectBoundingBox。開羅五邊形是不規則五邊形，繞 90°/180°/270° 之後每片的
-  // 外接框(bounding box)長寬比都不一樣；如果用 objectBoundingBox（貼合各自的外接框），
-  // 同一張材質圖在 4 種轉向的五邊形上會被拉伸成不同比例，導致相鄰瓦片的紋理對不齊、
-  // 看起來像沒鋪滿。改成 userSpaceOnUse 固定尺寸後，材質變成鋪在整個世界座標上的
-  // 一張連續壁紙，五邊形只是在上面挖形狀，紋理自然無縫銜接。
-  const WORLD_PATTERN_TILE = 300;
+  // 建立 6 種鏡射與方向變體，與分形、有機世界相同
   for (const zone of ["outer", "core"] as const) {
-    const pattern = document.createElementNS(svgNamespace, "pattern");
-    pattern.setAttribute("id", `mechanical-floor-${zone}`);
-    pattern.setAttribute("patternUnits", "userSpaceOnUse");
-    pattern.setAttribute("width", String(WORLD_PATTERN_TILE));
-    pattern.setAttribute("height", String(WORLD_PATTERN_TILE));
-    const halfStart = zone === "outer" ? 0 : 887;
-    pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
-    pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    for (let variant = 0; variant < 6; variant += 1) {
+      const pattern = document.createElementNS(svgNamespace, "pattern");
+      pattern.setAttribute("id", `mechanical-floor-${zone}-${variant}`);
+      pattern.setAttribute("patternUnits", "objectBoundingBox");
+      pattern.setAttribute("width", "1");
+      pattern.setAttribute("height", "1");
+      const halfStart = zone === "outer" ? 0 : 887;
+      pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
+      pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
-    const image = document.createElementNS(svgNamespace, "image");
-    image.setAttribute("href", "/機械世界地板.png");
-    image.setAttribute("width", "1774");
-    image.setAttribute("height", "887");
-    image.setAttribute("x", "0");
-    image.setAttribute("y", "0");
-    pattern.appendChild(image);
+      const image = document.createElementNS(svgNamespace, "image");
+      image.setAttribute("href", "/機械世界地板.png");
+      image.setAttribute("width", "1774");
+      image.setAttribute("height", "887");
+      image.setAttribute("x", "0");
+      image.setAttribute("y", "0");
+      const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
+      const transforms = [
+        "",
+        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+        "translate(0 887) scale(1 -1)",
+        `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
+        "",
+        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+      ];
+      image.setAttribute("transform", transforms[variant]);
+      pattern.appendChild(image);
 
-    const tint = document.createElementNS(svgNamespace, "rect");
-    tint.setAttribute("x", String(halfStart));
-    tint.setAttribute("y", "0");
-    tint.setAttribute("width", "887");
-    tint.setAttribute("height", "887");
-    // 外圍＝深灰鏽蝕鋼網，中央＝黃銅動力反應爐，呼應世界觀與視覺圖鑑.md §8.4
-    tint.setAttribute("fill", zone === "outer" ? "#4a4750" : "#c9a227");
-    tint.setAttribute("fill-opacity", zone === "outer" ? "0.84" : "0.72");
-    tint.setAttribute("style", "mix-blend-mode: multiply");
-    pattern.appendChild(tint);
-    definitions.appendChild(pattern);
+      const tint = document.createElementNS(svgNamespace, "rect");
+      tint.setAttribute("x", String(halfStart));
+      tint.setAttribute("y", "0");
+      tint.setAttribute("width", "887");
+      tint.setAttribute("height", "887");
+      tint.setAttribute("fill", zone === "outer" ? "#4a4750" : "#c9a227");
+      tint.setAttribute("fill-opacity", zone === "outer" ? "0.84" : "0.72");
+      tint.setAttribute("style", "mix-blend-mode: multiply");
+      pattern.appendChild(tint);
+      definitions.appendChild(pattern);
+    }
   }
 
   host.appendChild(definitions);
@@ -932,28 +937,50 @@ function createMechanicalCairoFloor(host: SVGSVGElement): CairoPoint[][] {
   tileGroup.setAttribute("clip-path", "url(#mechanical-world-floor-clip)");
 
   const targetBounds = boundsOf(mechanicalPolygon);
-  const field = buildCairoField(targetBounds, 130);
+  
+  // 建立正六邊形平鋪蜂巢網格
+  const R = 150; // 六角形半徑，大小契合其他世界
+  const dx = 1.5 * R;
+  const dy = Math.sqrt(3) * R;
+  const tiles: Array<{ center: { x: number; y: number }; points: Array<{ x: number; y: number }> }> = [];
+
+  for (let x = targetBounds.minX - R; x <= targetBounds.maxX + R; x += dx) {
+    const col = Math.round((x - targetBounds.minX) / dx);
+    for (let y = targetBounds.minY - R; y <= targetBounds.maxY + R; y += dy) {
+      const cy = y + (col % 2 === 1 ? dy / 2 : 0);
+      const center = { x, y: cy };
+      if (isPointInsidePolygon(center, mechanicalPolygon)) {
+        const points: Array<{ x: number; y: number }> = [];
+        for (let i = 0; i < 6; i++) {
+          const rad = (i * 60 * Math.PI) / 180;
+          points.push({ x: x + R * Math.cos(rad), y: cy + R * Math.sin(rad) });
+        }
+        tiles.push({ center, points });
+      }
+    }
+  }
 
   const regionArea = Math.abs(polygonArea(mechanicalPolygon));
   const coreRadius = Math.sqrt((regionArea * 0.3) / Math.PI);
-  const coreTiles = field.tiles.filter((tile) =>
+  const coreTiles = tiles.filter((tile) =>
     Math.hypot(tile.center.x - mechanicalZone.centerX, tile.center.y - mechanicalZone.centerY) <= coreRadius,
   );
   const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
 
-  for (let index = 0; index < field.tiles.length; index += 1) {
-    const tile = field.tiles[index];
+  for (let index = 0; index < tiles.length; index += 1) {
+    const tile = tiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
     const distanceToCore = Math.hypot(
       tile.center.x - mechanicalZone.centerX,
       tile.center.y - mechanicalZone.centerY,
     );
     const floorZone = distanceToCore <= coreRadius ? "core" : "outer";
+    const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    // 材質是 userSpaceOnUse 的連續壁紙，所有瓦片直接共用同一個 pattern 就會自然對齊，
-    // 不需要像 objectBoundingBox 時代那樣每片各自算 variant / 隨機偏移。
-    path.setAttribute("fill", `url(#mechanical-floor-${floorZone})`);
+    // 呼叫同款隨機偏移旋轉公式
+    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "mechanical", floorZone, variant, index, tile.center, svgNamespace);
+    path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-開羅磁磚 世界地圖層-開羅磁磚-${floorZone}`);
     tileGroup.appendChild(path);
   }
