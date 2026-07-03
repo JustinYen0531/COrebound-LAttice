@@ -840,47 +840,42 @@ function createMechanicalCairoFloor(host: SVGSVGElement): CairoPoint[][] {
   clipPath.appendChild(clipShape);
   definitions.appendChild(clipPath);
 
+  // 注意：這裡刻意用 patternUnits="userSpaceOnUse" 搭配「固定世界座標尺寸」，
+  // 不用 objectBoundingBox。開羅五邊形是不規則五邊形，繞 90°/180°/270° 之後每片的
+  // 外接框(bounding box)長寬比都不一樣；如果用 objectBoundingBox（貼合各自的外接框），
+  // 同一張材質圖在 4 種轉向的五邊形上會被拉伸成不同比例，導致相鄰瓦片的紋理對不齊、
+  // 看起來像沒鋪滿。改成 userSpaceOnUse 固定尺寸後，材質變成鋪在整個世界座標上的
+  // 一張連續壁紙，五邊形只是在上面挖形狀，紋理自然無縫銜接。
+  const WORLD_PATTERN_TILE = 300;
   for (const zone of ["outer", "core"] as const) {
-    for (let variant = 0; variant < 6; variant += 1) {
-      const pattern = document.createElementNS(svgNamespace, "pattern");
-      pattern.setAttribute("id", `mechanical-floor-${zone}-${variant}`);
-      pattern.setAttribute("patternUnits", "objectBoundingBox");
-      pattern.setAttribute("width", "1");
-      pattern.setAttribute("height", "1");
-      const halfStart = zone === "outer" ? 0 : 887;
-      pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
-      pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    const pattern = document.createElementNS(svgNamespace, "pattern");
+    pattern.setAttribute("id", `mechanical-floor-${zone}`);
+    pattern.setAttribute("patternUnits", "userSpaceOnUse");
+    pattern.setAttribute("width", String(WORLD_PATTERN_TILE));
+    pattern.setAttribute("height", String(WORLD_PATTERN_TILE));
+    const halfStart = zone === "outer" ? 0 : 887;
+    pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
+    pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
-      const image = document.createElementNS(svgNamespace, "image");
-      image.setAttribute("href", "/機械世界地板.png");
-      image.setAttribute("width", "1774");
-      image.setAttribute("height", "887");
-      image.setAttribute("x", "0");
-      image.setAttribute("y", "0");
-      const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
-      const transforms = [
-        "",
-        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
-        "translate(0 887) scale(1 -1)",
-        `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
-        "",
-        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
-      ];
-      image.setAttribute("transform", transforms[variant]);
-      pattern.appendChild(image);
+    const image = document.createElementNS(svgNamespace, "image");
+    image.setAttribute("href", "/機械世界地板.png");
+    image.setAttribute("width", "1774");
+    image.setAttribute("height", "887");
+    image.setAttribute("x", "0");
+    image.setAttribute("y", "0");
+    pattern.appendChild(image);
 
-      const tint = document.createElementNS(svgNamespace, "rect");
-      tint.setAttribute("x", String(halfStart));
-      tint.setAttribute("y", "0");
-      tint.setAttribute("width", "887");
-      tint.setAttribute("height", "887");
-      // 外圍＝深灰鏽蝕鋼網，中央＝黃銅動力反應爐，呼應世界觀與視覺圖鑑.md §8.4
-      tint.setAttribute("fill", zone === "outer" ? "#4a4750" : "#c9a227");
-      tint.setAttribute("fill-opacity", zone === "outer" ? "0.84" : "0.72");
-      tint.setAttribute("style", "mix-blend-mode: multiply");
-      pattern.appendChild(tint);
-      definitions.appendChild(pattern);
-    }
+    const tint = document.createElementNS(svgNamespace, "rect");
+    tint.setAttribute("x", String(halfStart));
+    tint.setAttribute("y", "0");
+    tint.setAttribute("width", "887");
+    tint.setAttribute("height", "887");
+    // 外圍＝深灰鏽蝕鋼網，中央＝黃銅動力反應爐，呼應世界觀與視覺圖鑑.md §8.4
+    tint.setAttribute("fill", zone === "outer" ? "#4a4750" : "#c9a227");
+    tint.setAttribute("fill-opacity", zone === "outer" ? "0.84" : "0.72");
+    tint.setAttribute("style", "mix-blend-mode: multiply");
+    pattern.appendChild(tint);
+    definitions.appendChild(pattern);
   }
 
   host.appendChild(definitions);
@@ -907,11 +902,11 @@ function createMechanicalCairoFloor(host: SVGSVGElement): CairoPoint[][] {
       tile.center.y - mechanicalZone.centerY,
     );
     const floorZone = distanceToCore <= coreRadius ? "core" : "outer";
-    const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "mechanical", floorZone, variant, index, tile.center, svgNamespace);
-    path.setAttribute("fill", `url(#${uniqueId})`);
+    // 材質是 userSpaceOnUse 的連續壁紙，所有瓦片直接共用同一個 pattern 就會自然對齊，
+    // 不需要像 objectBoundingBox 時代那樣每片各自算 variant / 隨機偏移。
+    path.setAttribute("fill", `url(#mechanical-floor-${floorZone})`);
     path.setAttribute("class", `世界地圖層-開羅磁磚 世界地圖層-開羅磁磚-${floorZone}`);
     tileGroup.appendChild(path);
   }
@@ -1062,13 +1057,25 @@ function 創建並綁定隨機偏移旋轉圖樣(
   
   const hashY = Math.sin(center.x * 37.719 + center.y * 91.327) * 54321.9876;
   const randRot = hashY - Math.floor(hashY);
+
+  const hashS = Math.sin(center.x * 53.185 + center.y * 23.948) * 65432.1234;
+  const randScale = hashS - Math.floor(hashS);
   
-  // 偏移量：-40px 到 40px，旋轉角度：0 到 360 度，圍繞瓷磚的幾何中心點旋轉
+  // 偏移量：-40px 到 40px，旋轉角度：0 到 360 度
   const dx = (randOffset * 80) - 40;
   const dy = (randRot * 80) - 40;
   const rotateDeg = randRot * 360;
+  // 縮放比例：1.3 到 1.6 倍隨機放大，讓細密禪繞畫/紋理圖線更容易被看清
+  const scaleVal = 1.3 + randScale * 0.3;
   
-  uniquePattern.setAttribute("patternTransform", `translate(${dx} ${dy}) rotate(${rotateDeg} ${center.x} ${center.y})`);
+  // 複合變換：先將坐標原點平移至瓷磚中心 center 點，進行隨機放大與旋轉，再套用平移偏移，最後平移回原位
+  const cx = center.x;
+  const cy = center.y;
+  uniquePattern.setAttribute(
+    "patternTransform",
+    `translate(${cx + dx} ${cy + dy}) rotate(${rotateDeg}) scale(${scaleVal}) translate(${-cx} ${-cy})`
+  );
+  
   definitions.appendChild(uniquePattern);
   
   return uniquePatternId;
