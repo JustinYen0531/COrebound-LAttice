@@ -683,8 +683,9 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "none");
+      mask.setAttribute("fill", "rgba(255, 255, 255, 0.24)");
+      mask.setAttribute("stroke", "#ffffff");
+      mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
     }
@@ -855,8 +856,9 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "none");
+      mask.setAttribute("fill", "rgba(255, 255, 255, 0.24)");
+      mask.setAttribute("stroke", "#fbc5ff");
+      mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
     }
@@ -999,8 +1001,9 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "none");
+      mask.setAttribute("fill", "rgba(255, 255, 255, 0.24)");
+      mask.setAttribute("stroke", "#ffd5d5");
+      mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
     }
@@ -1170,8 +1173,9 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "none");
+      mask.setAttribute("fill", "rgba(255, 255, 255, 0.24)");
+      mask.setAttribute("stroke", "#c0f0ff");
+      mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
     }
