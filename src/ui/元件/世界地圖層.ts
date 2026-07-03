@@ -576,8 +576,8 @@ function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
   img.className = "世界地圖層-環境物件-image";
   img.src = env.iconPath;
   img.alt = env.nameZh;
-  img.width = WORLD_OBJECT_SIZE;
-  img.height = WORLD_OBJECT_SIZE;
+  img.width = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM;
+  img.height = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM;
   img.draggable = false;
   const 重量描述 = env.destructible ? `碰撞重量 ${env.weight ?? "?"}` : "不可破壞";
   node.title = `${env.nameZh}（${env.category}・${重量描述}）\n${env.mechanicText}`;
