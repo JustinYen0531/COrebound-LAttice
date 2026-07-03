@@ -461,7 +461,7 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): void {
   }));
 
   const regionArea = Math.abs(polygonArea(geometryPolygon));
-  const coreRadius = Math.sqrt((regionArea * 0.4) / Math.PI);
+  const coreRadius = Math.sqrt((regionArea * 0.3) / Math.PI);
   for (let index = 0; index < transformedTiles.length; index += 1) {
     const tile = transformedTiles[index];
     const distanceToCore = Math.hypot(tile.center.x - geometryZone.centerX, tile.center.y - geometryZone.centerY);

@@ -820,7 +820,7 @@ button.禁用:hover {
 }
 .世界地圖層-愛因斯坦磁磚 {
   stroke: rgba(245, 252, 255, 0.96);
-  stroke-width: 8;
+  stroke-width: 12;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
   paint-order: stroke fill;
