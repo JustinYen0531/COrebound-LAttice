@@ -292,3 +292,254 @@ masterpiece, best quality, highly detailed anime game character concept art, ful
 5. 最後補本次鏡頭、表情、姿勢、版本差異
 
 這樣你之後每次要做新的隊長立繪，不會越做越亂，風格也比較容易穩住。
+
+---
+
+## 10. 遊戲開場封面動態特寫 Prompt
+
+這一節是專門給 `遊戲一開始的主畫面封面` 使用的。
+
+你的需求可以拆成兩部分：
+
+1. `四位隊長各自有一段符合性格的特寫動作`
+2. `四個世界各自有一張像宣傳圖的怪物世界背景`
+
+這樣最後就能組成：
+
+- 前景：四位隊長的動態特寫
+- 背景：四大世界各自的怪物群像與世界氛圍
+
+---
+
+## 10.1 四位隊長動態特寫共通原則
+
+四位隊長的動畫不要都做成普通走路。
+
+比較好的方向是：
+
+- `Conductor`：有節奏感、像在掌控局勢
+- `Operator`：有觀察感、像在校準與判讀
+- `Launcher`：有準備突進的勢能感
+- `Architect`：有沉穩承載感、像空間被他壓住
+
+鏡頭建議：
+
+- `半身到全身之間`
+- `角色特寫優先`
+- `動作不需要太大`
+- `但性格一定要清楚`
+
+---
+
+## 10.2 四位隊長動態特寫 Prompt
+
+### Conductor
+
+**動作方向**
+
+- 緩步前行
+- 一手抬起，像在指揮空氣中的節奏
+- 披帶與衣擺跟著步伐有規律擺動
+
+**Prompt**
+
+```text
+animated game cover key visual, close-up full-body shot of Conductor walking forward with calm authority, one hand raised like conducting an invisible orchestra, deep blue ivory gold ceremonial coat swaying rhythmically, mixed geometry organic fractal mechanical aesthetics, subtle living vine embroidery, recursive halo fragments, restrained mechanical ring-frame ornaments, elegant sacred tempo, cinematic character focus, premium fantasy sci-fi promotional art
+```
+
+### Operator
+
+**動作方向**
+
+- 站定或低速側身前行
+- 像正在檢查前方空間
+- 手邊有光學介面或校準碎片漂浮
+
+**Prompt**
+
+```text
+animated game cover key visual, close-up full-body shot of Operator moving in a restrained precise step, slightly turning sideways as if scanning and correcting the world, silver gray black infiltration outfit, translucent optical layers, floating precision interface shards, mixed geometry organic fractal mechanical aesthetics, subtle luminous vein glow, recursive distortion motifs, compact mechanical signal rings, quiet but dangerous, cinematic character focus, premium fantasy sci-fi promotional art
+```
+
+### Launcher
+
+**動作方向**
+
+- 半蹲起勢或前傾快步
+- 像下一秒就要衝出去
+- 鉤索、發射環、能量尾跡正在聚集
+
+**Prompt**
+
+```text
+animated game cover key visual, close-up full-body shot of Launcher leaning forward in a fast aggressive step, body full of explosive momentum as if about to dash or fire a hook, white gold orange blue combat regalia, flowing energy straps, circular launch arrays charging, mixed geometry organic fractal mechanical aesthetics, organic growth curves, fractal branching energy trails, mechanical launch frames, fierce kinetic presence, cinematic character focus, premium fantasy sci-fi promotional art
+```
+
+### Architect
+
+**動作方向**
+
+- 緩慢行走或安靜坐在結構體上
+- 像守住某個核心
+- 抬手時有重力環或護壁浮起
+
+**Prompt**
+
+```text
+animated game cover key visual, close-up full-body shot of Architect moving with slow monumental weight, or sitting calmly on a structural stone-metal frame like a guardian of the core, deep green stone white iron gray dark gold armor-robes, layered protective silhouette, gravity sigils and floating barrier rings, mixed geometry organic fractal mechanical aesthetics, living root understructure, recursive engraved motifs, mechanical reinforcement frames, solemn and reliable, cinematic character focus, premium fantasy sci-fi promotional art
+```
+
+---
+
+## 10.3 四大世界怪物宣傳背景共通原則
+
+這四張背景，不要只是地圖風景。
+
+它們應該像：
+
+> **該世界所有怪物與世界法則濃縮成一張宣傳主視覺。**
+
+所以每張圖都要有：
+
+- 該世界代表性的怪物群
+- 該世界 Boss 或守護者的壓迫感
+- 該世界的地板紋理、氣氛、法則感
+- 像正式宣傳圖，不像遊戲截圖
+
+---
+
+## 10.4 四大世界怪物宣傳背景 Prompt
+
+### Geometry 世界背景
+
+**畫面方向**
+
+- 幾何世界怪物群像
+- 有單圈、雙圈、三圈圖騰怪一起出現
+- 背後帶超立方體、生命之花、晶格地板
+
+**Prompt**
+
+```text
+game promotional background art, geometry world monster ensemble, sacred mathematical battlefield filled with concentric totem creatures from minor geometric mobs to elite impossible forms and the world guardian, glowing crystal lattice floor, flower of life patterns, tesseract projections, blue white gold palette, strict order, mystical sacred geometry atmosphere, premium cinematic fantasy sci-fi poster art, highly detailed
+```
+
+### Organic 世界背景
+
+**畫面方向**
+
+- 有機世界怪物群像
+- 葉脈、苔蘚、孢子、蟲巢、根系守護者全部融在同一張圖
+- 氣氛像生命爆發
+
+**Prompt**
+
+```text
+game promotional background art, organic world monster ensemble, living battlefield filled with leaf-vein creatures, moss growths, spore spirits, nest-like elites and the giant root-system guardian, breathing mycelium floor, bioluminescent pollen air, warm green red natural glow, ecosystem overflowing with life, mystical zentangle biology atmosphere, premium cinematic fantasy poster art, highly detailed
+```
+
+### Fractal 世界背景
+
+**畫面方向**
+
+- 分形世界怪物群像
+- 雪花、遞迴圖騰、分裂結晶、無盡維度守護者
+- 像整個空間都在往內遞迴
+
+**Prompt**
+
+```text
+game promotional background art, fractal world monster ensemble, recursive battlefield filled with snowflake totems, branching crystal entities, nested geometric horrors and the infinite recursion guardian, self-similar floor patterns, recursive light tunnels, deep blue gold surreal glow, space folding into itself, mystical fractal fantasy sci-fi atmosphere, premium cinematic poster art, highly detailed
+```
+
+### Mechanical 世界背景
+
+**畫面方向**
+
+- 機械世界怪物群像
+- 齒輪、活塞、自動砲塔、超級工廠守護者
+- 畫面像重工業神殿
+
+**Prompt**
+
+```text
+game promotional background art, mechanical world monster ensemble, industrial battlefield filled with gear totems, piston constructs, sentry machines and the colossal super factory guardian, brass reactor floor, conveyors, steam vents, iron-gray and gold heavy machinery palette, sacred industrial order, premium cinematic fantasy sci-fi poster art, highly detailed
+```
+
+---
+
+## 10.5 主畫面封面的 4 x 4 組合邏輯
+
+你現在要的不是單一固定封面，
+而是一套：
+
+> **四位隊長 x 四個世界背景 = 16 組主畫面封面組合**
+
+這套邏輯建議這樣記：
+
+- `4 位隊長`
+- `4 張世界背景`
+- `總共 16 種前景與背景排列`
+
+### 循環方式
+
+- 每 `4` 次為一輪
+- 每一輪會把四位隊長各出現一次
+- 每一位隊長都會配到 `隨機一張世界背景`
+- 四輪跑完，就剛好走完 `4 x 4 = 16` 種組合
+
+### 你可以理解成這種節奏
+
+- 第 1 輪：四位隊長各出現一次，背景隨機分到四世界
+- 第 2 輪：再來一輪新的四位隊長，背景重新打散
+- 第 3 輪：繼續輪替
+- 第 4 輪：補完最後一組配對
+
+這樣玩家會感覺：
+
+- 封面一直在變
+- 但不是亂變
+- 而是在一個完整的 16 種組合池裡循環
+
+### 構圖規則
+
+這些封面全部建議統一做成：
+
+- `橫向構圖`
+- `主畫面用 landscape ratio`
+- `角色在前景特寫`
+- `世界怪物背景在後景橫向鋪開`
+- `中央或偏中間保留 Logo / Start UI 空間`
+
+---
+
+## 10.6 主畫面封面 Prompt 模板
+
+這一段是你之後真的要生成 `16 種封面組合` 時最實用的模板。
+
+使用方式：
+
+1. 先選一位隊長動態特寫 prompt
+2. 再選一張世界背景 prompt
+3. 最後套進這個主畫面封面模板
+
+```text
+title screen cover art, landscape composition, premium game main menu key visual, one captain featured in the foreground with strong personality-driven motion, one world-specific monster background spread across the back in wide cinematic layout, readable center space reserved for logo and menu UI, layered depth, dynamic but elegant, fantasy sci-fi promotional quality, highly detailed
+```
+
+---
+
+## 10.7 16 組封面生成原則
+
+如果你之後真的要一口氣生成 16 張，建議每張都遵守：
+
+1. `同一位隊長的姿勢可以微調，但性格不要變`
+2. `同一張世界背景的怪物群可以重排，但法則感不要變`
+3. `全部維持橫向`
+4. `中間預留 UI 空間`
+5. `背景比前景稍暗，讓隊長能站出來`
+
+這樣最後拼起來才會像：
+
+- 同一套主畫面系統
+- 而不是 16 張互不相干的圖
