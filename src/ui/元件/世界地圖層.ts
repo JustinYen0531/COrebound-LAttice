@@ -148,9 +148,21 @@ export function 建立世界地圖層(): HTMLElement {
 
   const playerNode = document.createElement("div");
   playerNode.className = "世界地圖層-玩家";
-  // 真正移動的是「9 層疊加編織圖騰」(隊長六邊形印襯 + 9 成員差速互旋),取代漩渦 emoji
-  playerNode.appendChild(建立玩家標記圖騰({ size: 140 }));
-  playerNode.title = "小隊(玩家)· 9 層疊加編織圖騰";
+  playerNode.innerHTML = `
+    <svg viewBox="0 0 100 100" width="80" height="80">
+      <defs>
+        <linearGradient id="vortex-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ff8a3b" />
+          <stop offset="100%" stop-color="#60a5fa" />
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="2" stroke-dasharray="4,4" />
+      <path d="M 50 50 Q 65 35 75 50 T 50 85 T 20 50 T 50 20" fill="none" stroke="url(#vortex-grad)" stroke-width="4.5" stroke-linecap="round" />
+      <path d="M 50 50 Q 35 65 25 50 T 50 15 T 80 50 T 50 80" fill="none" stroke="url(#vortex-grad)" stroke-width="2.5" stroke-linecap="round" opacity="0.75" />
+      <circle cx="50" cy="50" r="5" fill="#ffffff" />
+    </svg>
+  `;
+  playerNode.title = "小隊(玩家)· 幾何雙螺旋漩渦標記";
   canvas.appendChild(playerNode);
 
   const miniMap = document.createElement("div");
