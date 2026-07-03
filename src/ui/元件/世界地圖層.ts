@@ -486,22 +486,27 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): void {
 
   const regionArea = Math.abs(polygonArea(geometryPolygon));
   const coreRadius = Math.sqrt((regionArea * 0.3) / Math.PI);
+  const coreTilePaths: string[] = [];
   for (let index = 0; index < transformedTiles.length; index += 1) {
     const tile = transformedTiles[index];
+    const tilePath = polygonToPath(tile.points, (point) => point);
+    const distanceToCore = Math.hypot(tile.center.x - geometryZone.centerX, tile.center.y - geometryZone.centerY);
+    if (distanceToCore <= coreRadius) {
+      coreTilePaths.push(tilePath);
+      continue;
+    }
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
-    path.setAttribute("d", polygonToPath(tile.points, (point) => point));
+    path.setAttribute("d", tilePath);
     path.setAttribute("fill", `url(#geometry-floor-outer-${variant})`);
     path.setAttribute("class", "世界地圖層-愛因斯坦磁磚");
     tileGroup.appendChild(path);
   }
 
-  // 中央是單一完整地板圖，蓋住下方所有磁磚與接縫，圖片中心對準區域中心。
-  const coreFloor = document.createElementNS(svgNamespace, "circle");
+  // 中央沿著被移除的 Hat 邊界形成不規則洞口，再用同一張圖連續填滿所有子輪廓。
+  const coreFloor = document.createElementNS(svgNamespace, "path");
   coreFloor.setAttribute("class", "世界地圖層-幾何中央整體地板");
-  coreFloor.setAttribute("cx", String(geometryZone.centerX));
-  coreFloor.setAttribute("cy", String(geometryZone.centerY));
-  coreFloor.setAttribute("r", String(coreRadius));
+  coreFloor.setAttribute("d", coreTilePaths.join(" "));
   coreFloor.setAttribute("fill", "url(#geometry-floor-core-whole)");
   tileGroup.appendChild(coreFloor);
   host.appendChild(tileGroup);
