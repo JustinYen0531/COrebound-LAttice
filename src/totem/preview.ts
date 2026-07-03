@@ -8,7 +8,7 @@ import { 幾何世界圖騰清單 } from "./資料/幾何世界圖騰";
 import { 有機世界圖騰清單 } from "./資料/有機世界圖騰";
 import { 分形世界圖騰清單 } from "./資料/分形世界圖騰";
 import { 機械世界圖騰清單 } from "./資料/機械世界圖騰";
-import { 建立120度圖徽群組 } from "./資料/角色識別圖徽";
+import { 建立單個角色圖徽 } from "./資料/角色識別圖徽";
 
 const style = document.createElement("style");
 style.textContent = `
@@ -180,14 +180,12 @@ for (const 世界 of 世界列表) {
       const emblemCenterG = document.createElementNS("http://www.w3.org/2000/svg", "g");
       emblemCenterG.setAttribute("transform", "translate(150, 150)");
       
-      // 根據星等決定半徑：1★=105px, 2★=116px, 3★=125px (均勻分佈在甜甜圈的外層軌道)
-      const 半徑軌道 = 105 + i * 10;
-      // 角度交錯錯開 20 度，視覺結構更富美感
-      const 偏轉角 = i * 20;
+      // 放置在圓環正上方 (0°)，半徑為 120px 的黃金軌道處
+      const 圖徽半徑 = 120;
       
-      // 建立白色白描、黑底實心背景、120度均勻分布的角色標識圖徽
-      const glyphGroup = 建立120度圖徽群組(角色.id, i + 1, 半徑軌道, "#ffffff", 偏轉角);
-      emblemCenterG.appendChild(glyphGroup);
+      // 建立白色白描、黑底實心背景、無光暈的 2 倍大小角色圖徽
+      const glyphEl = 建立單個角色圖徽(角色.id, i + 1, 圖徽半徑, "#ffffff", 0);
+      emblemCenterG.appendChild(glyphEl);
       svg.appendChild(emblemCenterG);
       
       cell.appendChild(svg);
