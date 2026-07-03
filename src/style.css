@@ -829,6 +829,15 @@ button.禁用:hover {
 .世界地圖層-愛因斯坦磁磚-core {
   fill-opacity: 0.92;
 }
+.世界地圖層-幾何中央分界線 {
+  fill: none;
+  stroke: #626c79;
+  stroke-width: 22;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.72));
+}
 .世界地圖層-區域片-organic {
   fill: rgba(111, 220, 140, 0.14);
 }
@@ -1035,6 +1044,21 @@ button.禁用:hover {
 .世界地圖層-小地圖片-organic { fill: rgba(111, 220, 140, 0.24); }
 .世界地圖層-小地圖片-fractal { fill: rgba(200, 155, 255, 0.26); }
 .世界地圖層-小地圖片-mechanical { fill: rgba(255, 197, 111, 0.24); }
+.世界地圖層-小地圖中央區 {
+  fill: rgba(112, 121, 134, 0.42);
+  stroke: #c5ccd5;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.世界地圖層-小地圖中央區標籤 {
+  fill: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: rgba(15, 19, 28, 0.92);
+  stroke-width: 3px;
+  pointer-events: none;
+}
 .世界地圖層-小地圖分界線 {
   fill: none;
   stroke: rgba(255, 255, 255, 0.88);

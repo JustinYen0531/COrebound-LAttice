@@ -108,7 +108,7 @@ export function 建立世界地圖層(): HTMLElement {
   canvas.appendChild(objectLayer);
 
   const regionPaths = createRegionPaths(zoneSvg);
-  createGeometryEinsteinFloor(zoneSvg);
+  const geometryCoreBoundaries = createGeometryEinsteinFloor(zoneSvg);
   const dividerPaths = createDividerPaths(zoneSvg);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
@@ -146,6 +146,7 @@ export function 建立世界地圖層(): HTMLElement {
   miniMapInner.appendChild(miniSvg);
 
   const miniRegionPaths = createMiniRegionPaths(miniSvg);
+  const miniGeometryCore = createMiniGeometryCore(miniSvg);
   const miniDividerPaths = createMiniDividerPaths(miniSvg);
   const miniObjectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
@@ -212,7 +213,15 @@ export function 建立世界地圖層(): HTMLElement {
       exclaim.style.display = "none";
     }
 
-    renderMiniMap(miniMapInner, miniRegionPaths, miniDividerPaths, miniObjectNodes, miniPlayer);
+    renderMiniMap(
+      miniMapInner,
+      miniRegionPaths,
+      miniGeometryCore,
+      geometryCoreBoundaries,
+      miniDividerPaths,
+      miniObjectNodes,
+      miniPlayer,
+    );
   }
 
   function tick(now: number): void {
@@ -347,6 +356,8 @@ function renderZoneLabels(
 function renderMiniMap(
   host: HTMLElement,
   regions: Record<World, SVGPathElement>,
+  geometryCore: { path: SVGPathElement; label: SVGTextElement },
+  geometryCoreBoundaries: EinsteinPoint[][],
   dividers: { vertical: SVGPathElement; horizontal: SVGPathElement },
   objectNodes: Map<string, HTMLElement>,
   playerNode: HTMLElement,
@@ -362,6 +373,16 @@ function renderMiniMap(
   (Object.keys(regions) as World[]).forEach((world) => {
     regions[world].setAttribute("d", polygonToPath(polygons[world], toMini));
   });
+  geometryCore.path.setAttribute(
+    "d",
+    geometryCoreBoundaries.map((boundary) => polygonToPath(boundary, toMini)).join(" "),
+  );
+  const geometryZone = MAP_ZONES.find((zone) => zone.region === "geometry");
+  if (geometryZone) {
+    const coreCenter = toMini({ x: geometryZone.centerX, y: geometryZone.centerY });
+    geometryCore.label.setAttribute("x", String(coreCenter.x));
+    geometryCore.label.setAttribute("y", String(coreCenter.y));
+  }
   dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, toMini));
   dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, toMini));
 
@@ -389,12 +410,12 @@ function createRegionPaths(host: SVGSVGElement): Record<World, SVGPathElement> {
   return regions;
 }
 
-function createGeometryEinsteinFloor(host: SVGSVGElement): void {
+function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const geometryPolygon = buildRegionPolygons().geometry;
   const geometryPath = polygonToPath(geometryPolygon, (point) => point);
   const geometryZone = MAP_ZONES.find((zone) => zone.region === "geometry");
-  if (!geometryZone) return;
+  if (!geometryZone) return [];
 
   const definitions = document.createElementNS(svgNamespace, "defs");
   const clipPath = document.createElementNS(svgNamespace, "clipPath");
@@ -471,6 +492,10 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): void {
 
   const regionArea = Math.abs(polygonArea(geometryPolygon));
   const coreRadius = Math.sqrt((regionArea * 0.3) / Math.PI);
+  const coreTiles = transformedTiles.filter((tile) =>
+    Math.hypot(tile.center.x - geometryZone.centerX, tile.center.y - geometryZone.centerY) <= coreRadius,
+  );
+  const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
   for (let index = 0; index < transformedTiles.length; index += 1) {
     const tile = transformedTiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
@@ -483,7 +508,60 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): void {
     path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
     tileGroup.appendChild(path);
   }
+
+  const coreDivider = document.createElementNS(svgNamespace, "path");
+  coreDivider.setAttribute("class", "世界地圖層-幾何中央分界線");
+  coreDivider.setAttribute("d", coreBoundaries.map((boundary) => polygonToPath(boundary, (point) => point)).join(" "));
+  tileGroup.appendChild(coreDivider);
   host.appendChild(tileGroup);
+  return coreBoundaries;
+}
+
+function buildTileBoundaryLoops(tiles: EinsteinPoint[][]): EinsteinPoint[][] {
+  const boundaryEdges = new Map<string, { a: EinsteinPoint; b: EinsteinPoint }>();
+  for (const tile of tiles) {
+    for (let index = 0; index < tile.length; index += 1) {
+      const a = tile[index];
+      const b = tile[(index + 1) % tile.length];
+      const key = canonicalEdgeKey(a, b);
+      if (boundaryEdges.has(key)) boundaryEdges.delete(key);
+      else boundaryEdges.set(key, { a, b });
+    }
+  }
+
+  const pending = [...boundaryEdges.values()];
+  const loops: EinsteinPoint[][] = [];
+  while (pending.length > 0) {
+    const first = pending.pop()!;
+    const loop = [first.a, first.b];
+    const startKey = boundaryPointKey(first.a);
+    let currentKey = boundaryPointKey(first.b);
+
+    while (currentKey !== startKey) {
+      const nextIndex = pending.findIndex((edge) =>
+        boundaryPointKey(edge.a) === currentKey || boundaryPointKey(edge.b) === currentKey,
+      );
+      if (nextIndex < 0) break;
+      const [nextEdge] = pending.splice(nextIndex, 1);
+      const nextPoint = boundaryPointKey(nextEdge.a) === currentKey ? nextEdge.b : nextEdge.a;
+      loop.push(nextPoint);
+      currentKey = boundaryPointKey(nextPoint);
+    }
+
+    if (currentKey === startKey) loop.pop();
+    if (loop.length >= 3) loops.push(loop);
+  }
+  return loops;
+}
+
+function boundaryPointKey(point: EinsteinPoint): string {
+  return `${Math.round(point.x * 1000)},${Math.round(point.y * 1000)}`;
+}
+
+function canonicalEdgeKey(a: EinsteinPoint, b: EinsteinPoint): string {
+  const first = boundaryPointKey(a);
+  const second = boundaryPointKey(b);
+  return first < second ? `${first}|${second}` : `${second}|${first}`;
 }
 
 function boundsOf(points: EinsteinPoint[]) {
@@ -579,6 +657,20 @@ function createMiniRegionPaths(host: SVGSVGElement): Record<World, SVGPathElemen
     regions[world] = path;
   });
   return regions;
+}
+
+function createMiniGeometryCore(host: SVGSVGElement): { path: SVGPathElement; label: SVGTextElement } {
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("class", "世界地圖層-小地圖中央區");
+  host.appendChild(path);
+
+  const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  label.setAttribute("class", "世界地圖層-小地圖中央區標籤");
+  label.setAttribute("text-anchor", "middle");
+  label.setAttribute("dominant-baseline", "middle");
+  label.textContent = "中央區";
+  host.appendChild(label);
+  return { path, label };
 }
 
 function createMiniDividerPaths(host: SVGSVGElement) {
