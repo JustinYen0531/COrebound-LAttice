@@ -30,22 +30,22 @@
 
 ### 主要參考文件與提示詞來源
 
-- 視覺總基調：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/世界觀與視覺圖鑑.md)
-- 角色數量與定位：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/角色圖鑑.md)
-- 怪物、Boss、材料數量：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/怪物圖鑑.md)
-- 可直接參考的 AI 生圖提示詞：[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)
-- 隊長專用共通 Prompt 與 `4 星` 版本提示詞：[隊長立繪_共通Prompt與四星提示詞.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/隊長立繪_共通Prompt與四星提示詞.md)
-- UI 視覺語言與頁面結構：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/玩家介面_UserFlow方案.md)
+- 視覺總基調：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/世界觀/世界觀與視覺圖鑑.md)
+- 角色數量與定位：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/角色圖鑑.md)
+- 怪物、Boss、材料數量：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/怪物圖鑑.md)
+- 可直接參考的 AI 生圖提示詞：[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/提示詞指南.md)
+- 隊長專用共通 Prompt 與 `4 星` 版本提示詞：[隊長立繪_共通Prompt與四星提示詞.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/隊長立繪_共通Prompt與四星提示詞.md)
+- UI 視覺語言與頁面結構：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/介面流程/玩家介面_UserFlow方案.md)
 
 ### 子資料夾用途
 
 - `images/characters/captains`
   - 放 `4` 位隊長的完整立繪
-  - 參考：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/角色圖鑑.md)、[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)、[隊長立繪_共通Prompt與四星提示詞.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/隊長立繪_共通Prompt與四星提示詞.md)
+  - 參考：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/角色圖鑑.md)、[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/提示詞指南.md)、[隊長立繪_共通Prompt與四星提示詞.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/隊長立繪_共通Prompt與四星提示詞.md)
 
 - `images/characters/members`
   - 放第一版 `20` 名成員完整立繪
-  - 參考：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/角色圖鑑.md)、[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)
+  - 參考：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/角色圖鑑.md)、[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/提示詞指南.md)
 
 - `images/characters/portraits`
   - 放隊長與成員頭像、裁切肖像、小卡面
@@ -56,7 +56,7 @@
 - `images/enemies/fractal`
 - `images/enemies/mechanical`
   - 放 `29` 種怪物中各世界對應的敵方圖騰形體
-  - 參考：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/怪物圖鑑.md)、[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/世界觀與視覺圖鑑.md)
+  - 參考：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/怪物圖鑑.md)、[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/世界觀/世界觀與視覺圖鑑.md)
 
 - `images/enemies/bosses`
   - 放世界守護者與最終 Boss 的主視覺
@@ -71,7 +71,7 @@
 
 - `images/materials/icons`
   - 放 `25` 種材料的小圖示 / 背包圖示
-  - 參考：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/怪物圖鑑.md)
+  - 參考：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/怪物圖鑑.md)
 
 - `images/materials/ores`
   - 放礦物、素材原件、可開採物的較大尺寸圖
@@ -79,7 +79,7 @@
 - `images/props/interaction_objects`
   - 放合成台、熔爐、雕像、商店、召喚裝置等互動物件
   - 建議第一版先抓 `10 到 20` 份
-  - 參考：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/世界觀與視覺圖鑑.md)、[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)
+  - 參考：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/世界觀/世界觀與視覺圖鑑.md)、[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/提示詞指南.md)
 
 - `images/props/environment_objects`
   - 放障礙物、裝飾物、資源節點等場景物件
@@ -89,7 +89,7 @@
 
 - `images/ui/main_menu`
   - 放主畫面主按鈕、右側彈出子按鈕、背景視覺零件
-  - 參考：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/玩家介面_UserFlow方案.md)
+  - 參考：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/介面流程/玩家介面_UserFlow方案.md)
 
 - `images/ui/hud`
   - 放底部核心 HUD、技能圖示、生命條、能量條、小地圖等零件
@@ -129,10 +129,10 @@
 
 ### 主要參考文件與提示詞來源
 
-- 世界與視覺氣氛：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/世界觀與視覺圖鑑.md)
-- 角色、技能、怪物設計：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/角色圖鑑.md)、[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/怪物圖鑑.md)
-- UI 動效與頁面 flow：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/玩家介面_UserFlow方案.md)
-- 靜態素材提示詞基底：[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)
+- 世界與視覺氣氛：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/世界觀/世界觀與視覺圖鑑.md)
+- 角色、技能、怪物設計：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/角色圖鑑.md)、[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/怪物圖鑑.md)
+- UI 動效與頁面 flow：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/介面流程/玩家介面_UserFlow方案.md)
+- 靜態素材提示詞基底：[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/提示詞指南.md)
 
 ### 子資料夾用途
 
@@ -168,10 +168,10 @@
 
 ### 主要參考文件與提示詞來源
 
-- 完整音樂與音效提示詞：[音樂與音效設計總表.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/音樂與音效設計總表.md)
-- 世界氣氛與音樂身份：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/世界觀與視覺圖鑑.md)
-- 遊戲節奏與階段：[遊戲設計文件.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/遊戲設計文件.md)
-- UI 音效落點：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/玩家介面_UserFlow方案.md)
+- 完整音樂與音效提示詞：[音樂與音效設計總表.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/音樂與音效設計總表.md)
+- 世界氣氛與音樂身份：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/世界觀/世界觀與視覺圖鑑.md)
+- 遊戲節奏與階段：[遊戲設計文件.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/遊戲總覽/遊戲設計文件.md)
+- UI 音效落點：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/介面流程/玩家介面_UserFlow方案.md)
 
 ### 子資料夾用途
 
@@ -247,13 +247,13 @@
 
 目前最適合一起參考的規劃文件：
 
-- 視覺生成提示詞：[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/提示詞指南.md)
-- 隊長一般版 / 四星版專用提示詞：[隊長立繪_共通Prompt與四星提示詞.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/隊長立繪_共通Prompt與四星提示詞.md)
-- 角色數量、技能、隊長設定：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/角色圖鑑.md)
-- 怪物、Boss、材料數量：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/怪物圖鑑.md)
-- 世界氣氛與美術基調：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/世界觀與視覺圖鑑.md)
-- 音樂 / 音效提示詞：[音樂與音效設計總表.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/音樂與音效設計總表.md)
-- UI / 頁面結構 / 按鈕規則：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/玩家介面_UserFlow方案.md)
+- 視覺生成提示詞：[提示詞指南.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/提示詞指南.md)
+- 隊長一般版 / 四星版專用提示詞：[隊長立繪_共通Prompt與四星提示詞.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/隊長立繪_共通Prompt與四星提示詞.md)
+- 角色數量、技能、隊長設定：[角色圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/角色圖鑑.md)
+- 怪物、Boss、材料數量：[怪物圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/角色與敵方/怪物圖鑑.md)
+- 世界氣氛與美術基調：[世界觀與視覺圖鑑.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/世界觀/世界觀與視覺圖鑑.md)
+- 音樂 / 音效提示詞：[音樂與音效設計總表.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/素材與提示詞/音樂與音效設計總表.md)
+- UI / 頁面結構 / 按鈕規則：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/介面流程/玩家介面_UserFlow方案.md)
 
 ---
 
