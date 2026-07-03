@@ -24,8 +24,9 @@ import {
   type Region,
 } from "../../data/地圖物件資料";
 import { ENV_OBJECTS, type EnvObjectInstance } from "../../data/環境物件資料";
-import type { World } from "../../data/成員型別";
+import type { Family, World } from "../../data/成員型別";
 import { buildEinsteinHatSupertile, type EinsteinPoint } from "../../world/愛因斯坦地板";
+import { buildPenroseSupertile, type PenrosePoint } from "../../world/彭羅斯地板";
 
 // 障礙物體積最大、資源礦物次之、環境機關最小，呼應立繪本身的視覺份量
 const ENV_ICON_SIZE: Record<EnvObjectInstance["category"], number> = {
@@ -37,6 +38,21 @@ const ENV_ICON_SIZE: Record<EnvObjectInstance["category"], number> = {
 const PLAYER_GLYPH = "🌀";
 const MOVE_SPEED = 24;
 const VIEW_PADDING = 140;
+
+const GUARDIAN_ALTAR_IMAGE: Record<World, string> = {
+  geometry: "/images/props/facilities/altars/guardian_altar_geometry.png",
+  organic: "/images/props/facilities/altars/guardian_altar_organic.png",
+  fractal: "/images/props/facilities/altars/guardian_altar_fractal.png",
+  mechanical: "/images/props/facilities/altars/guardian_altar_mechanical.png",
+};
+
+const FAMILY_FURNACE_IMAGE: Record<Family, string> = {
+  shield: "/images/props/facilities/furnaces/family_furnace_shield.png",
+  multishot: "/images/props/facilities/furnaces/family_furnace_multishot.png",
+  straight: "/images/props/facilities/furnaces/family_furnace_straight.png",
+  mine: "/images/props/facilities/furnaces/family_furnace_mine.png",
+  laser: "/images/props/facilities/furnaces/family_furnace_laser.png",
+};
 
 let playerPos = { x: 0, y: 0 };
 
@@ -109,6 +125,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   const regionPaths = createRegionPaths(zoneSvg);
   const geometryCoreBoundaries = createGeometryEinsteinFloor(zoneSvg);
+  const fractalCoreBoundaries = createFractalPenroseFloor(zoneSvg);
   const dividerPaths = createDividerPaths(zoneSvg);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
@@ -147,6 +164,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   const miniRegionPaths = createMiniRegionPaths(miniSvg);
   const miniGeometryCore = createMiniGeometryCore(miniSvg);
+  const miniFractalCore = createMiniFractalCore(miniSvg);
   const miniDividerPaths = createMiniDividerPaths(miniSvg);
   const miniObjectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
@@ -218,6 +236,8 @@ export function 建立世界地圖層(): HTMLElement {
       miniRegionPaths,
       miniGeometryCore,
       geometryCoreBoundaries,
+      miniFractalCore,
+      fractalCoreBoundaries,
       miniDividerPaths,
       miniObjectNodes,
       miniPlayer,
@@ -310,12 +330,19 @@ function createObjectNode(object: MapObject): HTMLElement {
   node.className = `世界地圖層-物件 世界地圖層-物件-${object.kind}`;
   node.dataset.kind = object.kind;
   node.dataset.id = object.id;
-  node.innerHTML = `
-    <span class="世界地圖層-物件-glyph">${FACILITY_GLYPH[object.kind]}</span>
-    <span class="世界地圖層-物件-label">${object.label}</span>
-  `;
+  const imagePath = facilityImagePath(object);
+  const visual = imagePath
+    ? `<img class="世界地圖層-物件-image" src="${imagePath}" alt="${object.label}" draggable="false">`
+    : `<span class="世界地圖層-物件-glyph">${FACILITY_GLYPH[object.kind]}</span>`;
+  node.innerHTML = `${visual}<span class="世界地圖層-物件-label">${object.label}</span>`;
   node.title = object.detail ?? object.label;
   return node;
+}
+
+function facilityImagePath(object: MapObject): string | null {
+  if (object.kind === "熔爐" && object.family) return FAMILY_FURNACE_IMAGE[object.family];
+  if (object.kind === "召喚" && object.region !== "plaza") return GUARDIAN_ALTAR_IMAGE[object.region];
+  return null;
 }
 
 function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
@@ -358,6 +385,8 @@ function renderMiniMap(
   regions: Record<World, SVGPathElement>,
   geometryCore: { path: SVGPathElement; label: SVGTextElement },
   geometryCoreBoundaries: EinsteinPoint[][],
+  fractalCore: { path: SVGPathElement; label: SVGTextElement },
+  fractalCoreBoundaries: PenrosePoint[][],
   dividers: { vertical: SVGPathElement; horizontal: SVGPathElement },
   objectNodes: Map<string, HTMLElement>,
   playerNode: HTMLElement,
@@ -382,6 +411,16 @@ function renderMiniMap(
     const coreCenter = toMini({ x: geometryZone.centerX, y: geometryZone.centerY });
     geometryCore.label.setAttribute("x", String(coreCenter.x));
     geometryCore.label.setAttribute("y", String(coreCenter.y));
+  }
+  fractalCore.path.setAttribute(
+    "d",
+    fractalCoreBoundaries.map((boundary) => polygonToPath(boundary, toMini)).join(" "),
+  );
+  const fractalZone = MAP_ZONES.find((zone) => zone.region === "fractal");
+  if (fractalZone) {
+    const coreCenter = toMini({ x: fractalZone.centerX, y: fractalZone.centerY });
+    fractalCore.label.setAttribute("x", String(coreCenter.x));
+    fractalCore.label.setAttribute("y", String(coreCenter.y));
   }
   dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, toMini));
   dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, toMini));
@@ -523,6 +562,125 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   coreDivider.setAttribute("class", "世界地圖層-幾何中央分界線");
   coreDivider.setAttribute("d", coreBoundaries.map((boundary) => polygonToPath(boundary, (point) => point)).join(" "));
   tileGroup.appendChild(coreDivider);
+  host.appendChild(tileGroup);
+  return coreBoundaries;
+}
+
+/**
+ * 分形世界地板：架構完全比照 createGeometryEinsteinFloor，只把鋪磚來源換成
+ * Penrose P3 菱形鋪磚（彭羅斯地板.ts），細分演算法保證無縫、不重疊。
+ */
+function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const fractalPolygon = buildRegionPolygons().fractal;
+  const fractalPath = polygonToPath(fractalPolygon, (point) => point);
+  const fractalZone = MAP_ZONES.find((zone) => zone.region === "fractal");
+  if (!fractalZone) return [];
+
+  const definitions = document.createElementNS(svgNamespace, "defs");
+  const clipPath = document.createElementNS(svgNamespace, "clipPath");
+  clipPath.setAttribute("id", "fractal-world-floor-clip");
+  const clipShape = document.createElementNS(svgNamespace, "path");
+  clipShape.setAttribute("d", fractalPath);
+  clipPath.appendChild(clipShape);
+  definitions.appendChild(clipPath);
+
+  for (const zone of ["outer", "core"] as const) {
+    for (let variant = 0; variant < 6; variant += 1) {
+      const pattern = document.createElementNS(svgNamespace, "pattern");
+      pattern.setAttribute("id", `fractal-floor-${zone}-${variant}`);
+      pattern.setAttribute("patternUnits", "objectBoundingBox");
+      pattern.setAttribute("width", "1");
+      pattern.setAttribute("height", "1");
+      const halfStart = zone === "outer" ? 0 : 887;
+      pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
+      pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+      const image = document.createElementNS(svgNamespace, "image");
+      image.setAttribute("href", "/分形世界地板.png");
+      image.setAttribute("width", "1774");
+      image.setAttribute("height", "887");
+      image.setAttribute("x", "0");
+      image.setAttribute("y", "0");
+      const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
+      const transforms = [
+        "",
+        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+        "translate(0 887) scale(1 -1)",
+        `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
+        "",
+        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+      ];
+      image.setAttribute("transform", transforms[variant]);
+      pattern.appendChild(image);
+
+      const tint = document.createElementNS(svgNamespace, "rect");
+      tint.setAttribute("x", String(halfStart));
+      tint.setAttribute("y", "0");
+      tint.setAttribute("width", "887");
+      tint.setAttribute("height", "887");
+      // 分形世界統一使用淺紫色，中央僅稍亮，不再切換為金色。
+      tint.setAttribute("fill", zone === "outer" ? "#b49bdc" : "#d0bdeb");
+      tint.setAttribute("fill-opacity", zone === "outer" ? "0.82" : "0.76");
+      tint.setAttribute("style", "mix-blend-mode: multiply");
+      pattern.appendChild(tint);
+      definitions.appendChild(pattern);
+    }
+  }
+
+  host.appendChild(definitions);
+
+  const tileGroup = document.createElementNS(svgNamespace, "g");
+  tileGroup.setAttribute("class", "世界地圖層-彭羅斯地板");
+  tileGroup.setAttribute("clip-path", "url(#fractal-world-floor-clip)");
+
+  const supertile = buildPenroseSupertile(6);
+  const sourceTiles = supertile.tiles;
+  const sourcePoints = sourceTiles.flatMap((tile) => tile.points);
+  const sourceBounds = boundsOf(sourcePoints);
+  const targetBounds = boundsOf(fractalPolygon);
+  const sourceWidth = sourceBounds.maxX - sourceBounds.minX;
+  const sourceHeight = sourceBounds.maxY - sourceBounds.minY;
+  const targetWidth = targetBounds.maxX - targetBounds.minX;
+  const targetHeight = targetBounds.maxY - targetBounds.minY;
+  const sourceCenter = pointAtCenter(sourceBounds);
+  const targetCenter = pointAtCenter(targetBounds);
+  const initialScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
+  const scale = findCoveringScale(
+    supertile.boundary,
+    fractalPolygon,
+    sourceCenter,
+    targetCenter,
+    initialScale,
+  );
+  const transformedTiles = sourceTiles.map((tile) => ({
+    ...tile,
+    points: tile.points.map((point) => transformFloorPoint(point, sourceCenter, targetCenter, scale)),
+    center: transformFloorPoint(tile.center, sourceCenter, targetCenter, scale),
+  }));
+
+  const regionArea = Math.abs(polygonArea(fractalPolygon));
+  const coreRadius = Math.sqrt((regionArea * 0.3) / Math.PI);
+  const coreTiles = transformedTiles.filter((tile) =>
+    Math.hypot(tile.center.x - fractalZone.centerX, tile.center.y - fractalZone.centerY) <= coreRadius,
+  );
+  const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
+  for (let index = 0; index < transformedTiles.length; index += 1) {
+    const tile = transformedTiles[index];
+    const tilePath = polygonToPath(tile.points, (point) => point);
+    const distanceToCore = Math.hypot(tile.center.x - fractalZone.centerX, tile.center.y - fractalZone.centerY);
+    const floorZone = distanceToCore <= coreRadius ? "core" : "outer";
+    const variant = stableTileVariant(tile.center, index);
+    const path = document.createElementNS(svgNamespace, "path");
+    path.setAttribute("d", tilePath);
+    path.setAttribute("fill", `url(#fractal-floor-${floorZone}-${variant})`);
+    path.setAttribute(
+      "class",
+      `世界地圖層-彭羅斯磁磚 世界地圖層-彭羅斯磁磚-${floorZone} 世界地圖層-彭羅斯磁磚-${tile.kind}`,
+    );
+    tileGroup.appendChild(path);
+  }
+
   host.appendChild(tileGroup);
   return coreBoundaries;
 }
@@ -679,6 +837,20 @@ function createMiniGeometryCore(host: SVGSVGElement): { path: SVGPathElement; la
 
   const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
   label.setAttribute("class", "世界地圖層-小地圖中央區標籤");
+  label.setAttribute("text-anchor", "middle");
+  label.setAttribute("dominant-baseline", "middle");
+  label.textContent = "中央區";
+  host.appendChild(label);
+  return { path, label };
+}
+
+function createMiniFractalCore(host: SVGSVGElement): { path: SVGPathElement; label: SVGTextElement } {
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("class", "世界地圖層-小地圖中央區 世界地圖層-小地圖中央區-fractal");
+  host.appendChild(path);
+
+  const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  label.setAttribute("class", "世界地圖層-小地圖中央區標籤 世界地圖層-小地圖中央區標籤-fractal");
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "middle");
   label.textContent = "中央區";

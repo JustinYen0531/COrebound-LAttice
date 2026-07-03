@@ -838,6 +838,25 @@ button.禁用:hover {
   vector-effect: non-scaling-stroke;
   filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.72));
 }
+.世界地圖層-彭羅斯地板 {
+  opacity: 1;
+}
+.世界地圖層-彭羅斯磁磚 {
+  stroke: #ffffff;
+  stroke-width: 10;
+  fill-opacity: 0.78;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  paint-order: stroke fill;
+  filter: drop-shadow(0 0 4px rgba(30, 12, 46, 0.96));
+}
+.世界地圖層-彭羅斯磁磚-core {
+  fill-opacity: 0.92;
+}
+/* 薄菱形(銳角三角形對)畫細一點的內縫線，厚菱形正常，強化「兩種菱形」的可辨識度 */
+.世界地圖層-彭羅斯磁磚-thin {
+  stroke-width: 7;
+}
 .世界地圖層-區域片-organic {
   fill: rgba(111, 220, 140, 0.14);
 }
@@ -926,6 +945,23 @@ button.禁用:hover {
     drop-shadow(0 -3px 0 rgba(255,255,255,0.96))
     drop-shadow(0 8px 12px rgba(0,0,0,0.82));
 }
+.世界地圖層-物件-image {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  filter:
+    drop-shadow(3px 0 0 rgba(255,255,255,0.96))
+    drop-shadow(-3px 0 0 rgba(255,255,255,0.96))
+    drop-shadow(0 3px 0 rgba(255,255,255,0.96))
+    drop-shadow(0 -3px 0 rgba(255,255,255,0.96))
+    drop-shadow(0 10px 16px rgba(0,0,0,0.82));
+  user-select: none;
+  pointer-events: none;
+}
+.世界地圖層-物件-召喚 .世界地圖層-物件-image {
+  width: 260px;
+  height: 260px;
+}
 .世界地圖層-物件-label {
   font-size: 18px;
   font-weight: 800;
@@ -942,7 +978,8 @@ button.禁用:hover {
   filter: brightness(1.3);
   z-index: 5;
 }
-.世界地圖層-物件.靠近中 .世界地圖層-物件-glyph {
+.世界地圖層-物件.靠近中 .世界地圖層-物件-glyph,
+.世界地圖層-物件.靠近中 .世界地圖層-物件-image {
   filter: drop-shadow(0 0 8px var(--accent));
   animation: 物件靠近脈動 1s ease-in-out infinite;
 }
@@ -1058,6 +1095,10 @@ button.禁用:hover {
   stroke: rgba(15, 19, 28, 0.92);
   stroke-width: 3px;
   pointer-events: none;
+}
+.世界地圖層-小地圖中央區-fractal {
+  fill: rgba(138, 118, 201, 0.42);
+  stroke: #c9b8ff;
 }
 .世界地圖層-小地圖分界線 {
   fill: none;
