@@ -625,60 +625,25 @@ button.禁用:hover {
 
 /* ---------- 操作頁面 ---------- */
 .操作頁面-root {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.流程提示卡 {
-  background: rgba(16, 19, 30, 0.92);
-  border: 1px solid var(--line);
-  padding: 16px 18px;
-  max-width: 760px;
-}
-.流程提示卡 h3 {
-  margin: 0 0 8px;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
 }
 .操作頁面-頂部 {
+  position: absolute;
+  top: 20px;
+  right: 28px;
+  z-index: 30;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   color: var(--ink-dim);
   font-size: 0.9em;
+  pointer-events: none;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.65);
 }
 .世界時鐘.警戒 {
   color: var(--danger);
   font-weight: 600;
-}
-.小地圖占位 {
-  align-self: flex-end;
-  width: 120px;
-  height: 90px;
-  border: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink-dim);
-  background: var(--bg-panel);
-}
-
-/* 驚嘆號提示：警示型，尖角菱形徽章 + 脈動亮框 */
-.驚嘆號提示 {
-  --cut-sm: 0px;
-  align-self: center;
-  border-color: var(--gold);
-  color: var(--gold);
-  background: linear-gradient(150deg, #2a2313 0%, #12151f 70%);
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-  padding: 12px 26px;
-  animation: 警示脈動 1.2s ease-in-out infinite;
-}
-@keyframes 警示脈動 {
-  0%,
-  100% {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 6px var(--gold-soft);
-  }
-  50% {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 18px var(--gold-soft);
-  }
 }
 
 .底部核心HUD {
@@ -740,26 +705,6 @@ button.禁用:hover {
   background: var(--bg-panel);
   border: 1px solid var(--line);
   padding: 16px;
-}
-
-.除錯區 {
-  margin-top: 12px;
-  border-top: 1px dashed var(--line);
-  padding-top: 14px;
-  color: var(--ink-dim);
-}
-.除錯區 summary {
-  cursor: pointer;
-  color: var(--ink-dim);
-  font-weight: 500;
-  font-size: 0.9em;
-  list-style: none;
-}
-.除錯區 summary::-webkit-details-marker {
-  display: none;
-}
-.除錯區[open] summary {
-  margin-bottom: 10px;
 }
 
 /* ---------- 管理介面 ---------- */
@@ -829,4 +774,256 @@ button.禁用:hover {
   border: 1px solid var(--gold);
   box-shadow: inset 0 0 0 1px rgba(216, 180, 106, 0.15), 0 0 30px rgba(216, 180, 106, 0.08);
   padding: 30px 32px;
+}
+
+/* ============================================================
+ * 世界地圖層(placeholder)
+ * ============================================================ */
+.世界地圖層 {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.世界地圖層-畫布 {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(111, 140, 255, 0.08) 0%, transparent 64%),
+    linear-gradient(180deg, rgba(8, 11, 18, 0.18), rgba(8, 11, 18, 0.58)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px var(--cell-px)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px var(--cell-px)),
+    #0a0d16;
+  overflow: hidden;
+}
+/* 區域底色 */
+.世界地圖層-區域底色 {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.世界地圖層-區域-plaza {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 2px dashed rgba(216, 180, 106, 0.4);
+  background: radial-gradient(circle, rgba(216,180,106,0.08), transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: rgba(216, 180, 106, 0.7);
+}
+.世界地圖層-區域標籤 {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+.世界地圖層-區域標籤-geometry { color: #6fa8ff; }
+.世界地圖層-區域標籤-organic { color: #6fdc8c; }
+.世界地圖層-區域標籤-fractal { color: #c89bff; }
+.世界地圖層-區域標籤-mechanical { color: #ffc56f; }
+
+/* 物件圖層與物件 */
+.世界地圖層-物件圖層 {
+  position: absolute;
+  inset: 0;
+}
+.世界地圖層-物件 {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.12s, filter 0.12s;
+  z-index: 2;
+}
+.世界地圖層-物件-glyph {
+  font-size: 26px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7));
+}
+.世界地圖層-物件-label {
+  font-size: 10px;
+  color: rgba(233, 236, 248, 0.72);
+  white-space: nowrap;
+  margin-top: 4px;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+}
+.世界地圖層-物件:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+  filter: brightness(1.3);
+  z-index: 5;
+}
+.世界地圖層-物件.靠近中 .世界地圖層-物件-glyph {
+  filter: drop-shadow(0 0 8px var(--accent));
+  animation: 物件靠近脈動 1s ease-in-out infinite;
+}
+@keyframes 物件靠近脈動 {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+/* 玩家標記 */
+.世界地圖層-玩家 {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 38px;
+  filter: drop-shadow(0 0 10px var(--accent));
+  z-index: 10;
+  transition: left 0.1s linear, top 0.1s linear;
+  pointer-events: none;
+}
+/* 驚嘆號 */
+.世界地圖層-驚嘆號 {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: var(--danger);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  animation: 驚嘆號彈跳 0.8s ease-in-out infinite;
+  box-shadow: 0 0 12px var(--danger);
+}
+@keyframes 驚嘆號彈跳 {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50% { transform: translate(-50%, -70%); }
+}
+
+/* ============================================================
+ * 互動面板(管理介面互動分頁)
+ * ============================================================ */
+.互動面板 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.互動面板 h3 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 18px;
+}
+.互動面板-說明 {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink);
+  margin: 0;
+}
+.互動面板-說明 b {
+  color: var(--accent);
+}
+.互動面板-區塊 {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.互動面板-區塊 h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--gold, #d8b46a);
+}
+.互動面板-表 {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.互動面板-表 th,
+.互動面板-表 td {
+  border: 1px solid var(--line);
+  padding: 5px 8px;
+  text-align: center;
+}
+.互動面板-表 th {
+  background: rgba(111, 140, 255, 0.12);
+  color: var(--accent);
+}
+.互動面板-材料列,
+.互動面板-成員列,
+.互動面板-印記列 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.互動面板-材料項 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.互動面板-材料名 small,
+.互動面板-材料產出 small {
+  color: var(--ink-dim);
+  font-size: 10px;
+}
+.互動面板-材料持有 {
+  color: var(--accent);
+  font-weight: 700;
+}
+.互動面板-成員項 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  min-width: 180px;
+}
+.互動面板-成員項.已解鎖 {
+  opacity: 0.55;
+}
+.互動面板-成員家族 {
+  color: var(--ink-dim);
+  font-size: 10px;
+}
+.互動面板-成員狀態 {
+  margin-left: auto;
+  font-size: 11px;
+}
+.互動面板-印記 {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.互動面板-印記.已取得 {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.互動面板-鎖定提示 {
+  padding: 24px;
+  text-align: center;
+}
+.互動面板-鎖定提示 .占位說明 {
+  font-size: 15px;
+  color: var(--ink-dim);
+}
+.互動面板-提示 {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin-top: 8px;
 }

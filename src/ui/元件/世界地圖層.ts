@@ -15,13 +15,9 @@ import {
   FACILITY_GLYPH,
   MAP_BOUNDS,
   MAP_OBJECTS,
-  NEAR_RADIUS,
   REGION_DIRECTION,
   REGION_LABEL,
-  distance,
-  isNear,
   nearbyObjects,
-  type FacilityKind,
   type MapObject,
   type Region,
 } from "../../data/地圖物件資料";
@@ -89,16 +85,6 @@ export function 建立世界地圖層(): HTMLElement {
   const root = document.createElement("div");
   root.className = "世界地圖層";
 
-  // ---- 標題列 ----
-  const header = document.createElement("div");
-  header.className = "世界地圖層-標題列";
-  header.innerHTML = `
-    <span class="世界地圖層-標題">🗺️ 世界地圖(placeholder)</span>
-    <span class="世界地圖層-位置">位置:中央廣場 (0, 0)</span>
-    <span class="世界地圖層-提示">WASD / 方向鍵移動 · 靠近設施出現 ❗ · 點擊 ❗ 進互動</span>
-  `;
-  root.appendChild(header);
-
   // ---- 地圖畫布 ----
   const canvas = document.createElement("div");
   canvas.className = "世界地圖層-畫布";
@@ -140,9 +126,6 @@ export function 建立世界地圖層(): HTMLElement {
   exclaim.onclick = () => 應用程式狀態.點擊驚嘆號提示();
   canvas.appendChild(exclaim);
 
-  // ---- 位置顯示更新 ----
-  const posDisplay = header.querySelector(".世界地圖層-位置") as HTMLElement;
-
   // ---- 渲染函式:根據玩家位置更新畫面 ----
   function render(): void {
     // 玩家標記位置(轉成畫布座標;注意 y 軸:北=+y,畫面上方)
@@ -150,10 +133,6 @@ export function 建立世界地圖層(): HTMLElement {
     const py = (MAP_BOUNDS.maxY - playerPos.y) * CELL_PX + CELL_PX / 2; // y 翻轉
     playerNode.style.left = `${px}px`;
     playerNode.style.top = `${py}px`;
-
-    // 區域標示
-    const region = regionAt(playerPos);
-    posDisplay.textContent = `位置:${REGION_LABEL[region]} (${playerPos.x}, ${playerPos.y})`;
 
     // 物件靠近高亮
     const near = new Set(nearbyObjects(playerPos).map((o) => o.id));
@@ -242,15 +221,6 @@ export function 建立世界地圖層(): HTMLElement {
 // ============================================================
 // 輔助
 // ============================================================
-
-/** 玩家所在區域(依方位判斷) */
-function regionAt(pos: { x: number; y: number }): Region {
-  if (Math.abs(pos.x) <= 2 && Math.abs(pos.y) <= 2) return "plaza";
-  if (Math.abs(pos.x) > Math.abs(pos.y)) {
-    return pos.x > 0 ? "geometry" : "fractal";
-  }
-  return pos.y > 0 ? "mechanical" : "organic";
-}
 
 function regionDirSafe(region: Region): { dx: number; dy: number } {
   if (region === "plaza") return { dx: 0, dy: -1 };
