@@ -961,6 +961,51 @@ button.禁用:hover {
   transition: transform 0.12s, filter 0.12s;
   z-index: 2;
   transform-origin: center bottom;
+  isolation: isolate;
+}
+.世界地圖層-物件-視覺層,
+.世界地圖層-環境物件-視覺層 {
+  position: relative;
+  width: var(--world-object-size, 720px);
+  height: var(--world-object-size, 720px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.世界地圖層-視覺層-禁走地板::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--world-object-size, 720px) * 0.02);
+  width: calc(var(--world-object-size, 720px) * 0.34);
+  height: calc(var(--world-object-size, 720px) * 0.11);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  opacity: 0.58;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.96),
+    0 0 24px rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+  z-index: 1;
+}
+.世界地圖層-物件-影子,
+.世界地圖層-環境物件-影子 {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--world-object-size, 720px) * 0.04);
+  width: var(--world-object-size, 720px);
+  height: var(--world-object-size, 720px);
+  transform: translateX(-20%) translateY(-7%) skewX(-38deg) scaleX(1.15) scaleY(0.34);
+  transform-origin: center bottom;
+  opacity: 0.62;
+  filter: blur(1.5px);
+  pointer-events: none;
+  z-index: 0;
+}
+.世界地圖層-物件-主體 {
+  position: relative;
+  z-index: 2;
 }
 .世界地圖層-物件-glyph {
   font-size: calc(var(--world-object-size, 240px) * 0.52);
@@ -972,6 +1017,10 @@ button.禁用:hover {
     drop-shadow(0 3px 0 rgba(255,255,255,0.96))
     drop-shadow(0 -3px 0 rgba(255,255,255,0.96))
     drop-shadow(0 8px 12px rgba(0,0,0,0.82));
+}
+.世界地圖層-物件-glyph-shadow {
+  color: rgba(148, 148, 148, 0.95);
+  filter: grayscale(1) brightness(0.62) contrast(0);
 }
 .世界地圖層-物件-image {
   width: var(--world-object-size, 240px);
@@ -986,16 +1035,22 @@ button.禁用:hover {
   user-select: none;
   pointer-events: none;
 }
+.世界地圖層-物件-image-shadow,
+.世界地圖層-環境物件-image-shadow {
+  filter: grayscale(1) brightness(0.62) contrast(0);
+}
 .世界地圖層-物件-label {
   font-size: 18px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.98);
   white-space: nowrap;
-  margin-top: 8px;
+  margin-top: -14px;
   max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+  position: relative;
+  z-index: 3;
 }
 .世界地圖層-物件:hover {
   transform: translate(-50%, -100%) scale(1.08);
@@ -1004,7 +1059,13 @@ button.禁用:hover {
 }
 .世界地圖層-物件.靠近中 .世界地圖層-物件-glyph,
 .世界地圖層-物件.靠近中 .世界地圖層-物件-image {
-  filter: drop-shadow(0 0 8px var(--accent));
+  filter:
+    drop-shadow(3px 0 0 rgba(255,255,255,0.96))
+    drop-shadow(-3px 0 0 rgba(255,255,255,0.96))
+    drop-shadow(0 3px 0 rgba(255,255,255,0.96))
+    drop-shadow(0 -3px 0 rgba(255,255,255,0.96))
+    drop-shadow(0 10px 16px rgba(0,0,0,0.82))
+    drop-shadow(0 0 8px var(--accent));
   animation: 物件靠近脈動 1s ease-in-out infinite;
 }
 @keyframes 物件靠近脈動 {
@@ -1028,6 +1089,7 @@ button.禁用:hover {
   transform-origin: center bottom;
   opacity: 0.94;
   user-select: none;
+  isolation: isolate;
 }
 .世界地圖層-環境物件-image {
   width: var(--world-object-size, 240px);
@@ -1039,6 +1101,8 @@ button.禁用:hover {
     drop-shadow(0 4px 0 rgba(255,255,255,0.98))
     drop-shadow(0 -4px 0 rgba(255,255,255,0.98))
     drop-shadow(0 10px 16px rgba(0, 0, 0, 0.72));
+  position: relative;
+  z-index: 2;
 }
 .世界地圖層-環境物件-障礙物 {
   opacity: 0.98;
@@ -1047,8 +1111,8 @@ button.禁用:hover {
 .世界地圖層-玩家 {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 140px;
-  height: 140px;
+  width: var(--player-world-size, 158px);
+  height: var(--player-world-size, 158px);
   filter: drop-shadow(0 0 14px var(--accent)) drop-shadow(0 0 4px rgba(96,165,250,0.5));
   z-index: 10;
   pointer-events: none;
@@ -1061,6 +1125,9 @@ button.禁用:hover {
 }
 .世界地圖層-玩家 .玩家標記圖騰 {
   overflow: visible;
+}
+.世界地圖層-玩家 .player-ring-hitbox {
+  transition: opacity 160ms ease;
 }
 /* 驚嘆號 */
 .世界地圖層-驚嘆號 {

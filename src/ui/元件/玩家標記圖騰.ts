@@ -245,7 +245,45 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
   }) as SVGSVGElement;
   svg.classList.add("玩家標記圖騰");
 
-  // 0. 背景圈(最底)
+  // 0. 三圈操作 hitbox 預覽：環帶本身就是未來可點擊區，不只是裝飾線。
+  const hitboxes = 建立元素("g", { class: "玩家標記圖騰-hitboxes" });
+  const hitbox配置 = [
+    { 名稱: "內圈", 內徑: 55, 外徑: 140, 顏色: "#65d9ff" },
+    { 名稱: "中圈", 內徑: 140, 外徑: 220, 顏色: "#ffd36a" },
+    { 名稱: "外圈", 內徑: 220, 外徑: 300, 顏色: "#ff7f9d" },
+  ];
+  for (const hitbox of hitbox配置) {
+    const 半徑 = (hitbox.內徑 + hitbox.外徑) / 2;
+    const 寬度 = hitbox.外徑 - hitbox.內徑;
+    const ring = 建立元素("circle", {
+      cx: 中心,
+      cy: 中心,
+      r: 半徑,
+      fill: "none",
+      stroke: hitbox.顏色,
+      "stroke-width": 寬度,
+      opacity: 0.1,
+      class: `player-ring-hitbox 玩家標記圖騰-hitbox-${hitbox.名稱}`,
+      "data-ring": hitbox.名稱,
+      "pointer-events": "stroke",
+    });
+    ring.setAttribute("aria-label", `${hitbox.名稱}操作範圍`);
+    hitboxes.appendChild(ring);
+    hitboxes.appendChild(建立元素("circle", {
+      cx: 中心,
+      cy: 中心,
+      r: hitbox.外徑,
+      fill: "none",
+      stroke: hitbox.顏色,
+      "stroke-width": 3,
+      "stroke-dasharray": "8,5",
+      opacity: 0.9,
+      "pointer-events": "none",
+    }));
+  }
+  svg.appendChild(hitboxes);
+
+  // 1. 背景圈
   const bg = 建立元素("g", { opacity: 0.22 });
   bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 55, fill: "none", stroke: "#fff", "stroke-width": 1.5 }));
   bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 140, fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-dasharray": "6,6" }));
@@ -253,7 +291,7 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
   bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 300, fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-dasharray": "6,6" }));
   svg.appendChild(bg);
 
-  // 1-3. 三層成員線條(差速互旋)
+  // 2-4. 三層成員線條(差速互旋)
   const 大環列表: 大環類型[] = ["內", "中", "外"];
   const 環角度: Record<大環類型, number> = { 內: 0, 中: 0, 外: 0 };
   const 環速度: Record<大環類型, number> = { 內: 0.16, 中: -0.10, 外: 0.05 };
