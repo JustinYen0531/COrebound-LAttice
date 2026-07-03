@@ -2,9 +2,14 @@
  * @file 操作頁面.ts
  * @description 戰鬥 HUD（IC 預設常駐層）。示範：左右滑互斥 R1、頭像展圈 → 進管理介面、
  * 驚嘆號快跳互動子頁 R6、世界時鐘持續流動、終局事件最高優先權 R11。
+ *
+ *              本版新增:嵌入「世界地圖層」,玩家可用 WASD 在 placeholder 地圖上移動,
+ *              靠近熔爐/雕像/工作台/商店/祭壇時自動觸發靠近狀態並顯示驚嘆號。
  */
 import { 應用程式狀態 } from "../應用程式狀態";
 import type { 互動設施 } from "../共用型別";
+import { 戰鬥HUD接線 } from "../戰鬥HUD接線";
+import { 建立世界地圖層 } from "../元件/世界地圖層";
 
 const 互動設施清單: 互動設施[] = ["合成", "熔爐", "雕像", "商店", "召喚"];
 
@@ -31,17 +36,14 @@ export function 渲染操作頁面(容器: HTMLElement) {
   const 流程提示 = document.createElement("div");
   流程提示.className = "流程提示卡";
   流程提示.innerHTML = `
-    <h3>目前你正在「正式遊玩」骨架頁</h3>
-    <p class="占位說明">先看底部核心 HUD。點中央隊長頭像可依序展開 3 層圓盤，展滿後再點一次可進管理介面。</p>
-    <p class="占位說明">左按鈕是耗能技能列，右按鈕是物品欄與隊員列。驚嘆號提示會把你直接送進對應的互動子頁。</p>
+    <h3>正式遊玩第一版：HUD 已接入即時冷卻 / 能量 / 主動技能</h3>
+    <p class="占位說明">底部中央現在不是靜態示意了。隊長頭像、能量條、主動技能冷卻環會跟著時間推進，點擊頭像可實際耗能並進入冷卻。</p>
+    <p class="占位說明">左側抽屜可切換耗能中的武器群組，右側抽屜可使用藥水。驚嘆號仍會把你直接送進對應的互動子頁。</p>
   `;
   root.appendChild(流程提示);
 
-  // 小地圖 placeholder
-  const 小地圖 = document.createElement("div");
-  小地圖.className = "小地圖占位";
-  小地圖.textContent = "小地圖";
-  root.appendChild(小地圖);
+  // 世界地圖層:玩家可走動、靠近設施觸發互動
+  root.appendChild(建立世界地圖層());
 
   // 驚嘆號互動提示
   if (額外.靠近的互動設施) {
@@ -52,74 +54,11 @@ export function 渲染操作頁面(容器: HTMLElement) {
     root.appendChild(驚嘆號);
   }
 
-  // 中央 HUD：左滑技能列 / 生命能量+頭像 / 右滑物品欄
-  const hud = document.createElement("div");
-  hud.className = "底部核心HUD";
-
-  const 左按鈕 = document.createElement("button");
-  左按鈕.className = "滑動切換按鈕";
-  左按鈕.textContent = "◀ 耗能中技能列";
-  左按鈕.classList.toggle("作用中", 額外.滑動面板 === "左");
-  左按鈕.onclick = () => 應用程式狀態.設定滑動面板("左");
-
-  const 右按鈕 = document.createElement("button");
-  右按鈕.className = "滑動切換按鈕";
-  右按鈕.textContent = "物品欄＋隊員列 ▶";
-  右按鈕.classList.toggle("作用中", 額外.滑動面板 === "右");
-  右按鈕.onclick = () => 應用程式狀態.設定滑動面板("右");
-
-  const 核心區 = document.createElement("div");
-  核心區.className = "底部核心HUD-核心區";
-
-  const 血條 = document.createElement("div");
-  血條.className = "血條";
-  血條.innerHTML = `<div class="血條-填充" style="width:78%"></div>`;
-
-  const 頭像 = document.createElement("button");
-  頭像.className = "隊長頭像";
-  頭像.textContent = `圈 ${額外.圓盤展開階段}/3`;
-  頭像.title = "點擊模擬「滑鼠停留展開」：內圈→中圈→外圈，展滿後再點一次進管理介面";
-  頭像.onclick = () => {
-    if (額外.圓盤展開階段 < 3) 應用程式狀態.展開下一圈();
-    else 應用程式狀態.進入管理介面("小隊");
-  };
-
-  const 能量條 = document.createElement("div");
-  能量條.className = "能量條";
-  能量條.innerHTML = `<div class="能量條-填充" style="width:55%"></div>`;
-
-  核心區.append(血條, 頭像, 能量條);
-
-  hud.append(左按鈕, 核心區, 右按鈕);
-  root.appendChild(hud);
-
-  if (額外.圓盤展開階段 === 3) {
-    const 提示 = document.createElement("div");
-    提示.className = "占位說明 置中";
-    提示.textContent = "圓盤已全展開，再點一次頭像即可進入管理介面（點擊圓盤任一處皆可）";
-    root.appendChild(提示);
-  }
-
-  // 左右滑出面板（互斥，R1）
-  if (額外.滑動面板 === "左") {
-    const 面板 = document.createElement("div");
-    面板.className = "滑出面板 滑出面板-左";
-    面板.innerHTML = `
-      <h4>耗能中技能列</h4>
-      <p class="占位說明">武器群組技能：查看冷卻／啟用中／點擊關閉（副技能層級，小圖示轉圈表示冷卻）</p>
-      <div class="占位卡片格">${["護盾", "多發", "直線", "地雷"].map((n) => `<div class="占位卡片">${n}</div>`).join("")}</div>
-    `;
-    root.appendChild(面板);
-  } else if (額外.滑動面板 === "右") {
-    const 面板 = document.createElement("div");
-    面板.className = "滑出面板 滑出面板-右";
-    面板.innerHTML = `
-      <h4>物品欄 ＋ 隊員狀態列</h4>
-      <p class="占位說明">左邊拿取道具、右邊指定對象（拖曳型操作，骨架先以清單呈現）</p>
-      <div class="占位卡片格">${["小生命藥水", "大生命藥水", "小能量藥水", "混合藥水"].map((n) => `<div class="占位卡片">${n}</div>`).join("")}</div>
-    `;
-    root.appendChild(面板);
-  }
+  const hud掛載區 = document.createElement("div");
+  hud掛載區.className = "戰鬥HUD掛載區";
+  root.appendChild(hud掛載區);
+  戰鬥HUD接線.掛載(hud掛載區);
+  戰鬥HUD接線.同步狀態();
 
   const 戰場操作列 = document.createElement("div");
   戰場操作列.className = "按鈕列";

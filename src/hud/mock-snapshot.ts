@@ -15,6 +15,8 @@ import type {
   WeaponGroupState,
   WeaponFamily,
 } from "./types";
+import { ACTIVE_SKILL_DEFS, CaptainActiveSkill } from "../captain/隊長主動技能";
+import { EnergySystem } from "../skills/能量系統";
 
 const LAYERS = ["inner", "middle", "outer"] as const;
 const ROLES = ["protect", "firepower", "supply"] as const;
@@ -22,14 +24,18 @@ const ROLES = ["protect", "firepower", "supply"] as const;
 export class MockSnapshotSource {
   private hp = 0.85;
   private shield = 0.2;
-  private energy = 0.6;
-  private cooldown = 1.0; // 主動技能冷卻(1=可放)
-  private energyEnough = true;
-  private castLatency = false;
   private moving = false;
   private lastHitAt = 0;
   private t = 0; // 模擬時間秒
-  private cooldownTimer = 0; // 主動技能放完後的冷卻剩餘
+  private readonly energySystem = new EnergySystem({
+    max: 100,
+    initial: 60,
+    regenPerSecond: 5,
+  });
+  private readonly activeSkill = new CaptainActiveSkill(
+    ACTIVE_SKILL_DEFS.conductor,
+    this.energySystem,
+  );
 
   private weapons: WeaponGroupState[] = [
     { family: "shield", star: 2, cooldownRatio: 0.6, active: true, disabledByRoster: false },
@@ -75,20 +81,16 @@ export class MockSnapshotSource {
     p.count -= 1;
     // 假裝生效
     if (p.effect === "hp") this.hp = Math.min(1, this.hp + (p.size === "big" ? 0.5 : 0.2));
-    if (p.effect === "energy") this.energy = Math.min(1, this.energy + (p.size === "big" ? 0.75 : 0.3));
+    if (p.effect === "energy") this.energySystem.restore(p.size === "big" ? 75 : 30);
     if (p.effect === "hybrid") {
       this.hp = Math.min(1, this.hp + (p.size === "big" ? 0.4 : 0.15));
-      this.energy = Math.min(1, this.energy + (p.size === "big" ? 0.5 : 0.2));
+      this.energySystem.restore(p.size === "big" ? 50 : 20);
     }
   }
 
   /** 觸發主動技能(由 cast_active 事件觸發) */
   castActive(): void {
-    if (this.cooldown < 1 || !this.energyEnough) return;
-    this.cooldown = 0;
-    this.cooldownTimer = 4; // 4 秒冷卻
-    this.castLatency = true;
-    setTimeout(() => (this.castLatency = false), 500); // 規格 §4.2 防連發 0.5s
+    this.activeSkill.tryCast();
   }
 
   /** 設定移動狀態(WASD 測試) */
@@ -104,16 +106,15 @@ export class MockSnapshotSource {
 
   /** 產生當前快照 */
   snapshot(): HudSnapshot {
+    const energy = this.energySystem.snapshot();
+    const active = this.activeSkill.snapshot();
+
     return {
       captainColor: "#3b82f6",
       hpRatio: this.hp,
       shieldRatio: this.shield,
-      energyRatio: this.energy,
-      active: {
-        cooldownRatio: this.cooldown,
-        energyEnough: this.energy >= 0.25,
-        castLatency: this.castLatency,
-      },
+      energyRatio: energy.ratio,
+      active,
       weapons: this.weapons.map((w) => ({ ...w })),
       periodics: this.periodics.map((p) => ({ ...p })),
       formation: this.buildFormation(),
@@ -152,15 +153,8 @@ export class MockSnapshotSource {
   /** 每幀推進模擬(dt 秒) */
   tick(dt: number): void {
     this.t += dt;
-    // 能量自然回復 — 規格 §1.4
-    this.energy = Math.min(1, this.energy + dt * 0.05);
-    // 主動技能冷卻推進
-    if (this.cooldownTimer > 0) {
-      this.cooldownTimer -= dt;
-      this.cooldown = 1 - Math.max(0, this.cooldownTimer) / 4;
-    } else {
-      this.cooldown = 1;
-    }
+    this.energySystem.tick(dt);
+    this.activeSkill.tick(dt);
     // 武器冷卻循環
     for (const w of this.weapons) {
       if (w.active && !w.disabledByRoster) {
