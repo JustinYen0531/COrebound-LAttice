@@ -38,8 +38,13 @@ const ENV_ICON_SIZE: Record<EnvObjectInstance["category"], number> = {
   環境機關: 200,
 };
 
-const MOVE_SPEED = 72;
+const MOVE_SPEED = 188;
+const MOVE_ACCELERATION = 980;
+const MOVE_DECELERATION = 1300;
+const TURN_LERP_SPEED = 15;
 const VIEW_PADDING = 140;
+// 正交斜俯視：只壓縮地面縱深，場景物件與 HUD 仍保持直立比例。
+const GROUND_DEPTH_SCALE = 0.6;
 
 const GUARDIAN_ALTAR_IMAGE: Record<World, string> = {
   geometry: "/images/props/facilities/altars/guardian_altar_geometry.png",
@@ -84,7 +89,7 @@ function worldToScreen(
 ): { x: number; y: number } {
   return {
     x: viewport.w / 2 + (point.x - player.x),
-    y: viewport.h / 2 + (point.y - player.y),
+    y: viewport.h / 2 + (point.y - player.y) * GROUND_DEPTH_SCALE,
   };
 }
 
@@ -113,6 +118,7 @@ export function 建立世界地圖層(): HTMLElement {
   zoneSvg.setAttribute("class", "世界地圖層-區域圖");
   zoneSvg.setAttribute("width", "100%");
   zoneSvg.setAttribute("height", "100%");
+  zoneSvg.setAttribute("preserveAspectRatio", "none");
   zoneLayer.appendChild(zoneSvg);
 
   // 環境物件層放在功能設施層「下面」：障礙物/資源礦/機關是場景裝飾與地形，
@@ -152,21 +158,8 @@ export function 建立世界地圖層(): HTMLElement {
 
   const playerNode = document.createElement("div");
   playerNode.className = "世界地圖層-玩家";
-  playerNode.innerHTML = `
-    <svg viewBox="0 0 100 100" width="80" height="80">
-      <defs>
-        <linearGradient id="vortex-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#ff8a3b" />
-          <stop offset="100%" stop-color="#60a5fa" />
-        </linearGradient>
-      </defs>
-      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="2" stroke-dasharray="4,4" />
-      <path d="M 50 50 Q 65 35 75 50 T 50 85 T 20 50 T 50 20" fill="none" stroke="url(#vortex-grad)" stroke-width="4.5" stroke-linecap="round" />
-      <path d="M 50 50 Q 35 65 25 50 T 50 15 T 80 50 T 50 80" fill="none" stroke="url(#vortex-grad)" stroke-width="2.5" stroke-linecap="round" opacity="0.75" />
-      <circle cx="50" cy="50" r="5" fill="#ffffff" />
-    </svg>
-  `;
-  playerNode.title = "小隊(玩家)· 幾何雙螺旋漩渦標記";
+  playerNode.appendChild(建立玩家標記圖騰({ size: 132, 旋轉: false }));
+  playerNode.title = "小隊(玩家)· 中央隊長核心與外圍三環圖騰";
   canvas.appendChild(playerNode);
 
   const miniMap = document.createElement("div");
@@ -226,6 +219,7 @@ export function 建立世界地圖層(): HTMLElement {
   let rafId = 0;
   let lastNow = performance.now();
   let playerRotation = 0;
+  let playerVelocity = { x: 0, y: 0 };
 
   function render(): void {
     const viewport = { w: canvas.clientWidth || window.innerWidth, h: canvas.clientHeight || window.innerHeight };
@@ -278,7 +272,7 @@ export function 建立世界地圖層(): HTMLElement {
     const dt = Math.min(0.05, (now - lastNow) / 1000);
     lastNow = now;
 
-    if (應用程式狀態.畫面.層 === "操作頁面" && pressed.size > 0) {
+    if (應用程式狀態.畫面.層 === "操作頁面") {
       let axisX = 0;
       let axisY = 0;
       if (pressed.has("KeyA") || pressed.has("ArrowLeft")) axisX -= 1;
@@ -286,21 +280,46 @@ export function 建立世界地圖層(): HTMLElement {
       if (pressed.has("KeyW") || pressed.has("ArrowUp")) axisY -= 1;
       if (pressed.has("KeyS") || pressed.has("ArrowDown")) axisY += 1;
 
-      if (axisX !== 0 || axisY !== 0) {
-        const length = Math.hypot(axisX, axisY) || 1;
-        const next = clampPlayerPosition({
-          x: playerPos.x + (axisX / length) * MOVE_SPEED * dt,
-          y: playerPos.y + (axisY / length) * MOVE_SPEED * dt,
+      const axisLength = Math.hypot(axisX, axisY);
+      const targetVelocity =
+        axisLength > 0
+          ? {
+              x: (axisX / axisLength) * MOVE_SPEED,
+              y: (axisY / axisLength) * MOVE_SPEED,
+            }
+          : { x: 0, y: 0 };
+
+      const velocityDeltaX = targetVelocity.x - playerVelocity.x;
+      const velocityDeltaY = targetVelocity.y - playerVelocity.y;
+      const velocityDelta = Math.hypot(velocityDeltaX, velocityDeltaY);
+      const maxVelocityStep =
+        (axisLength > 0 ? MOVE_ACCELERATION : MOVE_DECELERATION) * dt;
+
+      if (velocityDelta <= maxVelocityStep || velocityDelta === 0) {
+        playerVelocity = targetVelocity;
+      } else {
+        const ratio = maxVelocityStep / velocityDelta;
+        playerVelocity = {
+          x: playerVelocity.x + velocityDeltaX * ratio,
+          y: playerVelocity.y + velocityDeltaY * ratio,
+        };
+      }
+
+      if (Math.abs(playerVelocity.x) < 0.01) playerVelocity.x = 0;
+      if (Math.abs(playerVelocity.y) < 0.01) playerVelocity.y = 0;
+
+      if (playerVelocity.x !== 0 || playerVelocity.y !== 0) {
+        playerPos = clampPlayerPosition({
+          x: playerPos.x + playerVelocity.x * dt,
+          y: playerPos.y + playerVelocity.y * dt,
         });
-        playerPos = next;
         syncNearbyToState();
 
-        // 平滑漸變旋轉 (插值速度 12 * dt 確保平滑且幀率無涉)
-        const targetAngle = (Math.atan2(axisY, axisX) * 180) / Math.PI + 90;
+        const targetAngle = (Math.atan2(playerVelocity.y, playerVelocity.x) * 180) / Math.PI + 90;
         let diff = targetAngle - playerRotation;
         while (diff < -180) diff += 360;
         while (diff > 180) diff -= 360;
-        playerRotation += diff * 12 * dt;
+        playerRotation += diff * TURN_LERP_SPEED * dt;
         playerRotation = (playerRotation + 360) % 360;
       }
     }
@@ -337,6 +356,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   function onObjectClick(object: MapObject): void {
     const dir = regionDirSafe(object.region);
+    playerVelocity = { x: 0, y: 0 };
     playerPos = clampPlayerPosition({
       x: object.x - dir.dx * 36,
       y: object.y - dir.dy * 36,
@@ -677,6 +697,7 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "geometry", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
+    path.style.fillOpacity = String(stableTileOpacity(tile.center, index, floorZone));
     tileGroup.appendChild(path);
 
     // 障礙物與設施瓷磚疊加白色半透明遮罩
@@ -850,6 +871,7 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
       "class",
       `世界地圖層-彭羅斯磁磚 世界地圖層-彭羅斯磁磚-${floorZone} 世界地圖層-彭羅斯磁磚-${tile.kind}`,
     );
+    path.style.fillOpacity = String(stableTileOpacity(tile.center, index, floorZone));
     tileGroup.appendChild(path);
 
     // 障礙物與設施瓷磚疊加白色半透明遮罩
@@ -995,6 +1017,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "organic", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-艾雪鳥磁磚 世界地圖層-艾雪鳥磁磚-${floorZone}`);
+    path.style.fillOpacity = String(stableTileOpacity(tile.center, index, floorZone));
     tileGroup.appendChild(path);
 
     // 障礙物與設施瓷磚疊加白色半透明遮罩
@@ -1167,6 +1190,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "mechanical", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-開羅磁磚 世界地圖層-開羅磁磚-${floorZone}`);
+    path.style.fillOpacity = String(stableTileOpacity(tile.center, index, floorZone));
     tileGroup.appendChild(path);
 
     // 障礙物與設施瓷磚疊加白色半透明遮罩
@@ -1305,6 +1329,14 @@ function polygonArea(points: EinsteinPoint[]): number {
 function stableTileVariant(center: EinsteinPoint, index: number): number {
   const hash = Math.abs(Math.floor(center.x * 17 + center.y * 31 + index * 101));
   return hash % 6;
+}
+
+function stableTileOpacity(center: EinsteinPoint, index: number, floorZone: "outer" | "core"): number {
+  const hash = Math.sin(center.x * 41.731 + center.y * 17.117 + index * 13.37) * 91827.645;
+  const random = hash - Math.floor(hash);
+  const mean = floorZone === "core" ? 0.91 : 0.78;
+  const spread = floorZone === "core" ? 0.08 : 0.14;
+  return mean + (random - 0.5) * spread;
 }
 
 function 創建並綁定隨機偏移旋轉圖樣(
@@ -1463,8 +1495,9 @@ function updateMapViewBox(
   viewport: { w: number; h: number },
 ): void {
   const viewLeft = playerPos.x - viewport.w / 2;
-  const viewTop = playerPos.y - viewport.h / 2;
-  host.setAttribute("viewBox", `${viewLeft} ${viewTop} ${viewport.w} ${viewport.h}`);
+  const projectedWorldHeight = viewport.h / GROUND_DEPTH_SCALE;
+  const viewTop = playerPos.y - projectedWorldHeight / 2;
+  host.setAttribute("viewBox", `${viewLeft} ${viewTop} ${viewport.w} ${projectedWorldHeight}`);
 }
 
 function buildRegionPolygons(): Record<World, Array<{ x: number; y: number }>> {
