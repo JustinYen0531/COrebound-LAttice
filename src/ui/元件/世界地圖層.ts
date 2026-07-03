@@ -276,6 +276,8 @@ function createZoneNode(zone: MapZone, host: HTMLElement) {
   blob.className = `世界地圖層-區域 世界地圖層-區域-${zone.region}`;
   if (zone.region === "plaza") {
     blob.textContent = "中央廣場";
+  } else if (zone.region === "geometry") {
+    渲染幾何世界愛因斯坦磁磚地板(blob);
   }
   host.appendChild(blob);
 
@@ -323,4 +325,132 @@ function renderMiniMap(
 
   playerNode.style.left = `${(playerPos.x - MAP_BOUNDS.minX) * scaleX}px`;
   playerNode.style.top = `${(playerPos.y - MAP_BOUNDS.minY) * scaleY}px`;
+}
+
+function 渲染幾何世界愛因斯坦磁磚地板(container: HTMLElement) {
+  container.style.position = "relative";
+  container.style.overflow = "hidden";
+  container.style.background = "#05060b";
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 400 400");
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+  svg.style.position = "absolute";
+  svg.style.top = "0";
+  svg.style.left = "0";
+  svg.style.pointerEvents = "none";
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const hatPathD = "M 0 0 L 15 -26 L 45 -26 L 60 0 L 45 26 L 45 78 L 15 78 L 0 52 L -30 52 L -45 26 L -30 0 L -30 -52 L 0 -52 Z";
+
+  const dx = 68;
+  const dy = 58;
+
+  let seed = 99;
+  function pseudoRandom() {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  }
+
+  for (let r = -1; r <= 8; r++) {
+    for (let c = -1; c <= 8; c++) {
+      const px = c * dx + (r % 2 === 1 ? dx / 2 : 0);
+      const py = r * dy;
+
+      const isRightCentral = px >= 195;
+
+      let fill = "#ffffff";
+      if (!isRightCentral) {
+        const rand = pseudoRandom();
+        if (rand < 0.4) fill = "#d2d6e2";
+        else if (rand < 0.75) fill = "#b3b9ca";
+        else if (rand < 0.9) fill = "#ffffff";
+        else fill = "#e4e8f0";
+      } else {
+        const rand = pseudoRandom();
+        if (rand < 0.4) fill = "#4d8dff";
+        else if (rand < 0.75) fill = "#2e5cb8";
+        else if (rand < 0.9) fill = "#709cff";
+        else fill = "#1d3d80";
+      }
+
+      const scaleX = pseudoRandom() > 0.5 ? 1 : -1;
+      const rot = Math.floor(pseudoRandom() * 6) * 60 + 30;
+
+      const tileG = document.createElementNS(SVG_NS, "g");
+      tileG.setAttribute("transform", `translate(${px}, ${py}) scale(${scaleX} 1) rotate(${rot})`);
+
+      const path = document.createElementNS(SVG_NS, "path");
+      path.setAttribute("d", hatPathD);
+      path.setAttribute("fill", fill);
+      path.setAttribute("stroke", isRightCentral ? "#101e40" : "#51596c");
+      path.setAttribute("stroke-width", "1.5");
+      tileG.appendChild(path);
+
+      const linesG = document.createElementNS(SVG_NS, "g");
+      linesG.setAttribute("opacity", "0.28");
+      linesG.setAttribute("stroke", isRightCentral ? "#ffffff" : "#3b4356");
+      linesG.setAttribute("stroke-width", "0.75");
+      
+      const lines = [
+        { x2: 15, y2: -26 },
+        { x2: 45, y2: 26 },
+        { x2: 0, y2: 52 },
+        { x2: -30, y2: 0 },
+        { x2: 15, y2: 78 },
+        { x2: -30, y2: 52 }
+      ];
+      lines.forEach(l => {
+        const line = document.createElementNS(SVG_NS, "line");
+        line.setAttribute("x1", "15");
+        line.setAttribute("y1", "26");
+        line.setAttribute("x2", String(l.x2));
+        line.setAttribute("y2", String(l.y2));
+        linesG.appendChild(line);
+      });
+      tileG.appendChild(linesG);
+
+      const clipId = `clip-hat-${r}-${c}`;
+      const clipPath = document.createElementNS(SVG_NS, "clipPath");
+      clipPath.setAttribute("id", clipId);
+      
+      const clipD = document.createElementNS(SVG_NS, "path");
+      clipD.setAttribute("d", hatPathD);
+      clipPath.appendChild(clipD);
+      tileG.appendChild(clipPath);
+
+      const patternG = document.createElementNS(SVG_NS, "g");
+      patternG.setAttribute("clip-path", `url(#${clipId})`);
+
+      for (let i = 0; i < 3; i++) {
+        const line = document.createElementNS(SVG_NS, "line");
+        const x1 = pseudoRandom() * 120 - 60;
+        const y1 = pseudoRandom() * 150 - 75;
+        const x2 = pseudoRandom() * 120 - 60;
+        const y2 = pseudoRandom() * 150 - 75;
+        
+        line.setAttribute("x1", String(x1));
+        line.setAttribute("y1", String(y1));
+        line.setAttribute("x2", String(x2));
+        line.setAttribute("y2", String(y2));
+        
+        if (isRightCentral) {
+          line.setAttribute("stroke", pseudoRandom() > 0.45 ? "#ffffff" : "#ffd24d");
+          line.setAttribute("stroke-width", "2.0");
+          line.setAttribute("opacity", "0.9");
+        } else {
+          line.setAttribute("stroke", "#4b5775");
+          line.setAttribute("stroke-width", "1.2");
+          line.setAttribute("opacity", "0.45");
+        }
+        patternG.appendChild(line);
+      }
+      
+      tileG.appendChild(patternG);
+      svg.appendChild(tileG);
+    }
+  }
+
+  container.appendChild(svg);
 }
