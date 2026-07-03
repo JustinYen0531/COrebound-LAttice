@@ -872,6 +872,21 @@ button.禁用:hover {
 .世界地圖層-艾雪鳥磁磚-core {
   fill-opacity: 0.92;
 }
+.世界地圖層-開羅地板 {
+  opacity: 1;
+}
+.世界地圖層-開羅磁磚 {
+  stroke: #ffffff;
+  stroke-width: 8;
+  fill-opacity: 0.78;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  paint-order: stroke fill;
+  filter: drop-shadow(0 0 4px rgba(20, 18, 10, 0.9));
+}
+.世界地圖層-開羅磁磚-core {
+  fill-opacity: 0.92;
+}
 .世界地圖層-區域片-organic {
   fill: rgba(111, 220, 140, 0.14);
 }
@@ -1124,6 +1139,10 @@ button.禁用:hover {
 .世界地圖層-小地圖中央區-organic {
   fill: rgba(90, 156, 95, 0.42);
   stroke: #a8e0ac;
+}
+.世界地圖層-小地圖中央區-mechanical {
+  fill: rgba(201, 162, 39, 0.42);
+  stroke: #f0d27a;
 }
 .世界地圖層-小地圖分界線 {
   fill: none;

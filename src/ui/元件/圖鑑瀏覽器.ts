@@ -1,9 +1,10 @@
 /**
  * @file 圖鑑瀏覽器.ts
  * @description 圖鑑瀏覽器 UI 元件。支持動態資料渲染、選中高亮、以及右側詳情與數值表格繪製。
- * 兩個掛載點（主畫面 OOC / 管理介面 IC）共用同一個元件。
+ *              整合 20 名成員立繪合圖的 CSS 網格平移裁剪定位，並支援 1★、2★、3★ 星級即時切換。
  */
 import { 應用程式狀態, 圖鑑資料查詢類分頁 } from "../應用程式狀態";
+import { MEMBERS } from "../../data/成員資料庫";
 import {
   成員圖鑑資料,
   怪物圖鑑資料,
@@ -126,9 +127,49 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
   補充區.style.maxHeight = "100%";
 
   if (選中條目) {
+    let 立繪HTML = "";
+    
+    // 檢查選中條目是否在 20 名普通成員中，若在則加入立繪展示
+    const m = MEMBERS.find(x => x.id === 選中條目!.id);
+    if (m) {
+      const worldImages: Record<string, string> = {
+        geometry: "幾何世界所有成員立繪與頭像.png",
+        organic: "有機世界所有成員立繪與頭像.png",
+        fractal: "分形世界所有成員立繪與頭像.png",
+        mechanical: "機械世界所有成員立繪與頭像.png"
+      };
+      const imgFile = worldImages[m.world] || "幾何世界所有成員立繪與頭像.png";
+      const 同世界成員 = MEMBERS.filter(x => x.world === m.world);
+      const row = 同世界成員.findIndex(x => x.id === m.id);
+      const 選中星級 = 應用程式狀態.額外.圖鑑選中星級 ?? 3;
+      const col = 選中星級 - 1; // 1★, 2★, 3★ 對應 col 0, 1, 2
+
+      // 計算 CSS background position 百分比 (4列 5行)
+      const posX = (col * 100) / 3;
+      const posY = (row * 100) / 4;
+
+      立繪HTML = `
+        <div class="圖鑑立繪-容器" style="width: 100%; height: 330px; background: #05060b; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 16px;">
+          <!-- 實際的立繪裁剪視口 -->
+          <div style="width: 220px; height: 300px; background-image: url('assets/${imgFile}'); background-size: 400% 500%; background-position: ${posX}% ${posY}%; background-repeat: no-repeat; transition: background-position 0.25s ease-out;">
+          </div>
+          
+          <!-- 星級切換按鈕 -->
+          <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+            ${[1, 2, 3].map(lv => `
+              <button class="圖鑑星級按鈕" data-star="${lv}" style="background: ${選中星級 === lv ? "#ff8a3b" : "none"}; color: ${選中星級 === lv ? "#000" : "#fff"}; border: none; padding: 2px 10px; font-size: 0.72rem; border-radius: 12px; cursor: pointer; font-weight: bold; transition: all 0.15s;">
+                ${lv}★
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
     // 渲染詳細文本內容
     let 詳情HTML = `
-      <h4 style="color: #ff8a3b; font-size: 1.2rem; margin-bottom: 4px;">${選中條目.名稱}</h4>
+      ${立繪HTML}
+      <h4 style="color: #ff8a3b; font-size: 1.2rem; margin-bottom: 4px; margin-top: 0;">${選中條目.名稱}</h4>
       <div style="font-size: 0.8rem; color: #8f8f9c; margin-bottom: 12px; font-weight: bold;">
         🏷️ 類別與屬性：${選中條目.所屬}
       </div>
@@ -168,6 +209,16 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
       <p>點選左側分類查看詳情。共用元件 A，兩個掛載點共用同一份資料與同一份選取狀態邏輯。</p>
     `;
   }
+
+  // 5. 綁定星級切換按鈕事件
+  wrap.querySelectorAll(".圖鑑星級按鈕").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const lv = Number((e.currentTarget as HTMLElement).dataset.star);
+      應用程式狀態.設定圖鑑選中星級(lv);
+      // 利用重新選擇選中條目觸發 UI 通知與重繪
+      應用程式狀態.設定圖鑑選中條目(情境, 選中條目!.id);
+    });
+  });
 
   wrap.append(書籤欄, 內容區, 補充區);
   return wrap;
