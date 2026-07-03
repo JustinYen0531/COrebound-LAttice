@@ -306,6 +306,19 @@ export function 建立世界地圖層(): HTMLElement {
     }
 
     render();
+
+    // 局部更新頂端世界時鐘，不重建地圖 DOM
+    const clockEl = document.querySelector(".世界時鐘");
+    if (clockEl) {
+      const 額外 = 應用程式狀態.額外;
+      clockEl.textContent = `世界時間：${額外.世界時鐘秒數}s${額外.縮圈警戒 ? " ⚠" : ""}`;
+      if (額外.縮圈警戒) {
+        clockEl.classList.add("警戒");
+      } else {
+        clockEl.classList.remove("警戒");
+      }
+    }
+
     rafId = window.requestAnimationFrame(tick);
   }
 
@@ -627,6 +640,32 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     Math.hypot(tile.center.x - geometryZone.centerX, tile.center.y - geometryZone.centerY) <= coreRadius,
   );
   const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
+
+  // 吸附幾何世界物件到瓷磚中心
+  const geometryObjects = [
+    ...MAP_OBJECTS.filter((o) => o.region === "geometry"),
+    ...ENV_OBJECTS.filter((o) => o.world === "geometry")
+  ];
+  const occupiedIndices = new Set<number>();
+  for (const obj of geometryObjects) {
+    let nearestIndex = -1;
+    let minDistance = Infinity;
+    for (let idx = 0; idx < transformedTiles.length; idx += 1) {
+      if (occupiedIndices.has(idx)) continue;
+      const tile = transformedTiles[idx];
+      const dist = Math.hypot(tile.center.x - obj.x, tile.center.y - obj.y);
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestIndex = idx;
+      }
+    }
+    if (nearestIndex !== -1) {
+      occupiedIndices.add(nearestIndex);
+      (obj as any).x = transformedTiles[nearestIndex].center.x;
+      (obj as any).y = transformedTiles[nearestIndex].center.y;
+    }
+  }
+
   for (let index = 0; index < transformedTiles.length; index += 1) {
     const tile = transformedTiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
@@ -639,6 +678,16 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
     tileGroup.appendChild(path);
+
+    // 障礙物與設施瓷磚疊加白色半透明遮罩
+    if (occupiedIndices.has(index)) {
+      const mask = document.createElementNS(svgNamespace, "path");
+      mask.setAttribute("d", tilePath);
+      mask.setAttribute("fill", "rgba(255, 255, 255, 0.28)");
+      mask.setAttribute("stroke", "none");
+      mask.setAttribute("style", "pointer-events: none;");
+      tileGroup.appendChild(mask);
+    }
   }
 
   const coreDivider = document.createElementNS(svgNamespace, "path");
@@ -760,6 +809,32 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
     Math.hypot(tile.center.x - fractalZone.centerX, tile.center.y - fractalZone.centerY) <= coreRadius,
   );
   const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
+
+  // 吸附分形世界物件到瓷磚中心
+  const fractalObjects = [
+    ...MAP_OBJECTS.filter((o) => o.region === "fractal"),
+    ...ENV_OBJECTS.filter((o) => o.world === "fractal")
+  ];
+  const occupiedIndices = new Set<number>();
+  for (const obj of fractalObjects) {
+    let nearestIndex = -1;
+    let minDistance = Infinity;
+    for (let idx = 0; idx < transformedTiles.length; idx += 1) {
+      if (occupiedIndices.has(idx)) continue;
+      const tile = transformedTiles[idx];
+      const dist = Math.hypot(tile.center.x - obj.x, tile.center.y - obj.y);
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestIndex = idx;
+      }
+    }
+    if (nearestIndex !== -1) {
+      occupiedIndices.add(nearestIndex);
+      (obj as any).x = transformedTiles[nearestIndex].center.x;
+      (obj as any).y = transformedTiles[nearestIndex].center.y;
+    }
+  }
+
   for (let index = 0; index < transformedTiles.length; index += 1) {
     const tile = transformedTiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
@@ -775,6 +850,16 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
       `世界地圖層-彭羅斯磁磚 世界地圖層-彭羅斯磁磚-${floorZone} 世界地圖層-彭羅斯磁磚-${tile.kind}`,
     );
     tileGroup.appendChild(path);
+
+    // 障礙物與設施瓷磚疊加白色半透明遮罩
+    if (occupiedIndices.has(index)) {
+      const mask = document.createElementNS(svgNamespace, "path");
+      mask.setAttribute("d", tilePath);
+      mask.setAttribute("fill", "rgba(255, 255, 255, 0.28)");
+      mask.setAttribute("stroke", "none");
+      mask.setAttribute("style", "pointer-events: none;");
+      tileGroup.appendChild(mask);
+    }
   }
 
   host.appendChild(tileGroup);
@@ -872,6 +957,31 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
   );
   const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
 
+  // 吸附有機世界物件到瓷磚中心
+  const organicObjects = [
+    ...MAP_OBJECTS.filter((o) => o.region === "organic"),
+    ...ENV_OBJECTS.filter((o) => o.world === "organic")
+  ];
+  const occupiedIndices = new Set<number>();
+  for (const obj of organicObjects) {
+    let nearestIndex = -1;
+    let minDistance = Infinity;
+    for (let idx = 0; idx < field.tiles.length; idx += 1) {
+      if (occupiedIndices.has(idx)) continue;
+      const tile = field.tiles[idx];
+      const dist = Math.hypot(tile.center.x - obj.x, tile.center.y - obj.y);
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestIndex = idx;
+      }
+    }
+    if (nearestIndex !== -1) {
+      occupiedIndices.add(nearestIndex);
+      (obj as any).x = field.tiles[nearestIndex].center.x;
+      (obj as any).y = field.tiles[nearestIndex].center.y;
+    }
+  }
+
   for (let index = 0; index < field.tiles.length; index += 1) {
     const tile = field.tiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
@@ -884,6 +994,16 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-艾雪鳥磁磚 世界地圖層-艾雪鳥磁磚-${floorZone}`);
     tileGroup.appendChild(path);
+
+    // 障礙物與設施瓷磚疊加白色半透明遮罩
+    if (occupiedIndices.has(index)) {
+      const mask = document.createElementNS(svgNamespace, "path");
+      mask.setAttribute("d", tilePath);
+      mask.setAttribute("fill", "rgba(255, 255, 255, 0.28)");
+      mask.setAttribute("stroke", "none");
+      mask.setAttribute("style", "pointer-events: none;");
+      tileGroup.appendChild(mask);
+    }
   }
 
   host.appendChild(tileGroup);
@@ -1004,6 +1124,31 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
   );
   const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
 
+  // 吸附機械世界物件到瓷磚中心
+  const mechanicalObjects = [
+    ...MAP_OBJECTS.filter((o) => o.region === "mechanical"),
+    ...ENV_OBJECTS.filter((o) => o.world === "mechanical")
+  ];
+  const occupiedIndices = new Set<number>();
+  for (const obj of mechanicalObjects) {
+    let nearestIndex = -1;
+    let minDistance = Infinity;
+    for (let idx = 0; idx < tiles.length; idx += 1) {
+      if (occupiedIndices.has(idx)) continue;
+      const tile = tiles[idx];
+      const dist = Math.hypot(tile.center.x - obj.x, tile.center.y - obj.y);
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestIndex = idx;
+      }
+    }
+    if (nearestIndex !== -1) {
+      occupiedIndices.add(nearestIndex);
+      (obj as any).x = tiles[nearestIndex].center.x;
+      (obj as any).y = tiles[nearestIndex].center.y;
+    }
+  }
+
   for (let index = 0; index < tiles.length; index += 1) {
     const tile = tiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
@@ -1020,6 +1165,16 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-開羅磁磚 世界地圖層-開羅磁磚-${floorZone}`);
     tileGroup.appendChild(path);
+
+    // 障礙物與設施瓷磚疊加白色半透明遮罩
+    if (occupiedIndices.has(index)) {
+      const mask = document.createElementNS(svgNamespace, "path");
+      mask.setAttribute("d", tilePath);
+      mask.setAttribute("fill", "rgba(255, 255, 255, 0.28)");
+      mask.setAttribute("stroke", "none");
+      mask.setAttribute("style", "pointer-events: none;");
+      tileGroup.appendChild(mask);
+    }
   }
 
   host.appendChild(tileGroup);

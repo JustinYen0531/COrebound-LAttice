@@ -11,28 +11,42 @@ import { 渲染管理介面 } from "./頁面/管理介面";
 import { 渲染結算頁 } from "./頁面/結算頁";
 
 export function 啟動路由器(根節點: HTMLElement) {
-  function 渲染() {
-    根節點.innerHTML = "";
-    const 頁面容器 = document.createElement("div");
-    頁面容器.className = "頁面容器";
-    根節點.appendChild(頁面容器);
+  let lastLayer: string | null = null;
+  let 頁面容器: HTMLElement | null = null;
 
-    switch (應用程式狀態.畫面.層) {
-      case "主畫面":
-        渲染主畫面(頁面容器);
-        break;
-      case "遊戲準備流程":
-        渲染遊戲準備流程(頁面容器);
-        break;
-      case "操作頁面":
-        渲染操作頁面(頁面容器);
-        break;
-      case "管理介面":
+  function 渲染() {
+    const currentLayer = 應用程式狀態.畫面.層;
+
+    if (currentLayer !== lastLayer) {
+      根節點.innerHTML = "";
+      頁面容器 = document.createElement("div");
+      頁面容器.className = "頁面容器";
+      根節點.appendChild(頁面容器);
+      lastLayer = currentLayer;
+
+      switch (currentLayer) {
+        case "主畫面":
+          渲染主畫面(頁面容器);
+          break;
+        case "遊戲準備流程":
+          渲染遊戲準備流程(頁面容器);
+          break;
+        case "操作頁面":
+          渲染操作頁面(頁面容器);
+          break;
+        case "管理介面":
+          渲染管理介面(頁面容器);
+          break;
+        case "結算頁":
+          渲染結算頁(頁面容器);
+          break;
+      }
+    } else {
+      // 只有當處於管理介面且層未改變時，才需要為分頁切換重新調用渲染管理介面。
+      // 對於操作頁面，其地圖與 HUD 具備高精度的局部自刷新與 tick 循環，不應重繪銷毀。
+      if (currentLayer === "管理介面" && 頁面容器) {
         渲染管理介面(頁面容器);
-        break;
-      case "結算頁":
-        渲染結算頁(頁面容器);
-        break;
+      }
     }
   }
 
