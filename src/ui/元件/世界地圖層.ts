@@ -454,6 +454,16 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
       ];
       image.setAttribute("transform", transforms[variant]);
       pattern.appendChild(image);
+
+      const tint = document.createElementNS(svgNamespace, "rect");
+      tint.setAttribute("x", String(halfStart));
+      tint.setAttribute("y", "0");
+      tint.setAttribute("width", "887");
+      tint.setAttribute("height", "887");
+      tint.setAttribute("fill", zone === "outer" ? "#315d91" : "#9bc9f2");
+      tint.setAttribute("fill-opacity", zone === "outer" ? "0.86" : "0.78");
+      tint.setAttribute("style", "mix-blend-mode: multiply");
+      pattern.appendChild(tint);
       definitions.appendChild(pattern);
     }
   }
@@ -548,8 +558,11 @@ function buildTileBoundaryLoops(tiles: EinsteinPoint[][]): EinsteinPoint[][] {
       currentKey = boundaryPointKey(nextPoint);
     }
 
-    if (currentKey === startKey) loop.pop();
-    if (loop.length >= 3) loops.push(loop);
+    // 開放線段不可用 Z 強制閉合，否則會產生橫跨中央的灰色殘線。
+    if (currentKey === startKey) {
+      loop.pop();
+      if (loop.length >= 3) loops.push(loop);
+    }
   }
   return loops;
 }
