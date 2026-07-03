@@ -29,6 +29,11 @@ export interface EinsteinTile {
   mirrored: boolean;
 }
 
+export interface EinsteinSupertile {
+  tiles: EinsteinTile[];
+  boundary: EinsteinPoint[];
+}
+
 const SQRT_3_OVER_2 = Math.sqrt(3) / 2;
 const IDENTITY: Matrix = [1, 0, 0, 0, 1, 0];
 
@@ -291,15 +296,19 @@ function flatten(geometry: Geometry, parent: Matrix, output: EinsteinTile[]): vo
   }
 }
 
-export function buildEinsteinHatPatch(substitutionRounds = 3): EinsteinTile[] {
+export function buildEinsteinHatSupertile(substitutionRounds = 3): EinsteinSupertile {
   let metatiles = createInitialMetatiles();
   for (let round = 0; round < substitutionRounds; round += 1) {
     metatiles = constructMetatiles(constructPatch(...metatiles));
   }
-  // 單獨的 H 超級拼塊只有有限外輪廓，裁進大地圖時會留下中央與邊角空缺。
-  // 最後再依官方規則把 H/T/P/F 組成完整 patch，取得連續且沒有內部缺口的鋪面。
-  const completePatch = constructPatch(...metatiles);
   const output: EinsteinTile[] = [];
-  flatten(completePatch, IDENTITY, output);
-  return output;
+  flatten(metatiles[0], IDENTITY, output);
+  return {
+    tiles: output,
+    boundary: metatiles[0].shape.map((point) => ({ ...point })),
+  };
+}
+
+export function buildEinsteinHatPatch(substitutionRounds = 3): EinsteinTile[] {
+  return buildEinsteinHatSupertile(substitutionRounds).tiles;
 }

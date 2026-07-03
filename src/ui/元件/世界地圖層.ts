@@ -25,7 +25,7 @@ import {
 } from "../../data/地圖物件資料";
 import { ENV_OBJECTS, type EnvObjectInstance } from "../../data/環境物件資料";
 import type { World } from "../../data/成員型別";
-import { buildEinsteinHatPatch, type EinsteinPoint } from "../../world/愛因斯坦地板";
+import { buildEinsteinHatSupertile, type EinsteinPoint } from "../../world/愛因斯坦地板";
 
 // 障礙物體積最大、資源礦物次之、環境機關最小，呼應立繪本身的視覺份量
 const ENV_ICON_SIZE: Record<EnvObjectInstance["category"], number> = {
@@ -442,7 +442,8 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): void {
   tileGroup.setAttribute("class", "世界地圖層-愛因斯坦地板");
   tileGroup.setAttribute("clip-path", "url(#geometry-world-floor-clip)");
 
-  const sourceTiles = buildEinsteinHatPatch(3);
+  const supertile = buildEinsteinHatSupertile(3);
+  const sourceTiles = supertile.tiles;
   const sourcePoints = sourceTiles.flatMap((tile) => tile.points);
   const sourceBounds = boundsOf(sourcePoints);
   const targetBounds = boundsOf(geometryPolygon);
@@ -450,10 +451,17 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): void {
   const sourceHeight = sourceBounds.maxY - sourceBounds.minY;
   const targetWidth = targetBounds.maxX - targetBounds.minX;
   const targetHeight = targetBounds.maxY - targetBounds.minY;
-  // H 超級拼塊外緣不是矩形，稍微放大後再裁切，確保幾何世界邊角也由完整拼圖覆蓋。
-  const scale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight) * 1.46;
   const sourceCenter = pointAtCenter(sourceBounds);
   const targetCenter = pointAtCenter(targetBounds);
+  const initialScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
+  // 保持單一合法超級拼塊，不複製、不疊放；把它放大到整個幾何區都落在外框內。
+  const scale = findCoveringScale(
+    supertile.boundary,
+    geometryPolygon,
+    sourceCenter,
+    targetCenter,
+    initialScale,
+  );
   const transformedTiles = sourceTiles.map((tile) => ({
     ...tile,
     points: tile.points.map((point) => transformFloorPoint(point, sourceCenter, targetCenter, scale)),
@@ -502,6 +510,38 @@ function transformFloorPoint(
     x: targetCenter.x + (source.x - sourceCenter.x) * scale,
     y: targetCenter.y + (source.y - sourceCenter.y) * scale,
   };
+}
+
+function findCoveringScale(
+  sourceBoundary: EinsteinPoint[],
+  targetPolygon: EinsteinPoint[],
+  sourceCenter: EinsteinPoint,
+  targetCenter: EinsteinPoint,
+  initialScale: number,
+): number {
+  let scale = initialScale;
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const transformedBoundary = sourceBoundary.map((point) =>
+      transformFloorPoint(point, sourceCenter, targetCenter, scale),
+    );
+    if (targetPolygon.every((point) => pointInPolygon(point, transformedBoundary))) {
+      return scale * 1.015;
+    }
+    scale *= 1.06;
+  }
+  return scale;
+}
+
+function pointInPolygon(point: EinsteinPoint, polygon: EinsteinPoint[]): boolean {
+  let inside = false;
+  for (let current = 0, previous = polygon.length - 1; current < polygon.length; previous = current, current += 1) {
+    const a = polygon[current];
+    const b = polygon[previous];
+    const crossesRay = (a.y > point.y) !== (b.y > point.y)
+      && point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+    if (crossesRay) inside = !inside;
+  }
+  return inside;
 }
 
 function polygonArea(points: EinsteinPoint[]): number {
