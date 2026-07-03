@@ -1,0 +1,523 @@
+:root {
+  --bg: #0b0d14;
+  --bg-panel: #12151f;
+  --bg-panel-2: #191d2b;
+  --line: #2a3049;
+  --ink: #e8ebf7;
+  --ink-dim: #8d93ad;
+  --accent: #6f8cff;
+  --danger: #ff5468;
+  font-family: "Segoe UI", "Noto Sans TC", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at 50% 0%, #171b2a 0%, var(--bg) 60%);
+  color: var(--ink);
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+.頁面容器 {
+  width: 100%;
+  max-width: 1180px;
+  padding: 24px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--ink);
+  background: var(--bg-panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 16px;
+  transition: all 0.15s ease;
+}
+button:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+button.作用中 {
+  background: linear-gradient(180deg, #34406e, #202741);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+button.鎖定 {
+  opacity: 0.45;
+}
+button:disabled,
+button.禁用 {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.一級按鈕 {
+  padding: 14px 26px;
+  font-size: 1.05em;
+  background: linear-gradient(180deg, var(--accent), #3c53b0);
+  border-color: #93a6ff;
+}
+.二級按鈕 {
+  background: var(--bg-panel-2);
+}
+.三級按鈕 {
+  padding: 6px 12px;
+  font-size: 0.85em;
+}
+.危險按鈕 {
+  border-color: var(--danger);
+  color: #ffd6db;
+}
+
+.按鈕列 {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+/* ---------- 主畫面 ---------- */
+.主畫面-root {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-top: 30px;
+}
+.主畫面-進度摘要 {
+  background: rgba(18, 21, 31, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+.主畫面-進度摘要 h3 {
+  margin: 0 0 10px;
+}
+.主畫面-進度摘要 ol {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--ink);
+}
+.主畫面-進度摘要 li + li {
+  margin-top: 6px;
+}
+.主畫面-標題 h1 {
+  margin: 0;
+  font-size: 2.1em;
+  background: linear-gradient(90deg, #a9baff, #ffd8a9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.主畫面-標題 p {
+  color: var(--ink-dim);
+  margin: 6px 0 0;
+}
+.主畫面-版面 {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.主畫面-主按鈕欄 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 200px;
+}
+.主畫面-主按鈕 {
+  text-align: left;
+  padding: 16px 18px;
+  font-size: 1.05em;
+}
+.主畫面-離開按鈕 {
+  margin-top: 24px;
+  align-self: flex-end;
+  opacity: 0.6;
+  font-size: 0.85em;
+}
+.主畫面-子頁容器 {
+  flex: 1;
+  min-height: 320px;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: all 0.2s ease;
+}
+.主畫面-子頁容器.展開 {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.子頁內容 {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+}
+.子頁內容-narrow {
+  max-width: 460px;
+}
+
+.占位說明 {
+  color: var(--ink-dim);
+  font-size: 0.92em;
+}
+.占位說明.置中 {
+  text-align: center;
+}
+.占位卡片格 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.占位卡片 {
+  background: var(--bg-panel-2);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 16px 10px;
+  text-align: center;
+  font-size: 0.9em;
+  color: var(--ink-dim);
+}
+
+/* ---------- 隊長卡片 / 準備流程 ---------- */
+.準備流程-版面 {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.準備流程-隊長區,
+.準備流程-預覽區 {
+  flex: 1;
+  min-width: 280px;
+}
+.隊長卡片列 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.隊長卡片 {
+  --隊長色: #6f8cff;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border-top: 3px solid var(--隊長色);
+}
+.隊長說明卡 {
+  margin-top: 14px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.淡字 {
+  color: var(--ink-dim);
+  font-size: 0.8em;
+}
+
+/* ---------- 小隊圓盤（共用元件 B） ---------- */
+.小隊圓盤 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.小隊圓盤-環容器 {
+  position: relative;
+  width: 320px;
+  height: 320px;
+}
+.小隊圓盤-環 {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px dashed var(--line);
+  top: 50%;
+  left: 50%;
+  animation: 轉動 40s linear infinite;
+}
+.小隊圓盤-環-外 {
+  width: 292px;
+  height: 292px;
+  margin: -146px 0 0 -146px;
+  animation-duration: 60s;
+}
+.小隊圓盤-環-中 {
+  width: 208px;
+  height: 208px;
+  margin: -104px 0 0 -104px;
+  animation-duration: 40s;
+}
+.小隊圓盤-環-內 {
+  width: 128px;
+  height: 128px;
+  margin: -64px 0 0 -64px;
+  animation-duration: 26s;
+}
+@keyframes 轉動 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.小隊圓盤-核心 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6em;
+  font-weight: 700;
+  border: 2px solid #ffffff33;
+  z-index: 3;
+}
+.小隊圓盤-槽位 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #00000055;
+  transform: translate(-50%, -50%) rotate(var(--角度)) translate(var(--半徑)) rotate(calc(-1 * var(--角度)));
+  z-index: 2;
+}
+.小隊圓盤-圖例 {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85em;
+  color: var(--ink-dim);
+}
+.小隊圓盤-圖例項 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.小隊圓盤-圖例項 i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ---------- 資料夾式版面（共用元件 A + 背包/互動/地圖） ---------- */
+.資料夾式版面 {
+  display: grid;
+  grid-template-columns: 170px 1fr 220px;
+  gap: 16px;
+  min-height: 280px;
+}
+.資料夾式版面-書籤欄 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.資料夾式版面-書籤欄 button {
+  text-align: left;
+}
+.圖鑑瀏覽器-世界故事按鈕 {
+  margin-top: 10px;
+  border-top: 1px dashed var(--line);
+  padding-top: 12px;
+}
+.資料夾式版面-內容區 {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+.資料夾式版面-補充區 {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 0.88em;
+  color: var(--ink-dim);
+}
+
+/* ---------- 操作頁面 ---------- */
+.操作頁面-root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.流程提示卡 {
+  background: rgba(18, 21, 31, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  max-width: 760px;
+}
+.流程提示卡 h3 {
+  margin: 0 0 8px;
+}
+.操作頁面-頂部 {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-dim);
+  font-size: 0.9em;
+}
+.世界時鐘.警戒 {
+  color: var(--danger);
+  font-weight: 600;
+}
+.小地圖占位 {
+  align-self: flex-end;
+  width: 120px;
+  height: 90px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-dim);
+  background: var(--bg-panel);
+}
+.驚嘆號提示 {
+  align-self: center;
+  border-color: #ffd24d;
+  color: #ffd24d;
+  animation: 閃爍 1.2s ease-in-out infinite;
+}
+@keyframes 閃爍 {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.底部核心HUD {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 20px 0;
+}
+.底部核心HUD-核心區 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.血條,
+.能量條 {
+  width: 120px;
+  height: 14px;
+  background: #1c2131;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.血條-填充 {
+  height: 100%;
+  background: linear-gradient(90deg, #3bbf6d, #7ee6a0);
+}
+.能量條-填充 {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd24d, #ffec8f);
+}
+.隊長頭像 {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #6f8cff, #12141f);
+  border: 2px solid #ffffff44;
+  font-size: 0.85em;
+}
+
+.滑動切換按鈕 {
+  font-size: 0.85em;
+}
+
+.滑出面板 {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.除錯區 {
+  margin-top: 12px;
+  border-top: 1px dashed var(--line);
+  padding-top: 14px;
+  color: var(--ink-dim);
+}
+.除錯區 summary {
+  cursor: pointer;
+  color: var(--ink-dim);
+  font-weight: 500;
+  font-size: 0.9em;
+  list-style: none;
+}
+.除錯區 summary::-webkit-details-marker {
+  display: none;
+}
+.除錯區[open] summary {
+  margin-bottom: 10px;
+}
+
+/* ---------- 管理介面 ---------- */
+.管理介面-root {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.管理介面-分頁列 {
+  display: flex;
+  gap: 8px;
+}
+.管理介面-內容 {
+  min-height: 320px;
+}
+
+.小隊分頁.專屬構圖 {
+  display: flex;
+  gap: 24px;
+}
+.小隊分頁-左 {
+  display: flex;
+  justify-content: center;
+}
+.小隊分頁-右 {
+  flex: 1;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+/* ---------- 結算頁 ---------- */
+.結算頁-root {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 26px;
+}
