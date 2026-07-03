@@ -299,11 +299,14 @@ export function 建立世界地圖層(): HTMLElement {
   function setCameraZoom(nextZoom: number): void {
     cameraZoom = Math.max(MIN_CAMERA_ZOOM, Math.min(MAX_CAMERA_ZOOM, nextZoom));
     const worldObjectSize = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM * (cameraZoom / WORLD_OBJECT_REFERENCE_CAMERA_ZOOM);
+    const opticalOffset = worldObjectSize * 0.045;
     for (const node of objectNodes.values()) {
       node.style.setProperty("--world-object-size", `${worldObjectSize.toFixed(2)}px`);
+      node.style.setProperty("--object-optical-y", `${opticalOffset.toFixed(2)}px`);
     }
     for (const node of envNodes.values()) {
       node.style.setProperty("--world-object-size", `${worldObjectSize.toFixed(2)}px`);
+      node.style.setProperty("--object-optical-y", `${opticalOffset.toFixed(2)}px`);
     }
     const playerSize = PLAYER_SIZE_AT_REFERENCE_ZOOM * (cameraZoom / REFERENCE_CAMERA_ZOOM);
     playerNode.style.setProperty("--player-world-size", `${playerSize.toFixed(2)}px`);
@@ -1036,7 +1039,7 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
       mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "#fbc5ff");
+      mask.setAttribute("stroke", "#ffffff");
       mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
@@ -1182,7 +1185,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
       mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "#ffd5d5");
+      mask.setAttribute("stroke", "#ffffff");
       mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
@@ -1355,7 +1358,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
       mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "#c0f0ff");
+      mask.setAttribute("stroke", "#ffffff");
       mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
