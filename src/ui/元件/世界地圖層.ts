@@ -31,7 +31,7 @@ import { buildPenroseSupertile, type PenrosePoint } from "../../world/彭羅斯�
 import { buildEscherBirdField, type EscherPoint } from "../../world/艾雪鳥地板";
 import { buildCairoField, type CairoPoint } from "../../world/開羅五邊形地板";
 
-const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 720;
+const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
 
 const MOVE_SPEED = 42;
@@ -299,7 +299,8 @@ export function 建立世界地圖層(): HTMLElement {
   function setCameraZoom(nextZoom: number): void {
     cameraZoom = Math.max(MIN_CAMERA_ZOOM, Math.min(MAX_CAMERA_ZOOM, nextZoom));
     const worldObjectSize = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM * (cameraZoom / WORLD_OBJECT_REFERENCE_CAMERA_ZOOM);
-    const opticalOffset = worldObjectSize * 0.045;
+    // 物件不是放在幾何中心，而是靠近磁磚前緣落地，底部仍保留少量白邊。
+    const opticalOffset = worldObjectSize * 0.085;
     for (const node of objectNodes.values()) {
       node.style.setProperty("--world-object-size", `${worldObjectSize.toFixed(2)}px`);
       node.style.setProperty("--object-optical-y", `${opticalOffset.toFixed(2)}px`);
