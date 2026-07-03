@@ -857,11 +857,11 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     path.style.fillOpacity = String(stableTileOpacity(tile.center, index, floorZone));
     tileGroup.appendChild(path);
 
-    // 障礙物與設施瓷磚疊加白色半透明遮罩
+    // 障礙物與設施所在的整塊磁磚必須是純白，不混入底圖顏色。
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "rgba(255, 255, 255, 0.24)");
+      mask.setAttribute("fill", "#ffffff");
       mask.setAttribute("stroke", "#ffffff");
       mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
@@ -1035,7 +1035,7 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "rgba(255, 255, 255, 0.24)");
+      mask.setAttribute("fill", "#ffffff");
       mask.setAttribute("stroke", "#fbc5ff");
       mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
@@ -1181,7 +1181,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "rgba(255, 255, 255, 0.24)");
+      mask.setAttribute("fill", "#ffffff");
       mask.setAttribute("stroke", "#ffd5d5");
       mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");
@@ -1354,7 +1354,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "rgba(255, 255, 255, 0.24)");
+      mask.setAttribute("fill", "#ffffff");
       mask.setAttribute("stroke", "#c0f0ff");
       mask.setAttribute("stroke-width", "2");
       mask.setAttribute("style", "pointer-events: none;");

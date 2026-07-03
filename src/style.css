@@ -1244,7 +1244,7 @@ button.禁用:hover {
   justify-content: center;
 }
 .世界地圖層-視覺層-禁走地板::before {
-  content: "";
+  content: none;
   position: absolute;
   left: 50%;
   bottom: calc(var(--world-object-size, 720px) * 0.02);
@@ -1254,6 +1254,8 @@ button.禁用:hover {
   border-radius: 50%;
   background: #ffffff;
   opacity: 1;
+  filter: none;
+  mix-blend-mode: normal;
   box-shadow:
     0 0 0 3px #ffffff,
     0 0 24px rgba(255, 255, 255, 0.36);
@@ -1269,8 +1271,8 @@ button.禁用:hover {
   height: var(--world-object-size, 720px);
   transform: translateX(-20%) translateY(-7%) skewX(-38deg) scaleX(1.15) scaleY(0.34);
   transform-origin: center bottom;
-  opacity: 0.62;
-  filter: blur(1.5px);
+  opacity: 1;
+  filter: none;
   pointer-events: none;
   z-index: 0;
 }
@@ -1290,8 +1292,8 @@ button.禁用:hover {
     drop-shadow(0 8px 12px rgba(0,0,0,0.82));
 }
 .世界地圖層-物件-glyph-shadow {
-  color: rgba(148, 148, 148, 0.95);
-  filter: grayscale(1) brightness(0.62) contrast(0);
+  color: #16191f;
+  filter: none;
 }
 .世界地圖層-物件-image {
   width: var(--world-object-size, 240px);
@@ -1308,7 +1310,7 @@ button.禁用:hover {
 }
 .世界地圖層-物件-image-shadow,
 .世界地圖層-環境物件-image-shadow {
-  filter: grayscale(1) brightness(0.62) contrast(0);
+  filter: brightness(0) saturate(0) opacity(1);
 }
 .世界地圖層-物件-label {
   font-size: 18px;
