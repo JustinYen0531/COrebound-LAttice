@@ -679,34 +679,46 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
       pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
       pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
-      const image = document.createElementNS(svgNamespace, "image");
-      image.setAttribute("href", "/分形世界地板.png");
-      image.setAttribute("width", "1774");
-      image.setAttribute("height", "887");
-      image.setAttribute("x", "0");
-      image.setAttribute("y", "0");
-      const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
-      const transforms = [
-        "",
-        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
-        "translate(0 887) scale(1 -1)",
-        `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
-        "",
-        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
-      ];
-      image.setAttribute("transform", transforms[variant]);
-      pattern.appendChild(image);
+        // 底層純色 bg 托底以維持顏色飽和
+        const bg = document.createElementNS(svgNamespace, "rect");
+        bg.setAttribute("x", String(halfStart));
+        bg.setAttribute("y", "0");
+        bg.setAttribute("width", "887");
+        bg.setAttribute("height", "887");
+        bg.setAttribute("fill", zone === "outer" ? "#b49bdc" : "#d0bdeb");
+        bg.setAttribute("fill-opacity", "1.0");
+        pattern.appendChild(bg);
 
-      const tint = document.createElementNS(svgNamespace, "rect");
-      tint.setAttribute("x", String(halfStart));
-      tint.setAttribute("y", "0");
-      tint.setAttribute("width", "887");
-      tint.setAttribute("height", "887");
-      // 分形世界統一使用淺紫色，中央僅稍亮，不再切換為金色。
-      tint.setAttribute("fill", zone === "outer" ? "#b49bdc" : "#d0bdeb");
-      tint.setAttribute("fill-opacity", zone === "outer" ? "0.82" : "0.76");
-      tint.setAttribute("style", "mix-blend-mode: multiply");
-      pattern.appendChild(tint);
+        // 中間半透明 image 用以淡化強黑線
+        const image = document.createElementNS(svgNamespace, "image");
+        image.setAttribute("href", "/分形世界地板.png");
+        image.setAttribute("width", "1774");
+        image.setAttribute("height", "887");
+        image.setAttribute("x", "0");
+        image.setAttribute("y", "0");
+        image.setAttribute("opacity", "0.26"); // 稀釋黑線，降低存在感
+        const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
+        const transforms = [
+          "",
+          `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+          "translate(0 887) scale(1 -1)",
+          `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
+          "",
+          `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+        ];
+        image.setAttribute("transform", transforms[variant]);
+        pattern.appendChild(image);
+
+        // 頂層正片疊底染墨層
+        const tint = document.createElementNS(svgNamespace, "rect");
+        tint.setAttribute("x", String(halfStart));
+        tint.setAttribute("y", "0");
+        tint.setAttribute("width", "887");
+        tint.setAttribute("height", "887");
+        tint.setAttribute("fill", zone === "outer" ? "#b49bdc" : "#d0bdeb");
+        tint.setAttribute("fill-opacity", "0.6");
+        tint.setAttribute("style", "mix-blend-mode: multiply");
+        pattern.appendChild(tint);
       definitions.appendChild(pattern);
     }
   }
@@ -800,34 +812,46 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
       pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
       pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
-      const image = document.createElementNS(svgNamespace, "image");
-      image.setAttribute("href", "/有機世界地板.png");
-      image.setAttribute("width", "1774");
-      image.setAttribute("height", "887");
-      image.setAttribute("x", "0");
-      image.setAttribute("y", "0");
-      const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
-      const transforms = [
-        "",
-        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
-        "translate(0 887) scale(1 -1)",
-        `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
-        "",
-        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
-      ];
-      image.setAttribute("transform", transforms[variant]);
-      pattern.appendChild(image);
+        // 底層純色 bg 托底以維持顏色飽和
+        const bg = document.createElementNS(svgNamespace, "rect");
+        bg.setAttribute("x", String(halfStart));
+        bg.setAttribute("y", "0");
+        bg.setAttribute("width", "887");
+        bg.setAttribute("height", "887");
+        bg.setAttribute("fill", zone === "outer" ? "#1a4321" : "#5a9c5f");
+        bg.setAttribute("fill-opacity", "1.0");
+        pattern.appendChild(bg);
 
-      const tint = document.createElementNS(svgNamespace, "rect");
-      tint.setAttribute("x", String(halfStart));
-      tint.setAttribute("y", "0");
-      tint.setAttribute("width", "887");
-      tint.setAttribute("height", "887");
-      // 外圍＝暗黃綠森林，中央＝暖綠生命搏動，呼應世界觀與視覺圖鑑.md §8.2
-      tint.setAttribute("fill", zone === "outer" ? "#1a4321" : "#5a9c5f");
-      tint.setAttribute("fill-opacity", zone === "outer" ? "0.82" : "0.7");
-      tint.setAttribute("style", "mix-blend-mode: multiply");
-      pattern.appendChild(tint);
+        // 中間半透明 image 用以淡化強黑線
+        const image = document.createElementNS(svgNamespace, "image");
+        image.setAttribute("href", "/有機世界地板.png");
+        image.setAttribute("width", "1774");
+        image.setAttribute("height", "887");
+        image.setAttribute("x", "0");
+        image.setAttribute("y", "0");
+        image.setAttribute("opacity", "0.26"); // 稀釋黑線，降低存在感
+        const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
+        const transforms = [
+          "",
+          `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+          "translate(0 887) scale(1 -1)",
+          `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
+          "",
+          `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+        ];
+        image.setAttribute("transform", transforms[variant]);
+        pattern.appendChild(image);
+
+        // 頂層正片疊底染墨層
+        const tint = document.createElementNS(svgNamespace, "rect");
+        tint.setAttribute("x", String(halfStart));
+        tint.setAttribute("y", "0");
+        tint.setAttribute("width", "887");
+        tint.setAttribute("height", "887");
+        tint.setAttribute("fill", zone === "outer" ? "#1a4321" : "#5a9c5f");
+        tint.setAttribute("fill-opacity", "0.6");
+        tint.setAttribute("style", "mix-blend-mode: multiply");
+        pattern.appendChild(tint);
       definitions.appendChild(pattern);
     }
   }
@@ -899,12 +923,24 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
       pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
       pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
+      // 底層純色 bg 托底以維持顏色飽和
+      const bg = document.createElementNS(svgNamespace, "rect");
+      bg.setAttribute("x", String(halfStart));
+      bg.setAttribute("y", "0");
+      bg.setAttribute("width", "887");
+      bg.setAttribute("height", "887");
+      bg.setAttribute("fill", zone === "outer" ? "#4a4750" : "#c9a227");
+      bg.setAttribute("fill-opacity", "1.0");
+      pattern.appendChild(bg);
+
+      // 中間半透明 image 用以淡化強黑線
       const image = document.createElementNS(svgNamespace, "image");
       image.setAttribute("href", "/機械世界地板.png");
       image.setAttribute("width", "1774");
       image.setAttribute("height", "887");
       image.setAttribute("x", "0");
       image.setAttribute("y", "0");
+      image.setAttribute("opacity", "0.26"); // 稀釋黑線，降低存在感
       const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
       const transforms = [
         "",
@@ -917,13 +953,14 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
       image.setAttribute("transform", transforms[variant]);
       pattern.appendChild(image);
 
+      // 頂層正片疊底染墨層
       const tint = document.createElementNS(svgNamespace, "rect");
       tint.setAttribute("x", String(halfStart));
       tint.setAttribute("y", "0");
       tint.setAttribute("width", "887");
       tint.setAttribute("height", "887");
       tint.setAttribute("fill", zone === "outer" ? "#4a4750" : "#c9a227");
-      tint.setAttribute("fill-opacity", zone === "outer" ? "0.84" : "0.72");
+      tint.setAttribute("fill-opacity", "0.6");
       tint.setAttribute("style", "mix-blend-mode: multiply");
       pattern.appendChild(tint);
       definitions.appendChild(pattern);
