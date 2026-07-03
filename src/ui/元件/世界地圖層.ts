@@ -195,6 +195,7 @@ export function 建立世界地圖層(): HTMLElement {
   const pressed = new Set<string>();
   let rafId = 0;
   let lastNow = performance.now();
+  let playerRotation = 0;
 
   function render(): void {
     const viewport = { w: canvas.clientWidth || window.innerWidth, h: canvas.clientHeight || window.innerHeight };
@@ -202,6 +203,7 @@ export function 建立世界地圖層(): HTMLElement {
 
     playerNode.style.left = `${playerScreen.x}px`;
     playerNode.style.top = `${playerScreen.y}px`;
+    playerNode.style.transform = `translate(-50%, -50%) rotate(${playerRotation}deg)`;
 
     renderRegionPaths(regionPaths, dividerPaths, viewport);
     renderZoneLabels(zoneLabels, viewport);
@@ -275,6 +277,14 @@ export function 建立世界地圖層(): HTMLElement {
         });
         playerPos = next;
         syncNearbyToState();
+
+        // 平滑漸變旋轉 (插值速度 12 * dt 確保平滑且幀率無涉)
+        const targetAngle = (Math.atan2(axisY, axisX) * 180) / Math.PI + 90;
+        let diff = targetAngle - playerRotation;
+        while (diff < -180) diff += 360;
+        while (diff > 180) diff -= 360;
+        playerRotation += diff * 12 * dt;
+        playerRotation = (playerRotation + 360) % 360;
       }
     }
 
