@@ -23,6 +23,15 @@ const 成員世界合圖: Record<string, string> = {
   mechanical: "機械世界所有成員立繪與頭像.png",
 };
 
+function 尋找對應成員(條目ID: string) {
+  return MEMBERS.find((item) => {
+    if (item.id === 條目ID) return true;
+    if (item.id.endsWith(`_${條目ID}`)) return true;
+    if (item.nameEn.toLowerCase() === 條目ID.toLowerCase()) return true;
+    return false;
+  });
+}
+
 function 渲染Markdown(md: string): string {
   return md
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -68,7 +77,7 @@ function 建立星級切換(選中星級: number): string {
 }
 
 function 建立成員立繪HTML(條目ID: string): string {
-  const m = MEMBERS.find((item) => item.id === 條目ID);
+  const m = 尋找對應成員(條目ID);
   if (!m) return "";
 
   const imgFile = 成員世界合圖[m.world] ?? 成員世界合圖.geometry;
