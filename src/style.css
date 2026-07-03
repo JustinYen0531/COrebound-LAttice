@@ -1,12 +1,49 @@
+/**
+ * 視覺設計系統依據：
+ * - doc/介面流程/玩家介面_UserFlow方案.md §4（風格關鍵字：核心／圖騰／晶格／儀式／展開／層級／秩序中的活性）
+ *   與 §5（按鈕分級：一級核心／二級主要／三級次要／四級狀態圖示）
+ * - doc/介面流程/玩家介面_主畫面與管理介面補充規格.md（藍=保護／紅=火力／黃=補給）
+ * - doc/介面流程/玩家介面_戰鬥HUD與操作骨架.md（同一色彩裁定，資訊邊角低調常駐）
+ * - doc/世界觀/世界觀與視覺圖鑑.md（晶格核心＝淡藍＋金／神聖晶核＝金藍強光）
+ * - doc/素材與提示詞/提示詞指南.md（sacred geometry, crystalline, glowing edges, zentangle linework）
+ * - .agents/skills/lattice-language/SKILL.md（zentangle / mandala 高對比線條語彙）
+ *
+ * 形狀語言落地方式：
+ * - 核心型（圓／環／放射狀）→ 頭像、小隊圓盤、圓形狀態徽章
+ * - 系統型（方角帶切角／卡片／標籤／分頁）→ 一切面板與按鈕改用「切角八邊形」取代純圓角矩形
+ * - 警示型（尖角／亮框）→ 危險按鈕、驚嘆號提示改用尖角菱形與警示紋理
+ * - 動態型（旋轉環／脈動圈／流動條）→ 保留既有的圓盤旋轉動畫，並統一脈動節奏
+ */
+
 :root {
-  --bg: #0b0d14;
-  --bg-panel: #12151f;
-  --bg-panel-2: #191d2b;
-  --line: #2a3049;
-  --ink: #e8ebf7;
+  /* ---- 基礎色板：深空底 + 晶格藍 + 儀式金 ---- */
+  --bg: #0a0c13;
+  --bg-panel: #10131e;
+  --bg-panel-2: #171b29;
+  --line: #2c3350;
+  --line-soft: rgba(111, 140, 255, 0.16);
+  --ink: #e9ecf8;
   --ink-dim: #8d93ad;
-  --accent: #6f8cff;
+  --ink-warm: #f2e6c9;
+
+  --accent: #6f8cff; /* 晶格藍：系統／二級 */
+  --accent-soft: rgba(111, 140, 255, 0.28);
+  --gold: #d8b46a; /* 儀式金：核心／一級 */
+  --gold-soft: rgba(216, 180, 106, 0.32);
   --danger: #ff5468;
+  --danger-soft: rgba(255, 84, 104, 0.3);
+
+  /* ---- 職責色標：裁定版（藍=保護／紅=火力／黃=補給） ---- */
+  --role-protect: #4d8dff;
+  --role-fire: #ff4d5e;
+  --role-supply: #ffd24d;
+
+  /* ---- 切角幾何參數 ---- */
+  --cut-lg: 16px;
+  --cut-md: 10px;
+  --cut-sm: 6px;
+  --cut-xs: 3px;
+
   font-family: "Segoe UI", "Noto Sans TC", system-ui, sans-serif;
 }
 
@@ -18,14 +55,30 @@ html,
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 0%, #171b2a 0%, var(--bg) 60%);
+  background: radial-gradient(circle at 50% 0%, #161a2a 0%, var(--bg) 55%), var(--bg);
+  background-attachment: fixed;
   color: var(--ink);
+  position: relative;
+}
+
+/* 晶格底紋：極淡的雙向細線網格，呼應「晶格」關鍵字，不搶內容 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.05;
+  background-image: repeating-linear-gradient(60deg, var(--accent) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(-60deg, var(--accent) 0 1px, transparent 1px 64px);
 }
 
 #app {
   min-height: 100vh;
   display: flex;
   justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .頁面容器 {
@@ -40,52 +93,159 @@ h3,
 h4 {
   font-weight: 600;
   letter-spacing: 0.02em;
+  color: var(--ink-warm);
 }
 
+/* =========================================================
+ * 按鈕系統（對應 UserFlow §5 四級分級）
+ * 共同基礎：切角八邊形面板 + 髮絲外框 + 內嵌高光，取代純圓角色塊
+ * ========================================================= */
 button {
+  position: relative;
   font-family: inherit;
   cursor: pointer;
   color: var(--ink);
-  background: var(--bg-panel-2);
+  background: linear-gradient(150deg, #1c2136 0%, #12151f 70%);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0;
+  clip-path: polygon(
+    var(--cut-sm) 0,
+    calc(100% - var(--cut-sm)) 0,
+    100% var(--cut-sm),
+    100% calc(100% - var(--cut-sm)),
+    calc(100% - var(--cut-sm)) 100%,
+    var(--cut-sm) 100%,
+    0 calc(100% - var(--cut-sm)),
+    0 var(--cut-sm)
+  );
   padding: 10px 16px;
-  transition: all 0.15s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, filter 0.15s ease;
 }
 button:hover {
   border-color: var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 14px var(--accent-soft);
   transform: translateY(-1px);
 }
+button:active {
+  transform: translateY(0);
+}
 button.作用中 {
-  background: linear-gradient(180deg, #34406e, #202741);
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent) inset;
+  background: linear-gradient(150deg, #2a3562 0%, #171b29 75%);
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold-soft), 0 0 16px var(--gold-soft);
+  color: var(--ink-warm);
 }
 button.鎖定 {
-  opacity: 0.45;
+  opacity: 0.4;
+  filter: grayscale(0.5);
+  cursor: not-allowed;
+}
+button.鎖定:hover {
+  transform: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-color: var(--line);
 }
 button:disabled,
 button.禁用 {
-  opacity: 0.4;
+  opacity: 0.35;
+  filter: grayscale(0.6);
   cursor: not-allowed;
 }
+button:disabled:hover,
+button.禁用:hover {
+  transform: none;
+  border-color: var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
 
+/* ---- 一級按鈕：儀式核心入口。大切角、金色髮絲、角落有精密鑲邊、字後方有柔光 ---- */
 .一級按鈕 {
-  padding: 14px 26px;
-  font-size: 1.05em;
-  background: linear-gradient(180deg, var(--accent), #3c53b0);
-  border-color: #93a6ff;
+  --cut-sm: var(--cut-lg);
+  padding: 14px 30px;
+  font-size: 1.02em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-warm);
+  background: linear-gradient(150deg, #3a3252 0%, #211c33 55%, #171420 100%);
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(216, 180, 106, 0.35), 0 0 18px rgba(216, 180, 106, 0.16);
 }
+.一級按鈕::before,
+.一級按鈕::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.一級按鈕::before {
+  top: 3px;
+  left: 3px;
+  border-top: 1.5px solid var(--gold);
+  border-left: 1.5px solid var(--gold);
+}
+.一級按鈕::after {
+  bottom: 3px;
+  right: 3px;
+  border-bottom: 1.5px solid var(--gold);
+  border-right: 1.5px solid var(--gold);
+}
+.一級按鈕:hover {
+  border-color: #f0d493;
+  box-shadow: inset 0 0 0 1px rgba(216, 180, 106, 0.5), 0 0 26px rgba(216, 180, 106, 0.3);
+}
+
+/* ---- 二級按鈕：主要功能。中切角、藍色髮絲，穩定但不搶戲 ---- */
 .二級按鈕 {
-  background: var(--bg-panel-2);
+  --cut-sm: var(--cut-md);
+  background: linear-gradient(150deg, #1c2136 0%, #12151f 70%);
+  border-color: var(--line);
 }
+.二級按鈕:hover {
+  border-color: var(--accent);
+}
+
+/* ---- 三級按鈕：次要操作。近乎扁平，僅底線提示，視覺存在感刻意壓低 ---- */
 .三級按鈕 {
+  --cut-sm: var(--cut-xs);
   padding: 6px 12px;
-  font-size: 0.85em;
+  font-size: 0.82em;
+  background: transparent;
+  border-color: transparent;
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+  color: var(--ink-dim);
 }
+.三級按鈕:hover {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+  box-shadow: none;
+  transform: none;
+}
+.三級按鈕.作用中 {
+  color: var(--ink-warm);
+  border-bottom-color: var(--gold);
+  background: rgba(216, 180, 106, 0.08);
+  box-shadow: none;
+}
+
+/* ---- 危險按鈕：警示型。尖角、紅色髮絲、細密警示紋理 ---- */
 .危險按鈕 {
+  --cut-sm: var(--cut-xs);
   border-color: var(--danger);
   color: #ffd6db;
+  background: repeating-linear-gradient(
+      135deg,
+      rgba(255, 84, 104, 0.06) 0 6px,
+      rgba(255, 84, 104, 0) 6px 14px
+    ),
+    linear-gradient(150deg, #241823 0%, #150f16 70%);
+}
+.危險按鈕:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 16px var(--danger-soft);
+  border-color: #ff8190;
 }
 
 .按鈕列 {
@@ -93,6 +253,34 @@ button.禁用 {
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 14px;
+}
+
+/* =========================================================
+ * 面板／外框系統：一律用切角八邊形取代圓角矩形，呼應「晶格結構」
+ * ========================================================= */
+.面板邊框,
+.子頁內容,
+.資料夾式版面-內容區,
+.資料夾式版面-補充區,
+.占位卡片,
+.隊長說明卡,
+.管理介面-root,
+.結算頁-root,
+.滑出面板,
+.流程提示卡,
+.主畫面-進度摘要,
+.小地圖占位 {
+  border-radius: 0;
+  clip-path: polygon(
+    var(--cut-md) 0,
+    calc(100% - var(--cut-md)) 0,
+    100% var(--cut-md),
+    100% calc(100% - var(--cut-md)),
+    calc(100% - var(--cut-md)) 100%,
+    var(--cut-md) 100%,
+    0 calc(100% - var(--cut-md)),
+    0 var(--cut-md)
+  );
 }
 
 /* ---------- 主畫面 ---------- */
@@ -103,10 +291,9 @@ button.禁用 {
   padding-top: 30px;
 }
 .主畫面-進度摘要 {
-  background: rgba(18, 21, 31, 0.92);
+  background: rgba(16, 19, 30, 0.92);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px 20px;
+  padding: 18px 22px;
 }
 .主畫面-進度摘要 h3 {
   margin: 0 0 10px;
@@ -122,7 +309,8 @@ button.禁用 {
 .主畫面-標題 h1 {
   margin: 0;
   font-size: 2.1em;
-  background: linear-gradient(90deg, #a9baff, #ffd8a9);
+  letter-spacing: 0.03em;
+  background: linear-gradient(90deg, #d8b46a, #a9baff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -142,16 +330,48 @@ button.禁用 {
   gap: 10px;
   min-width: 200px;
 }
+/* 主畫面主按鈕：介於一級與二級之間的「結構開口」語言，左側有點亮式豎線 */
 .主畫面-主按鈕 {
+  --cut-sm: var(--cut-md);
+  position: relative;
   text-align: left;
-  padding: 16px 18px;
-  font-size: 1.05em;
+  padding: 16px 18px 16px 22px;
+  font-size: 1.02em;
+  letter-spacing: 0.03em;
+  border-color: var(--line);
+}
+.主畫面-主按鈕::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14%;
+  bottom: 14%;
+  width: 2px;
+  background: var(--line);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.主畫面-主按鈕:hover::before {
+  background: var(--accent);
+}
+.主畫面-主按鈕.作用中::before {
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold-soft);
 }
 .主畫面-離開按鈕 {
+  --cut-sm: var(--cut-xs);
   margin-top: 24px;
   align-self: flex-end;
-  opacity: 0.6;
-  font-size: 0.85em;
+  opacity: 0.55;
+  font-size: 0.82em;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.主畫面-離開按鈕:hover {
+  opacity: 0.85;
+  box-shadow: none;
+  transform: none;
+  border-color: var(--line);
 }
 .主畫面-子頁容器 {
   flex: 1;
@@ -168,7 +388,6 @@ button.禁用 {
 .子頁內容 {
   background: var(--bg-panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
   padding: 20px;
 }
 .子頁內容-narrow {
@@ -191,7 +410,6 @@ button.禁用 {
 .占位卡片 {
   background: var(--bg-panel-2);
   border: 1px dashed var(--line);
-  border-radius: 10px;
   padding: 16px 10px;
   text-align: center;
   font-size: 0.9em;
@@ -216,25 +434,31 @@ button.禁用 {
 }
 .隊長卡片 {
   --隊長色: #6f8cff;
+  --cut-sm: var(--cut-sm);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
   border-top: 3px solid var(--隊長色);
 }
+.隊長卡片.作用中 {
+  border-color: var(--隊長色);
+  box-shadow: inset 0 0 0 1px var(--隊長色), 0 0 16px color-mix(in srgb, var(--隊長色) 40%, transparent);
+}
 .隊長說明卡 {
   margin-top: 14px;
   background: var(--bg-panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px 16px;
+  padding: 14px 18px;
 }
 .淡字 {
   color: var(--ink-dim);
   font-size: 0.8em;
 }
 
-/* ---------- 小隊圓盤（共用元件 B） ---------- */
+/* =========================================================
+ * 小隊圓盤（共用元件 B）：核心型語言，圓／環／放射狀
+ * ========================================================= */
 .小隊圓盤 {
   display: flex;
   flex-direction: column;
@@ -246,10 +470,19 @@ button.禁用 {
   width: 320px;
   height: 320px;
 }
+.小隊圓盤-環容器::before {
+  /* 淡淡的十字準星刻度，強化「儀式核心」感 */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 62%, rgba(216, 180, 106, 0.05) 63%, transparent 64%);
+  pointer-events: none;
+}
 .小隊圓盤-環 {
   position: absolute;
   border-radius: 50%;
-  border: 1px dashed var(--line);
+  border: 1px solid var(--line-soft);
   top: 50%;
   left: 50%;
   animation: 轉動 40s linear infinite;
@@ -293,7 +526,8 @@ button.禁用 {
   justify-content: center;
   font-size: 1.6em;
   font-weight: 700;
-  border: 2px solid #ffffff33;
+  border: 2px solid var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 18px var(--gold-soft);
   z-index: 3;
 }
 .小隊圓盤-槽位 {
@@ -304,9 +538,16 @@ button.禁用 {
   height: 26px;
   padding: 0;
   border-radius: 50%;
-  border: 2px solid #00000055;
+  clip-path: none;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
   transform: translate(-50%, -50%) rotate(var(--角度)) translate(var(--半徑)) rotate(calc(-1 * var(--角度)));
   z-index: 2;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.小隊圓盤-槽位:hover {
+  filter: brightness(1.25);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35) inset, 0 0 10px currentColor;
 }
 .小隊圓盤-圖例 {
   display: flex;
@@ -324,9 +565,13 @@ button.禁用 {
   height: 12px;
   border-radius: 50%;
   display: inline-block;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
 }
 
-/* ---------- 資料夾式版面（共用元件 A + 背包/互動/地圖） ---------- */
+/* =========================================================
+ * 資料夾式版面（共用元件 A + 背包/互動/地圖）
+ * 書籤欄改用「攤開資料夾標籤」語言，而非漂浮卡片按鈕
+ * ========================================================= */
 .資料夾式版面 {
   display: grid;
   grid-template-columns: 170px 1fr 220px;
@@ -336,10 +581,29 @@ button.禁用 {
 .資料夾式版面-書籤欄 {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .資料夾式版面-書籤欄 button {
+  --cut-sm: 0px;
   text-align: left;
+  border-radius: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, var(--cut-xs) 100%);
+  background: rgba(23, 27, 41, 0.6);
+  border: 1px solid transparent;
+  border-left: 3px solid var(--line);
+  box-shadow: none;
+}
+.資料夾式版面-書籤欄 button:hover {
+  border-left-color: var(--accent);
+  background: rgba(23, 27, 41, 0.9);
+  box-shadow: none;
+  transform: none;
+}
+.資料夾式版面-書籤欄 button.作用中 {
+  background: linear-gradient(90deg, rgba(216, 180, 106, 0.14), rgba(23, 27, 41, 0.9) 60%);
+  border-left: 3px solid var(--gold);
+  box-shadow: none;
+  color: var(--ink-warm);
 }
 .圖鑑瀏覽器-世界故事按鈕 {
   margin-top: 10px;
@@ -349,14 +613,12 @@ button.禁用 {
 .資料夾式版面-內容區 {
   background: var(--bg-panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 16px;
+  padding: 18px 20px;
 }
 .資料夾式版面-補充區 {
   background: var(--bg-panel-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px;
+  padding: 14px 16px;
   font-size: 0.88em;
   color: var(--ink-dim);
 }
@@ -368,9 +630,8 @@ button.禁用 {
   gap: 16px;
 }
 .流程提示卡 {
-  background: rgba(18, 21, 31, 0.92);
+  background: rgba(16, 19, 30, 0.92);
   border: 1px solid var(--line);
-  border-radius: 14px;
   padding: 16px 18px;
   max-width: 760px;
 }
@@ -392,22 +653,31 @@ button.禁用 {
   width: 120px;
   height: 90px;
   border: 1px solid var(--line);
-  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--ink-dim);
   background: var(--bg-panel);
 }
+
+/* 驚嘆號提示：警示型，尖角菱形徽章 + 脈動亮框 */
 .驚嘆號提示 {
+  --cut-sm: 0px;
   align-self: center;
-  border-color: #ffd24d;
-  color: #ffd24d;
-  animation: 閃爍 1.2s ease-in-out infinite;
+  border-color: var(--gold);
+  color: var(--gold);
+  background: linear-gradient(150deg, #2a2313 0%, #12151f 70%);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  padding: 12px 26px;
+  animation: 警示脈動 1.2s ease-in-out infinite;
 }
-@keyframes 閃爍 {
+@keyframes 警示脈動 {
+  0%,
+  100% {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 6px var(--gold-soft);
+  }
   50% {
-    opacity: 0.55;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 18px var(--gold-soft);
   }
 }
 
@@ -423,40 +693,52 @@ button.禁用 {
   align-items: center;
   gap: 12px;
 }
+/* 生命/能量條：切角端頭 + 內嵌刻度，取代純圓角進度條 */
 .血條,
 .能量條 {
+  position: relative;
   width: 120px;
   height: 14px;
-  background: #1c2131;
+  background: #171a26;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 50%);
   overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 .血條-填充 {
   height: 100%;
-  background: linear-gradient(90deg, #3bbf6d, #7ee6a0);
+  background: linear-gradient(90deg, #2f9e5c, #7ee6a0);
 }
 .能量條-填充 {
   height: 100%;
-  background: linear-gradient(90deg, #ffd24d, #ffec8f);
+  background: linear-gradient(90deg, #c99a1f, #ffe488);
 }
+/* 隊長頭像：雙環徽章（金色外環 + 晶格藍核心），呼應核心型語言 */
 .隊長頭像 {
   width: 84px;
   height: 84px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #6f8cff, #12141f);
-  border: 2px solid #ffffff44;
+  background: radial-gradient(circle at 35% 30%, #6f8cff, #12141f 78%);
+  border: 2px solid var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(216, 180, 106, 0.12),
+    0 0 16px var(--gold-soft);
   font-size: 0.85em;
+  transition: box-shadow 0.2s ease, filter 0.2s ease;
+}
+.隊長頭像:hover {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(216, 180, 106, 0.2),
+    0 0 22px var(--gold-soft);
+  transform: none;
 }
 
 .滑動切換按鈕 {
+  --cut-sm: var(--cut-sm);
   font-size: 0.85em;
 }
 
 .滑出面板 {
   background: var(--bg-panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
   padding: 16px;
 }
 
@@ -484,15 +766,43 @@ button.禁用 {
 .管理介面-root {
   background: var(--bg-panel);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 20px;
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  box-shadow: inset 0 0 0 1px rgba(111, 140, 255, 0.06);
 }
+/* 管理介面第一層資料夾：更明顯的「攤開總冊」書籤語言 */
 .管理介面-分頁列 {
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.管理介面-分頁列 button {
+  --cut-sm: 0px;
+  clip-path: polygon(var(--cut-sm) 0, calc(100% - var(--cut-sm)) 0, 100% 100%, 0 100%);
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  padding: 10px 22px;
+  font-size: 0.95em;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+  box-shadow: none;
+  margin-bottom: -1px;
+}
+.管理介面-分頁列 button:hover {
+  color: var(--ink);
+  box-shadow: none;
+  transform: none;
+  background: rgba(111, 140, 255, 0.08);
+}
+.管理介面-分頁列 button.作用中 {
+  color: var(--ink-warm);
+  background: var(--bg-panel-2);
+  border: 1px solid var(--line);
+  border-bottom: 1px solid var(--bg-panel-2);
+  box-shadow: 0 -2px 0 var(--gold) inset;
 }
 .管理介面-內容 {
   min-height: 320px;
@@ -510,14 +820,13 @@ button.禁用 {
   flex: 1;
   background: var(--bg-panel-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 16px;
+  padding: 16px 18px;
 }
 
 /* ---------- 結算頁 ---------- */
 .結算頁-root {
   background: var(--bg-panel);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 26px;
+  border: 1px solid var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(216, 180, 106, 0.15), 0 0 30px rgba(216, 180, 106, 0.08);
+  padding: 30px 32px;
 }

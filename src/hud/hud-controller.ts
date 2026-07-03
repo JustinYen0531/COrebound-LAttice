@@ -143,6 +143,25 @@ export class HudController {
     this.itemDrawer.tickPendingBig(Date.now());
   }
 
+  /** 對外公開：直接開啟左側抽屜 */
+  openLeftDrawer(): void {
+    this.setState("left_open");
+    // 設定展開比例為 1.0 (全開)
+    this.weaponDrawer.setOpenRatio(1);
+  }
+
+  /** 對外公開：直接開啟右側抽屜 */
+  openRightDrawer(): void {
+    this.setState("right_open");
+    // 設定展開比例為 1.0 (全開)
+    this.itemDrawer.setOpenRatio(1);
+  }
+
+  /** 對外公開：關閉抽屜 */
+  closeDrawers(): void {
+    this.setState("idle");
+  }
+
   // ============================================================
   // 狀態轉移
   // ============================================================
