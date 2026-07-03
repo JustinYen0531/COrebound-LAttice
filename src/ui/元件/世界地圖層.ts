@@ -949,7 +949,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     for (let y = targetBounds.minY - R; y <= targetBounds.maxY + R; y += dy) {
       const cy = y + (col % 2 === 1 ? dy / 2 : 0);
       const center = { x, y: cy };
-      if (isPointInsidePolygon(center, mechanicalPolygon)) {
+      if (pointInPolygon(center, mechanicalPolygon)) {
         const points: Array<{ x: number; y: number }> = [];
         for (let i = 0; i < 6; i++) {
           const rad = (i * 60 * Math.PI) / 180;
