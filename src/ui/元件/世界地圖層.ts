@@ -404,7 +404,7 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): void {
   clipPath.appendChild(clipShape);
   definitions.appendChild(clipPath);
 
-  for (const zone of ["outer"] as const) {
+  for (const zone of ["outer", "core"] as const) {
     for (let variant = 0; variant < 6; variant += 1) {
       const pattern = document.createElementNS(svgNamespace, "pattern");
       pattern.setAttribute("id", `geometry-floor-${zone}-${variant}`);
@@ -437,21 +437,6 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): void {
     }
   }
 
-  const corePattern = document.createElementNS(svgNamespace, "pattern");
-  corePattern.setAttribute("id", "geometry-floor-core-whole");
-  corePattern.setAttribute("patternUnits", "objectBoundingBox");
-  corePattern.setAttribute("width", "1");
-  corePattern.setAttribute("height", "1");
-  corePattern.setAttribute("viewBox", "887 0 887 887");
-  corePattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
-  const coreImage = document.createElementNS(svgNamespace, "image");
-  coreImage.setAttribute("href", "/幾何世界地板花紋.png");
-  coreImage.setAttribute("width", "1774");
-  coreImage.setAttribute("height", "887");
-  coreImage.setAttribute("x", "0");
-  coreImage.setAttribute("y", "0");
-  corePattern.appendChild(coreImage);
-  definitions.appendChild(corePattern);
   host.appendChild(definitions);
 
   const tileGroup = document.createElementNS(svgNamespace, "g");
@@ -486,29 +471,18 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): void {
 
   const regionArea = Math.abs(polygonArea(geometryPolygon));
   const coreRadius = Math.sqrt((regionArea * 0.3) / Math.PI);
-  const coreTilePaths: string[] = [];
   for (let index = 0; index < transformedTiles.length; index += 1) {
     const tile = transformedTiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
     const distanceToCore = Math.hypot(tile.center.x - geometryZone.centerX, tile.center.y - geometryZone.centerY);
-    if (distanceToCore <= coreRadius) {
-      coreTilePaths.push(tilePath);
-      continue;
-    }
+    const floorZone = distanceToCore <= coreRadius ? "core" : "outer";
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    path.setAttribute("fill", `url(#geometry-floor-outer-${variant})`);
-    path.setAttribute("class", "世界地圖層-愛因斯坦磁磚");
+    path.setAttribute("fill", `url(#geometry-floor-${floorZone}-${variant})`);
+    path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
     tileGroup.appendChild(path);
   }
-
-  // 中央沿著被移除的 Hat 邊界形成不規則洞口，再用同一張圖連續填滿所有子輪廓。
-  const coreFloor = document.createElementNS(svgNamespace, "path");
-  coreFloor.setAttribute("class", "世界地圖層-幾何中央整體地板");
-  coreFloor.setAttribute("d", coreTilePaths.join(" "));
-  coreFloor.setAttribute("fill", "url(#geometry-floor-core-whole)");
-  tileGroup.appendChild(coreFloor);
   host.appendChild(tileGroup);
 }
 

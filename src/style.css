@@ -826,10 +826,8 @@ button.禁用:hover {
   paint-order: stroke fill;
   filter: drop-shadow(0 0 4px rgba(2, 14, 34, 0.96));
 }
-.世界地圖層-幾何中央整體地板 {
-  stroke: none;
-  opacity: 1;
-  filter: contrast(1.08) brightness(0.72);
+.世界地圖層-愛因斯坦磁磚-core {
+  fill-opacity: 0.92;
 }
 .世界地圖層-區域片-organic {
   fill: rgba(111, 220, 140, 0.14);
