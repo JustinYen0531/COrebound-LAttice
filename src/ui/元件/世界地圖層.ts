@@ -40,7 +40,10 @@ const TURN_LERP_SPEED = 15;
 const VIEW_PADDING = 140;
 // 正交斜俯視：只壓縮地面縱深，場景物件與 HUD 仍保持直立比例。
 const GROUND_DEPTH_SCALE = 0.6;
-const CAMERA_ZOOM = 1.25;
+const DEFAULT_CAMERA_ZOOM = 2.43;
+const MIN_CAMERA_ZOOM = 0.85;
+const MAX_CAMERA_ZOOM = 3.5;
+let cameraZoom = DEFAULT_CAMERA_ZOOM;
 
 const GUARDIAN_ALTAR_IMAGE: Record<World, string> = {
   geometry: "/images/props/facilities/altars/guardian_altar_geometry.png",
@@ -61,6 +64,7 @@ let playerPos = { x: 0, y: 0 };
 
 export function resetPlayerPos(): void {
   playerPos = { x: 0, y: 0 };
+  cameraZoom = DEFAULT_CAMERA_ZOOM;
 }
 
 function clampPlayerPosition(next: { x: number; y: number }): { x: number; y: number } {
@@ -84,8 +88,8 @@ function worldToScreen(
   viewport: { w: number; h: number },
 ): { x: number; y: number } {
   return {
-    x: viewport.w / 2 + (point.x - player.x) * CAMERA_ZOOM,
-    y: viewport.h / 2 + (point.y - player.y) * GROUND_DEPTH_SCALE * CAMERA_ZOOM,
+    x: viewport.w / 2 + (point.x - player.x) * cameraZoom,
+    y: viewport.h / 2 + (point.y - player.y) * GROUND_DEPTH_SCALE * cameraZoom,
   };
 }
 
@@ -154,7 +158,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   const playerNode = document.createElement("div");
   playerNode.className = "世界地圖層-玩家";
-  playerNode.appendChild(建立玩家標記圖騰({ size: 68, 旋轉: true }));
+  playerNode.appendChild(建立玩家標記圖騰({ size: 132, 旋轉: true }));
   playerNode.title = "小隊(玩家)· 中央隊長核心與外圍三環圖騰";
   canvas.appendChild(playerNode);
 
@@ -204,6 +208,30 @@ export function 建立世界地圖層(): HTMLElement {
   miniPlayer.className = "世界地圖層-小地圖玩家";
   miniMapInner.appendChild(miniPlayer);
 
+  const zoomControl = document.createElement("div");
+  zoomControl.className = "世界地圖層-縮放控制";
+  zoomControl.title = "滑鼠滾輪或拖曳滑桿調整鏡頭距離";
+
+  const zoomRatio = document.createElement("output");
+  zoomRatio.className = "世界地圖層-縮放比例";
+  zoomControl.appendChild(zoomRatio);
+
+  const zoomSlider = document.createElement("input");
+  zoomSlider.className = "世界地圖層-縮放滑桿";
+  zoomSlider.type = "range";
+  zoomSlider.min = String(MIN_CAMERA_ZOOM);
+  zoomSlider.max = String(MAX_CAMERA_ZOOM);
+  zoomSlider.step = "0.05";
+  zoomSlider.value = String(cameraZoom);
+  zoomSlider.setAttribute("aria-label", "鏡頭放大比例");
+  zoomControl.appendChild(zoomSlider);
+
+  const zoomLabel = document.createElement("span");
+  zoomLabel.className = "世界地圖層-縮放標籤";
+  zoomLabel.textContent = "鏡頭";
+  zoomControl.appendChild(zoomLabel);
+  canvas.appendChild(zoomControl);
+
   const exclaim = document.createElement("button");
   exclaim.className = "世界地圖層-驚嘆號";
   exclaim.innerHTML = "❗";
@@ -216,6 +244,22 @@ export function 建立世界地圖層(): HTMLElement {
   let lastNow = performance.now();
   let playerRotation = 0;
   let playerVelocity = { x: 0, y: 0 };
+
+  function setCameraZoom(nextZoom: number): void {
+    cameraZoom = Math.max(MIN_CAMERA_ZOOM, Math.min(MAX_CAMERA_ZOOM, nextZoom));
+    zoomSlider.value = cameraZoom.toFixed(2);
+    zoomRatio.value = `${Math.round(cameraZoom * 100)}%`;
+    render();
+  }
+
+  function onWheel(event: WheelEvent): void {
+    event.preventDefault();
+    const zoomFactor = Math.exp(-event.deltaY * 0.001);
+    setCameraZoom(cameraZoom * zoomFactor);
+  }
+
+  zoomSlider.addEventListener("input", () => setCameraZoom(Number(zoomSlider.value)));
+  setCameraZoom(cameraZoom);
 
   function render(): void {
     const viewport = { w: canvas.clientWidth || window.innerWidth, h: canvas.clientHeight || window.innerHeight };
@@ -373,11 +417,13 @@ export function 建立世界地圖層(): HTMLElement {
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
   window.addEventListener("resize", render);
+  root.addEventListener("wheel", onWheel, { passive: false });
 
   root.addEventListener("DOMNodeRemovedFromDocument", () => {
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("keyup", onKeyUp);
     window.removeEventListener("resize", render);
+    root.removeEventListener("wheel", onWheel);
     window.cancelAnimationFrame(rafId);
   });
 
@@ -1495,8 +1541,8 @@ function updateMapViewBox(
   host: SVGSVGElement,
   viewport: { w: number; h: number },
 ): void {
-  const projectedWorldWidth = viewport.w / CAMERA_ZOOM;
-  const projectedWorldHeight = viewport.h / (GROUND_DEPTH_SCALE * CAMERA_ZOOM);
+  const projectedWorldWidth = viewport.w / cameraZoom;
+  const projectedWorldHeight = viewport.h / (GROUND_DEPTH_SCALE * cameraZoom);
   const viewLeft = playerPos.x - projectedWorldWidth / 2;
   const viewTop = playerPos.y - projectedWorldHeight / 2;
   host.setAttribute("viewBox", `${viewLeft} ${viewTop} ${projectedWorldWidth} ${projectedWorldHeight}`);
