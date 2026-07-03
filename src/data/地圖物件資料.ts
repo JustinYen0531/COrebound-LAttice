@@ -92,11 +92,14 @@ export interface GeneratedMap {
 // 二、地圖尺度
 // ============================================================
 
+// 邊長乘上 sqrt(2)，因此整張正方形地圖的總面積精確成為上一版的兩倍。
+const MAP_HALF_SIZE = 4200 * Math.SQRT2;
+
 export const MAP_BOUNDS = {
-  minX: -4200,
-  maxX: 4200,
-  minY: -4200,
-  maxY: 4200,
+  minX: -MAP_HALF_SIZE,
+  maxX: MAP_HALF_SIZE,
+  minY: -MAP_HALF_SIZE,
+  maxY: MAP_HALF_SIZE,
 };
 
 export const PLAZA_RADIUS = 520;
@@ -130,13 +133,13 @@ const FAMILY_LABEL_ZH: Record<Family, string> = {
 // 三、亂數工具
 // ============================================================
 
-interface RandomSource {
+export interface RandomSource {
   next(): number;
   range(min: number, max: number): number;
   int(min: number, max: number): number;
 }
 
-function createRandom(seed: number): RandomSource {
+export function createRandom(seed: number): RandomSource {
   let state = seed >>> 0;
   const next = () => {
     state = (state * 1664525 + 1013904223) >>> 0;
@@ -313,7 +316,7 @@ function samplePointInRegion(
   return nudgePointIntoRegion({ x: 0, y: 0 }, region, verticalDivider, horizontalDivider, random);
 }
 
-function placePoint(
+export function placePoint(
   usedPoints: Array<{ x: number; y: number }>,
   region: World,
   verticalDivider: DividerPoint[],

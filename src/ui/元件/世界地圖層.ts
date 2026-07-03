@@ -23,6 +23,16 @@ import {
   type MapZone,
   type Region,
 } from "../../data/地圖物件資料";
+import { ENV_OBJECTS, type EnvObjectInstance } from "../../data/環境物件資料";
+import type { World } from "../../data/成員型別";
+import { buildEinsteinHatPatch, type EinsteinPoint } from "../../world/愛因斯坦地板";
+
+// 障礙物體積最大、資源礦物次之、環境機關最小，呼應立繪本身的視覺份量
+const ENV_ICON_SIZE: Record<EnvObjectInstance["category"], number> = {
+  障礙物: 256,
+  資源礦物: 184,
+  環境機關: 200,
+};
 
 const PLAYER_GLYPH = "🌀";
 const MOVE_SPEED = 24;
@@ -87,11 +97,18 @@ export function 建立世界地圖層(): HTMLElement {
   zoneSvg.setAttribute("height", "100%");
   zoneLayer.appendChild(zoneSvg);
 
+  // 環境物件層放在功能設施層「下面」：障礙物/資源礦/機關是場景裝飾與地形，
+  // 熔爐/雕像/商店等互動設施圖示要疊在它們之上，不能被擋住。
+  const envLayer = document.createElement("div");
+  envLayer.className = "世界地圖層-環境物件圖層";
+  canvas.appendChild(envLayer);
+
   const objectLayer = document.createElement("div");
   objectLayer.className = "世界地圖層-物件圖層";
   canvas.appendChild(objectLayer);
 
   const regionPaths = createRegionPaths(zoneSvg);
+  createGeometryEinsteinFloor(zoneSvg);
   const dividerPaths = createDividerPaths(zoneSvg);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
@@ -99,6 +116,13 @@ export function 建立世界地圖層(): HTMLElement {
     const node = createObjectNode(object);
     objectLayer.appendChild(node);
     objectNodes.set(object.id, node);
+  }
+
+  const envNodes = new Map<string, HTMLElement>();
+  for (const env of ENV_OBJECTS) {
+    const node = createEnvObjectNode(env);
+    envLayer.appendChild(node);
+    envNodes.set(env.id, node);
   }
 
   const playerNode = document.createElement("div");
@@ -155,6 +179,15 @@ export function 建立世界地圖層(): HTMLElement {
 
     renderRegionPaths(regionPaths, dividerPaths, viewport);
     renderZoneLabels(zoneLabels, viewport);
+
+    for (const env of ENV_OBJECTS) {
+      const node = envNodes.get(env.id);
+      if (!node) continue;
+      const pos = worldToScreen(env, playerPos, viewport);
+      node.style.left = `${pos.x}px`;
+      node.style.top = `${pos.y}px`;
+      node.style.display = isVisible(pos, viewport) ? "block" : "none";
+    }
 
     const near = nearbyObjects(playerPos);
     const nearIds = new Set(near.map((object) => object.id));
@@ -276,6 +309,20 @@ function createObjectNode(object: MapObject): HTMLElement {
   return node;
 }
 
+function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
+  const size = ENV_ICON_SIZE[env.category];
+  const img = document.createElement("img");
+  img.className = `世界地圖層-環境物件 世界地圖層-環境物件-${env.category}`;
+  img.src = env.iconPath;
+  img.alt = env.nameZh;
+  img.width = size;
+  img.height = size;
+  img.draggable = false;
+  const 重量描述 = env.destructible ? `碰撞重量 ${env.weight ?? "?"}` : "不可破壞";
+  img.title = `${env.nameZh}（${env.category}・${重量描述}）\n${env.mechanicText}`;
+  return img;
+}
+
 function createZoneLabel(zone: MapZone, host: HTMLElement) {
   const label = document.createElement("div");
   label.className = `世界地圖層-區域標籤 世界地圖層-區域標籤-${zone.region}`;
@@ -342,6 +389,133 @@ function createRegionPaths(host: SVGSVGElement): Record<World, SVGPathElement> {
   return regions;
 }
 
+function createGeometryEinsteinFloor(host: SVGSVGElement): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const geometryPolygon = buildRegionPolygons().geometry;
+  const geometryPath = polygonToPath(geometryPolygon, (point) => point);
+  const geometryZone = MAP_ZONES.find((zone) => zone.region === "geometry");
+  if (!geometryZone) return;
+
+  const definitions = document.createElementNS(svgNamespace, "defs");
+  const clipPath = document.createElementNS(svgNamespace, "clipPath");
+  clipPath.setAttribute("id", "geometry-world-floor-clip");
+  const clipShape = document.createElementNS(svgNamespace, "path");
+  clipShape.setAttribute("d", geometryPath);
+  clipPath.appendChild(clipShape);
+  definitions.appendChild(clipPath);
+
+  for (const zone of ["outer", "core"] as const) {
+    for (let variant = 0; variant < 6; variant += 1) {
+      const pattern = document.createElementNS(svgNamespace, "pattern");
+      pattern.setAttribute("id", `geometry-floor-${zone}-${variant}`);
+      pattern.setAttribute("patternUnits", "objectBoundingBox");
+      pattern.setAttribute("width", "1");
+      pattern.setAttribute("height", "1");
+      const halfStart = zone === "outer" ? 0 : 887;
+      pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
+      pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+      const image = document.createElementNS(svgNamespace, "image");
+      image.setAttribute("href", "/幾何世界地板花紋.png");
+      image.setAttribute("width", "1774");
+      image.setAttribute("height", "887");
+      image.setAttribute("x", "0");
+      image.setAttribute("y", "0");
+      // 只使用不會露出方形角落的鏡射；原先的 60 度旋轉正是藍色缺口來源。
+      const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
+      const transforms = [
+        "",
+        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+        "translate(0 887) scale(1 -1)",
+        `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
+        "",
+        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+      ];
+      image.setAttribute("transform", transforms[variant]);
+      pattern.appendChild(image);
+      definitions.appendChild(pattern);
+    }
+  }
+  host.appendChild(definitions);
+
+  const tileGroup = document.createElementNS(svgNamespace, "g");
+  tileGroup.setAttribute("class", "世界地圖層-愛因斯坦地板");
+  tileGroup.setAttribute("clip-path", "url(#geometry-world-floor-clip)");
+
+  const sourceTiles = buildEinsteinHatPatch(3);
+  const sourcePoints = sourceTiles.flatMap((tile) => tile.points);
+  const sourceBounds = boundsOf(sourcePoints);
+  const targetBounds = boundsOf(geometryPolygon);
+  const sourceWidth = sourceBounds.maxX - sourceBounds.minX;
+  const sourceHeight = sourceBounds.maxY - sourceBounds.minY;
+  const targetWidth = targetBounds.maxX - targetBounds.minX;
+  const targetHeight = targetBounds.maxY - targetBounds.minY;
+  // H 超級拼塊外緣不是矩形，稍微放大後再裁切，確保幾何世界邊角也由完整拼圖覆蓋。
+  const scale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight) * 1.46;
+  const sourceCenter = pointAtCenter(sourceBounds);
+  const targetCenter = pointAtCenter(targetBounds);
+  const transformedTiles = sourceTiles.map((tile) => ({
+    ...tile,
+    points: tile.points.map((point) => transformFloorPoint(point, sourceCenter, targetCenter, scale)),
+    center: transformFloorPoint(tile.center, sourceCenter, targetCenter, scale),
+  }));
+
+  const regionArea = Math.abs(polygonArea(geometryPolygon));
+  const coreRadius = Math.sqrt((regionArea * 0.4) / Math.PI);
+  for (let index = 0; index < transformedTiles.length; index += 1) {
+    const tile = transformedTiles[index];
+    const distanceToCore = Math.hypot(tile.center.x - geometryZone.centerX, tile.center.y - geometryZone.centerY);
+    const floorZone = distanceToCore <= coreRadius ? "core" : "outer";
+    const variant = stableTileVariant(tile.center, index);
+    const path = document.createElementNS(svgNamespace, "path");
+    path.setAttribute("d", polygonToPath(tile.points, (point) => point));
+    path.setAttribute("fill", `url(#geometry-floor-${floorZone}-${variant})`);
+    path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
+    tileGroup.appendChild(path);
+  }
+  host.appendChild(tileGroup);
+}
+
+function boundsOf(points: EinsteinPoint[]) {
+  return points.reduce(
+    (bounds, point) => ({
+      minX: Math.min(bounds.minX, point.x),
+      maxX: Math.max(bounds.maxX, point.x),
+      minY: Math.min(bounds.minY, point.y),
+      maxY: Math.max(bounds.maxY, point.y),
+    }),
+    { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity },
+  );
+}
+
+function pointAtCenter(bounds: ReturnType<typeof boundsOf>): EinsteinPoint {
+  return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
+}
+
+function transformFloorPoint(
+  source: EinsteinPoint,
+  sourceCenter: EinsteinPoint,
+  targetCenter: EinsteinPoint,
+  scale: number,
+): EinsteinPoint {
+  return {
+    x: targetCenter.x + (source.x - sourceCenter.x) * scale,
+    y: targetCenter.y + (source.y - sourceCenter.y) * scale,
+  };
+}
+
+function polygonArea(points: EinsteinPoint[]): number {
+  return points.reduce((area, point, index) => {
+    const next = points[(index + 1) % points.length];
+    return area + point.x * next.y - next.x * point.y;
+  }, 0) / 2;
+}
+
+function stableTileVariant(center: EinsteinPoint, index: number): number {
+  const hash = Math.abs(Math.floor(center.x * 17 + center.y * 31 + index * 101));
+  return hash % 6;
+}
+
 function createDividerPaths(host: SVGSVGElement) {
   const vertical = document.createElementNS("http://www.w3.org/2000/svg", "path");
   vertical.setAttribute("class", "世界地圖層-分界線");
@@ -382,15 +556,18 @@ function renderRegionPaths(
   dividers: { vertical: SVGPathElement; horizontal: SVGPathElement },
   viewport: { w: number; h: number },
 ): void {
-  const toScreen = (point: { x: number; y: number }) => worldToScreen(point, playerPos, viewport);
+  const viewLeft = playerPos.x - viewport.w / 2;
+  const viewTop = playerPos.y - viewport.h / 2;
+  const host = regions.geometry.ownerSVGElement;
+  host?.setAttribute("viewBox", `${viewLeft} ${viewTop} ${viewport.w} ${viewport.h}`);
   const polygons = buildRegionPolygons();
 
   (Object.keys(regions) as World[]).forEach((world) => {
-    regions[world].setAttribute("d", polygonToPath(polygons[world], toScreen));
+    regions[world].setAttribute("d", polygonToPath(polygons[world], (point) => point));
   });
 
-  dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, toScreen));
-  dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, toScreen));
+  dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, (point) => point));
+  dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, (point) => point));
 }
 
 function buildRegionPolygons(): Record<World, Array<{ x: number; y: number }>> {
