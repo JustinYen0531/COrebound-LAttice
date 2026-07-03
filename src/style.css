@@ -802,6 +802,35 @@ button.禁用:hover {
   inset: 0;
   pointer-events: none;
 }
+.世界地圖層-區域圖,
+.世界地圖層-小地圖圖層 {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.世界地圖層-區域片 {
+  opacity: 0.92;
+}
+.世界地圖層-區域片-geometry {
+  fill: rgba(111, 168, 255, 0.16);
+}
+.世界地圖層-區域片-organic {
+  fill: rgba(111, 220, 140, 0.14);
+}
+.世界地圖層-區域片-fractal {
+  fill: rgba(200, 155, 255, 0.16);
+}
+.世界地圖層-區域片-mechanical {
+  fill: rgba(255, 197, 111, 0.14);
+}
+.世界地圖層-分界線 {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 14px rgba(255,255,255,0.22));
+}
 .世界地圖層-區域 {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -948,20 +977,20 @@ button.禁用:hover {
     radial-gradient(circle at 50% 50%, rgba(111, 140, 255, 0.1), transparent 60%),
     rgba(7, 10, 17, 0.9);
 }
-.世界地圖層-小地圖區域 {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  opacity: 0.82;
+.世界地圖層-小地圖片 {
+  opacity: 0.86;
 }
-.世界地圖層-小地圖區域-plaza {
-  border: 1px dashed rgba(216, 180, 106, 0.65);
-  background: rgba(216, 180, 106, 0.12);
+.世界地圖層-小地圖片-geometry { fill: rgba(111, 168, 255, 0.26); }
+.世界地圖層-小地圖片-organic { fill: rgba(111, 220, 140, 0.24); }
+.世界地圖層-小地圖片-fractal { fill: rgba(200, 155, 255, 0.26); }
+.世界地圖層-小地圖片-mechanical { fill: rgba(255, 197, 111, 0.24); }
+.世界地圖層-小地圖分界線 {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.88);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.世界地圖層-小地圖區域-geometry { background: rgba(111, 168, 255, 0.24); }
-.世界地圖層-小地圖區域-organic { background: rgba(111, 220, 140, 0.22); }
-.世界地圖層-小地圖區域-fractal { background: rgba(200, 155, 255, 0.24); }
-.世界地圖層-小地圖區域-mechanical { background: rgba(255, 197, 111, 0.22); }
 .世界地圖層-小地圖點,
 .世界地圖層-小地圖玩家 {
   position: absolute;

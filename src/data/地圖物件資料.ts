@@ -68,10 +68,13 @@ export interface MapZone {
   region: Region;
   centerX: number;
   centerY: number;
-  radiusX: number;
-  radiusY: number;
   labelX: number;
   labelY: number;
+}
+
+export interface DividerPoint {
+  x: number;
+  y: number;
 }
 
 export interface GeneratedMap {
@@ -80,6 +83,8 @@ export interface GeneratedMap {
   plazaRadius: number;
   nearRadius: number;
   zones: MapZone[];
+  verticalDivider: DividerPoint[];
+  horizontalDivider: DividerPoint[];
   objects: MapObject[];
 }
 
@@ -98,7 +103,6 @@ export const PLAZA_RADIUS = 520;
 export const NEAR_RADIUS = 70;
 
 const WORLD_HALF_SIZE = MAP_BOUNDS.maxX;
-const WORLD_ANCHOR_DISTANCE = 1500;
 const OBJECT_MIN_DISTANCE = 120;
 
 const FURNACE_DISTRIBUTION: { family: Family; world: World }[] = [
@@ -162,38 +166,122 @@ function distance(a: { x: number; y: number }, b: { x: number; y: number }): num
 // 四、生成邏輯
 // ============================================================
 
-function buildZones(random: RandomSource): MapZone[] {
+function buildWobblyDivider(
+  random: RandomSource,
+  orientation: "vertical" | "horizontal",
+): DividerPoint[] {
+  const points: DividerPoint[] = [];
+  const steps = 16;
+  const half = WORLD_HALF_SIZE;
+  const majorAmp = 460;
+  const minorAmp = 120;
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const axis = -half + t * half * 2;
+    const waveA = Math.sin(t * Math.PI * 2.3 + random.range(-0.8, 0.8)) * majorAmp;
+    const waveB = Math.sin(t * Math.PI * 6.2 + random.range(-0.4, 0.4)) * minorAmp;
+    const drift = random.range(-60, 60);
+    const offset = waveA + waveB + drift;
+
+    points.push(
+      orientation === "vertical"
+        ? { x: offset, y: axis }
+        : { x: axis, y: offset },
+    );
+  }
+
+  if (orientation === "vertical") {
+    points[0].x = 0;
+    points[Math.floor(points.length / 2)].x = 0;
+    points[points.length - 1].x = 0;
+  } else {
+    points[0].y = 0;
+    points[Math.floor(points.length / 2)].y = 0;
+    points[points.length - 1].y = 0;
+  }
+
+  return points;
+}
+
+function interpolateDivider(points: DividerPoint[], value: number, axis: "x" | "y"): number {
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const aAxis = axis === "x" ? a.x : a.y;
+    const bAxis = axis === "x" ? b.x : b.y;
+    if ((value >= aAxis && value <= bAxis) || (value >= bAxis && value <= aAxis)) {
+      const denom = bAxis - aAxis || 1;
+      const t = (value - aAxis) / denom;
+      return axis === "x"
+        ? a.y + (b.y - a.y) * t
+        : a.x + (b.x - a.x) * t;
+    }
+  }
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  return axis === "x" ? (value < first.x ? first.y : last.y) : (value < first.y ? first.x : last.x);
+}
+
+function regionAtPoint(
+  point: { x: number; y: number },
+  verticalDivider: DividerPoint[],
+  horizontalDivider: DividerPoint[],
+): World {
+  const xBoundary = interpolateDivider(verticalDivider, point.y, "y");
+  const yBoundary = interpolateDivider(horizontalDivider, point.x, "x");
+  const left = point.x < xBoundary;
+  const top = point.y < yBoundary;
+
+  if (!left && top) return "geometry";
+  if (left && top) return "fractal";
+  if (left && !top) return "organic";
+  return "mechanical";
+}
+
+function buildZones(
+  random: RandomSource,
+  verticalDivider: DividerPoint[],
+  horizontalDivider: DividerPoint[],
+): MapZone[] {
   const zones: MapZone[] = [
     {
       region: "plaza",
       centerX: 0,
       centerY: 0,
-      radiusX: PLAZA_RADIUS,
-      radiusY: PLAZA_RADIUS,
       labelX: 0,
       labelY: 0,
     },
   ];
 
+  const approximateLabels: Record<World, { x: number; y: number }> = {
+    geometry: { x: WORLD_HALF_SIZE * 0.52, y: -WORLD_HALF_SIZE * 0.52 },
+    fractal: { x: -WORLD_HALF_SIZE * 0.52, y: -WORLD_HALF_SIZE * 0.52 },
+    organic: { x: -WORLD_HALF_SIZE * 0.52, y: WORLD_HALF_SIZE * 0.52 },
+    mechanical: { x: WORLD_HALF_SIZE * 0.52, y: WORLD_HALF_SIZE * 0.52 },
+  };
+
   const worlds: World[] = ["geometry", "organic", "fractal", "mechanical"];
   for (const world of worlds) {
-    const dir = REGION_DIRECTION[world];
-    const tangent = { dx: -dir.dy, dy: dir.dx };
-    const axialJitter = random.range(-180, 180);
-    const lateralJitter = random.range(-420, 420);
-    const radiusX = random.range(1550, 2050);
-    const radiusY = random.range(1450, 1950);
-    const centerX = dir.dx * (WORLD_ANCHOR_DISTANCE + axialJitter) + tangent.dx * lateralJitter;
-    const centerY = dir.dy * (WORLD_ANCHOR_DISTANCE + axialJitter) + tangent.dy * lateralJitter;
+    const labelBase = approximateLabels[world];
+    const label = nudgePointIntoRegion(
+      {
+        x: labelBase.x + random.range(-240, 240),
+        y: labelBase.y + random.range(-240, 240),
+      },
+      world,
+      verticalDivider,
+      horizontalDivider,
+      random,
+    );
 
     zones.push({
       region: world,
-      centerX,
-      centerY,
-      radiusX,
-      radiusY,
-      labelX: centerX + tangent.dx * random.range(-280, 280),
-      labelY: centerY + tangent.dy * random.range(-280, 280),
+      centerX: label.x,
+      centerY: label.y,
+      labelX: label.x,
+      labelY: label.y,
     });
   }
 
@@ -206,28 +294,35 @@ function findZone(zones: MapZone[], region: Region): MapZone {
   return zone;
 }
 
-function samplePointInZone(
-  zone: MapZone,
+function samplePointInRegion(
+  region: World,
+  verticalDivider: DividerPoint[],
+  horizontalDivider: DividerPoint[],
   random: RandomSource,
-  radialBand: [number, number],
 ): { x: number; y: number } {
-  const angle = random.range(0, Math.PI * 2);
-  const t = Math.sqrt(random.next());
-  const bandRatio = radialBand[0] + (radialBand[1] - radialBand[0]) * t;
-  const x = zone.centerX + Math.cos(angle) * zone.radiusX * bandRatio;
-  const y = zone.centerY + Math.sin(angle) * zone.radiusY * bandRatio;
-  return { x, y };
+  const margin = 220;
+  for (let attempt = 0; attempt < 150; attempt++) {
+    const point = {
+      x: random.range(MAP_BOUNDS.minX + margin, MAP_BOUNDS.maxX - margin),
+      y: random.range(MAP_BOUNDS.minY + margin, MAP_BOUNDS.maxY - margin),
+    };
+    if (distance(point, { x: 0, y: 0 }) < PLAZA_RADIUS + 120) continue;
+    if (regionAtPoint(point, verticalDivider, horizontalDivider) === region) return point;
+  }
+
+  return nudgePointIntoRegion({ x: 0, y: 0 }, region, verticalDivider, horizontalDivider, random);
 }
 
 function placePoint(
   usedPoints: Array<{ x: number; y: number }>,
-  zone: MapZone,
+  region: World,
+  verticalDivider: DividerPoint[],
+  horizontalDivider: DividerPoint[],
   random: RandomSource,
-  radialBand: [number, number],
   minDistance = OBJECT_MIN_DISTANCE,
 ): { x: number; y: number } {
   for (let attempt = 0; attempt < 80; attempt++) {
-    const point = samplePointInZone(zone, random, radialBand);
+    const point = samplePointInRegion(region, verticalDivider, horizontalDivider, random);
     if (
       usedPoints.every((used) => distance(used, point) >= minDistance) &&
       Math.abs(point.x) <= WORLD_HALF_SIZE - 20 &&
@@ -238,12 +333,41 @@ function placePoint(
     }
   }
 
-  const fallback = samplePointInZone(zone, random, radialBand);
+  const fallback = samplePointInRegion(region, verticalDivider, horizontalDivider, random);
   usedPoints.push(fallback);
   return fallback;
 }
 
-function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
+function nudgePointIntoRegion(
+  point: { x: number; y: number },
+  region: World,
+  verticalDivider: DividerPoint[],
+  horizontalDivider: DividerPoint[],
+  random: RandomSource,
+): { x: number; y: number } {
+  let current = { ...point };
+  for (let step = 0; step < 80; step++) {
+    if (regionAtPoint(current, verticalDivider, horizontalDivider) === region) return current;
+    const targetSigns: Record<World, { x: number; y: number }> = {
+      geometry: { x: 1, y: -1 },
+      fractal: { x: -1, y: -1 },
+      organic: { x: -1, y: 1 },
+      mechanical: { x: 1, y: 1 },
+    };
+    current = {
+      x: current.x + targetSigns[region].x * random.range(80, 140),
+      y: current.y + targetSigns[region].y * random.range(80, 140),
+    };
+  }
+  return current;
+}
+
+function buildObjects(
+  zones: MapZone[],
+  verticalDivider: DividerPoint[],
+  horizontalDivider: DividerPoint[],
+  random: RandomSource,
+): MapObject[] {
   const usedPoints: Array<{ x: number; y: number }> = [];
   const objects: MapObject[] = [];
 
@@ -265,7 +389,7 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
     const worldMembers = MEMBERS.filter((member) => member.world === world);
     const workbenchCount = world === "geometry" || world === "organic" ? 2 : 3;
 
-    const altarPoint = placePoint(usedPoints, zone, random, [0.08, 0.2], 180);
+    const altarPoint = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 180);
     objects.push({
       id: `altar_${world}`,
       kind: "召喚",
@@ -277,7 +401,7 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
       summonType: "guardian",
     });
 
-    const shopPoint = placePoint(usedPoints, zone, random, [0.22, 0.42], 180);
+    const shopPoint = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 180);
     objects.push({
       id: `shop_${world}`,
       kind: "商店",
@@ -289,7 +413,7 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
     });
 
     for (let i = 0; i < workbenchCount; i++) {
-      const point = placePoint(usedPoints, zone, random, [0.32, 0.74], 165);
+      const point = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 165);
       objects.push({
         id: `workbench_${world}_${i + 1}`,
         kind: "合成",
@@ -302,7 +426,7 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
     }
 
     for (const member of worldMembers) {
-      const point = placePoint(usedPoints, zone, random, [0.46, 0.96], 150);
+      const point = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 150);
       objects.push({
         id: `statue_${member.id}`,
         kind: "雕像",
@@ -324,12 +448,12 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
   };
 
   for (const furnace of FURNACE_DISTRIBUTION) {
-    const zone = findZone(zones, furnace.world);
     const point = placePoint(
       usedPoints,
-      zone,
+      furnace.world,
+      verticalDivider,
+      horizontalDivider,
       random,
-      furnacesPerWorld[furnace.world] === 0 ? [0.38, 0.78] : [0.58, 0.98],
       180,
     );
     furnacesPerWorld[furnace.world] += 1;
@@ -351,8 +475,10 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
 
 function buildGeneratedMap(seed: number): GeneratedMap {
   const random = createRandom(seed);
-  const zones = buildZones(random);
-  const objects = buildObjects(zones, random);
+  const verticalDivider = buildWobblyDivider(random, "vertical");
+  const horizontalDivider = buildWobblyDivider(random, "horizontal");
+  const zones = buildZones(random, verticalDivider, horizontalDivider);
+  const objects = buildObjects(zones, verticalDivider, horizontalDivider, random);
 
   return {
     seed,
@@ -360,6 +486,8 @@ function buildGeneratedMap(seed: number): GeneratedMap {
     plazaRadius: PLAZA_RADIUS,
     nearRadius: NEAR_RADIUS,
     zones,
+    verticalDivider,
+    horizontalDivider,
     objects,
   };
 }
@@ -372,6 +500,8 @@ export const MAP_SEED = createMapSeed();
 export const GENERATED_MAP = buildGeneratedMap(MAP_SEED);
 export const MAP_OBJECTS: readonly MapObject[] = GENERATED_MAP.objects;
 export const MAP_ZONES: readonly MapZone[] = GENERATED_MAP.zones;
+export const MAP_VERTICAL_DIVIDER: readonly DividerPoint[] = GENERATED_MAP.verticalDivider;
+export const MAP_HORIZONTAL_DIVIDER: readonly DividerPoint[] = GENERATED_MAP.horizontalDivider;
 
 export function objectsByRegion(region: Region): MapObject[] {
   return MAP_OBJECTS.filter((object) => object.region === region);

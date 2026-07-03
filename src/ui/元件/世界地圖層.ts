@@ -11,9 +11,10 @@
 import { 應用程式狀態 } from "../應用程式狀態";
 import {
   FACILITY_GLYPH,
-  GENERATED_MAP,
+  MAP_HORIZONTAL_DIVIDER,
   MAP_BOUNDS,
   MAP_OBJECTS,
+  MAP_VERTICAL_DIVIDER,
   MAP_ZONES,
   REGION_DIRECTION,
   REGION_LABEL,
@@ -80,11 +81,19 @@ export function 建立世界地圖層(): HTMLElement {
   zoneLayer.className = "世界地圖層-區域底色";
   canvas.appendChild(zoneLayer);
 
+  const zoneSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  zoneSvg.setAttribute("class", "世界地圖層-區域圖");
+  zoneSvg.setAttribute("width", "100%");
+  zoneSvg.setAttribute("height", "100%");
+  zoneLayer.appendChild(zoneSvg);
+
   const objectLayer = document.createElement("div");
   objectLayer.className = "世界地圖層-物件圖層";
   canvas.appendChild(objectLayer);
 
-  const zoneNodes = MAP_ZONES.map((zone) => createZoneNode(zone, zoneLayer));
+  const regionPaths = createRegionPaths(zoneSvg);
+  const dividerPaths = createDividerPaths(zoneSvg);
+  const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
     const node = createObjectNode(object);
@@ -106,7 +115,14 @@ export function 建立世界地圖層(): HTMLElement {
   miniMapInner.className = "世界地圖層-小地圖內層";
   miniMap.appendChild(miniMapInner);
 
-  const miniZoneNodes = MAP_ZONES.map((zone) => createMiniZoneNode(zone, miniMapInner));
+  const miniSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  miniSvg.setAttribute("class", "世界地圖層-小地圖圖層");
+  miniSvg.setAttribute("width", "100%");
+  miniSvg.setAttribute("height", "100%");
+  miniMapInner.appendChild(miniSvg);
+
+  const miniRegionPaths = createMiniRegionPaths(miniSvg);
+  const miniDividerPaths = createMiniDividerPaths(miniSvg);
   const miniObjectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
     const node = document.createElement("div");
@@ -137,19 +153,8 @@ export function 建立世界地圖層(): HTMLElement {
     playerNode.style.left = `${playerScreen.x}px`;
     playerNode.style.top = `${playerScreen.y}px`;
 
-    for (const { zone, blob, label } of zoneNodes) {
-      const center = worldToScreen({ x: zone.centerX, y: zone.centerY }, playerPos, viewport);
-      blob.style.left = `${center.x}px`;
-      blob.style.top = `${center.y}px`;
-      blob.style.width = `${zone.radiusX * 2}px`;
-      blob.style.height = `${zone.radiusY * 2}px`;
-      blob.style.display = isVisible(center, viewport) ? "flex" : "none";
-
-      const labelPos = worldToScreen({ x: zone.labelX, y: zone.labelY }, playerPos, viewport);
-      label.style.left = `${labelPos.x}px`;
-      label.style.top = `${labelPos.y}px`;
-      label.style.display = isVisible(labelPos, viewport) ? "block" : "none";
-    }
+    renderRegionPaths(regionPaths, dividerPaths, viewport);
+    renderZoneLabels(zoneLabels, viewport);
 
     const near = nearbyObjects(playerPos);
     const nearIds = new Set(near.map((object) => object.id));
@@ -174,7 +179,7 @@ export function 建立世界地圖層(): HTMLElement {
       exclaim.style.display = "none";
     }
 
-    renderMiniMap(miniMapInner, miniZoneNodes, miniObjectNodes, miniPlayer);
+    renderMiniMap(miniMapInner, miniRegionPaths, miniDividerPaths, miniObjectNodes, miniPlayer);
   }
 
   function tick(now: number): void {
@@ -271,186 +276,190 @@ function createObjectNode(object: MapObject): HTMLElement {
   return node;
 }
 
-function createZoneNode(zone: MapZone, host: HTMLElement) {
-  const blob = document.createElement("div");
-  blob.className = `世界地圖層-區域 世界地圖層-區域-${zone.region}`;
-  if (zone.region === "plaza") {
-    blob.textContent = "中央廣場";
-  } else if (zone.region === "geometry") {
-    渲染幾何世界愛因斯坦磁磚地板(blob);
-  }
-  host.appendChild(blob);
-
+function createZoneLabel(zone: MapZone, host: HTMLElement) {
   const label = document.createElement("div");
   label.className = `世界地圖層-區域標籤 世界地圖層-區域標籤-${zone.region}`;
   label.textContent = REGION_LABEL[zone.region];
   host.appendChild(label);
 
-  return { zone, blob, label };
+  return { zone, label };
 }
 
-function createMiniZoneNode(zone: MapZone, host: HTMLElement) {
-  const blob = document.createElement("div");
-  blob.className = `世界地圖層-小地圖區域 世界地圖層-小地圖區域-${zone.region}`;
-  host.appendChild(blob);
-  return { zone, blob };
+function renderZoneLabels(
+  labels: Array<{ zone: MapZone; label: HTMLElement }>,
+  viewport: { w: number; h: number },
+): void {
+  for (const { zone, label } of labels) {
+    const labelPos = worldToScreen({ x: zone.labelX, y: zone.labelY }, playerPos, viewport);
+    label.style.left = `${labelPos.x}px`;
+    label.style.top = `${labelPos.y}px`;
+    label.style.display = isVisible(labelPos, viewport) ? "block" : "none";
+  }
 }
 
 function renderMiniMap(
   host: HTMLElement,
-  zones: Array<{ zone: MapZone; blob: HTMLElement }>,
+  regions: Record<World, SVGPathElement>,
+  dividers: { vertical: SVGPathElement; horizontal: SVGPathElement },
   objectNodes: Map<string, HTMLElement>,
   playerNode: HTMLElement,
 ): void {
   const width = host.clientWidth || 180;
   const height = host.clientHeight || 180;
-  const scaleX = width / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX);
-  const scaleY = height / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY);
+  const toMini = (point: { x: number; y: number }) => ({
+    x: ((point.x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width,
+    y: ((point.y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY)) * height,
+  });
 
-  for (const { zone, blob } of zones) {
-    const x = (zone.centerX - MAP_BOUNDS.minX) * scaleX;
-    const y = (zone.centerY - MAP_BOUNDS.minY) * scaleY;
-    blob.style.left = `${x}px`;
-    blob.style.top = `${y}px`;
-    blob.style.width = `${zone.radiusX * 2 * scaleX}px`;
-    blob.style.height = `${zone.radiusY * 2 * scaleY}px`;
-  }
+  const polygons = buildRegionPolygons();
+  (Object.keys(regions) as World[]).forEach((world) => {
+    regions[world].setAttribute("d", polygonToPath(polygons[world], toMini));
+  });
+  dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, toMini));
+  dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, toMini));
 
   for (const object of MAP_OBJECTS) {
     const node = objectNodes.get(object.id);
     if (!node) continue;
-    node.style.left = `${(object.x - MAP_BOUNDS.minX) * scaleX}px`;
-    node.style.top = `${(object.y - MAP_BOUNDS.minY) * scaleY}px`;
+    const pos = toMini(object);
+    node.style.left = `${pos.x}px`;
+    node.style.top = `${pos.y}px`;
   }
 
-  playerNode.style.left = `${(playerPos.x - MAP_BOUNDS.minX) * scaleX}px`;
-  playerNode.style.top = `${(playerPos.y - MAP_BOUNDS.minY) * scaleY}px`;
+  const player = toMini(playerPos);
+  playerNode.style.left = `${player.x}px`;
+  playerNode.style.top = `${player.y}px`;
 }
 
-function 渲染幾何世界愛因斯坦磁磚地板(container: HTMLElement) {
-  container.style.position = "relative";
-  container.style.overflow = "hidden";
-  container.style.background = "#05060b";
+function createRegionPaths(host: SVGSVGElement): Record<World, SVGPathElement> {
+  const regions = {} as Record<World, SVGPathElement>;
+  (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("class", `世界地圖層-區域片 世界地圖層-區域片-${world}`);
+    host.appendChild(path);
+    regions[world] = path;
+  });
+  return regions;
+}
 
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", "0 0 400 400");
-  svg.setAttribute("width", "100%");
-  svg.setAttribute("height", "100%");
-  svg.style.position = "absolute";
-  svg.style.top = "0";
-  svg.style.left = "0";
-  svg.style.pointerEvents = "none";
+function createDividerPaths(host: SVGSVGElement) {
+  const vertical = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  vertical.setAttribute("class", "世界地圖層-分界線");
+  host.appendChild(vertical);
 
-  const SVG_NS = "http://www.w3.org/2000/svg";
-  const hatPathD = "M 0 0 L 15 -26 L 45 -26 L 60 0 L 45 26 L 45 78 L 15 78 L 0 52 L -30 52 L -45 26 L -30 0 L -30 -52 L 0 -52 Z";
+  const horizontal = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  horizontal.setAttribute("class", "世界地圖層-分界線");
+  host.appendChild(horizontal);
 
-  const dx = 68;
-  const dy = 58;
+  return { vertical, horizontal };
+}
 
-  let seed = 99;
-  function pseudoRandom() {
-    seed = (seed * 9301 + 49297) % 233280;
-    return seed / 233280;
-  }
+function createMiniRegionPaths(host: SVGSVGElement): Record<World, SVGPathElement> {
+  const regions = {} as Record<World, SVGPathElement>;
+  (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("class", `世界地圖層-小地圖片 世界地圖層-小地圖片-${world}`);
+    host.appendChild(path);
+    regions[world] = path;
+  });
+  return regions;
+}
 
-  for (let r = -1; r <= 8; r++) {
-    for (let c = -1; c <= 8; c++) {
-      const px = c * dx + (r % 2 === 1 ? dx / 2 : 0);
-      const py = r * dy;
+function createMiniDividerPaths(host: SVGSVGElement) {
+  const vertical = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  vertical.setAttribute("class", "世界地圖層-小地圖分界線");
+  host.appendChild(vertical);
 
-      const isRightCentral = px >= 195;
+  const horizontal = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  horizontal.setAttribute("class", "世界地圖層-小地圖分界線");
+  host.appendChild(horizontal);
 
-      let fill = "#ffffff";
-      if (!isRightCentral) {
-        const rand = pseudoRandom();
-        if (rand < 0.4) fill = "#d2d6e2";
-        else if (rand < 0.75) fill = "#b3b9ca";
-        else if (rand < 0.9) fill = "#ffffff";
-        else fill = "#e4e8f0";
-      } else {
-        const rand = pseudoRandom();
-        if (rand < 0.4) fill = "#4d8dff";
-        else if (rand < 0.75) fill = "#2e5cb8";
-        else if (rand < 0.9) fill = "#709cff";
-        else fill = "#1d3d80";
-      }
+  return { vertical, horizontal };
+}
 
-      const scaleX = pseudoRandom() > 0.5 ? 1 : -1;
-      const rot = Math.floor(pseudoRandom() * 6) * 60 + 30;
+function renderRegionPaths(
+  regions: Record<World, SVGPathElement>,
+  dividers: { vertical: SVGPathElement; horizontal: SVGPathElement },
+  viewport: { w: number; h: number },
+): void {
+  const toScreen = (point: { x: number; y: number }) => worldToScreen(point, playerPos, viewport);
+  const polygons = buildRegionPolygons();
 
-      const tileG = document.createElementNS(SVG_NS, "g");
-      tileG.setAttribute("transform", `translate(${px}, ${py}) scale(${scaleX} 1) rotate(${rot})`);
+  (Object.keys(regions) as World[]).forEach((world) => {
+    regions[world].setAttribute("d", polygonToPath(polygons[world], toScreen));
+  });
 
-      const path = document.createElementNS(SVG_NS, "path");
-      path.setAttribute("d", hatPathD);
-      path.setAttribute("fill", fill);
-      path.setAttribute("stroke", isRightCentral ? "#101e40" : "#51596c");
-      path.setAttribute("stroke-width", "1.5");
-      tileG.appendChild(path);
+  dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, toScreen));
+  dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, toScreen));
+}
 
-      const linesG = document.createElementNS(SVG_NS, "g");
-      linesG.setAttribute("opacity", "0.28");
-      linesG.setAttribute("stroke", isRightCentral ? "#ffffff" : "#3b4356");
-      linesG.setAttribute("stroke-width", "0.75");
-      
-      const lines = [
-        { x2: 15, y2: -26 },
-        { x2: 45, y2: 26 },
-        { x2: 0, y2: 52 },
-        { x2: -30, y2: 0 },
-        { x2: 15, y2: 78 },
-        { x2: -30, y2: 52 }
-      ];
-      lines.forEach(l => {
-        const line = document.createElementNS(SVG_NS, "line");
-        line.setAttribute("x1", "15");
-        line.setAttribute("y1", "26");
-        line.setAttribute("x2", String(l.x2));
-        line.setAttribute("y2", String(l.y2));
-        linesG.appendChild(line);
-      });
-      tileG.appendChild(linesG);
+function buildRegionPolygons(): Record<World, Array<{ x: number; y: number }>> {
+  const topLeft = { x: MAP_BOUNDS.minX, y: MAP_BOUNDS.minY };
+  const topRight = { x: MAP_BOUNDS.maxX, y: MAP_BOUNDS.minY };
+  const bottomLeft = { x: MAP_BOUNDS.minX, y: MAP_BOUNDS.maxY };
+  const bottomRight = { x: MAP_BOUNDS.maxX, y: MAP_BOUNDS.maxY };
+  const verticalMid = Math.floor(MAP_VERTICAL_DIVIDER.length / 2);
+  const horizontalMid = Math.floor(MAP_HORIZONTAL_DIVIDER.length / 2);
+  const verticalTopHalf = MAP_VERTICAL_DIVIDER.slice(0, verticalMid + 1);
+  const verticalBottomHalf = MAP_VERTICAL_DIVIDER.slice(verticalMid);
+  const horizontalLeftHalf = MAP_HORIZONTAL_DIVIDER.slice(0, horizontalMid + 1);
+  const horizontalRightHalf = MAP_HORIZONTAL_DIVIDER.slice(horizontalMid);
+  const verticalTop = MAP_VERTICAL_DIVIDER[0];
+  const verticalBottom = MAP_VERTICAL_DIVIDER[MAP_VERTICAL_DIVIDER.length - 1];
+  const horizontalLeft = MAP_HORIZONTAL_DIVIDER[0];
+  const horizontalRight = MAP_HORIZONTAL_DIVIDER[MAP_HORIZONTAL_DIVIDER.length - 1];
 
-      const clipId = `clip-hat-${r}-${c}`;
-      const clipPath = document.createElementNS(SVG_NS, "clipPath");
-      clipPath.setAttribute("id", clipId);
-      
-      const clipD = document.createElementNS(SVG_NS, "path");
-      clipD.setAttribute("d", hatPathD);
-      clipPath.appendChild(clipD);
-      tileG.appendChild(clipPath);
+  return {
+    geometry: [
+      verticalTop,
+      topRight,
+      horizontalRight,
+      ...horizontalRightHalf.slice(0, -1).reverse(),
+      ...verticalTopHalf.slice(0, -1).reverse(),
+    ],
+    fractal: [
+      topLeft,
+      verticalTop,
+      ...verticalTopHalf.slice(1),
+      ...horizontalLeftHalf.slice(0, -1).reverse(),
+      horizontalLeft,
+    ],
+    organic: [
+      horizontalLeft,
+      bottomLeft,
+      verticalBottom,
+      ...verticalBottomHalf.slice(0, -1).reverse(),
+      ...horizontalLeftHalf.slice(0, -1).reverse(),
+    ],
+    mechanical: [
+      ...horizontalRightHalf,
+      bottomRight,
+      verticalBottom,
+      ...verticalBottomHalf.slice(0, -1).reverse(),
+    ],
+  };
+}
 
-      const patternG = document.createElementNS(SVG_NS, "g");
-      patternG.setAttribute("clip-path", `url(#${clipId})`);
+function polygonToPath(
+  polygon: Array<{ x: number; y: number }>,
+  mapPoint: (point: { x: number; y: number }) => { x: number; y: number },
+): string {
+  return polygon
+    .map((point, index) => {
+      const mapped = mapPoint(point);
+      return `${index === 0 ? "M" : "L"} ${mapped.x} ${mapped.y}`;
+    })
+    .join(" ") + " Z";
+}
 
-      for (let i = 0; i < 3; i++) {
-        const line = document.createElementNS(SVG_NS, "line");
-        const x1 = pseudoRandom() * 120 - 60;
-        const y1 = pseudoRandom() * 150 - 75;
-        const x2 = pseudoRandom() * 120 - 60;
-        const y2 = pseudoRandom() * 150 - 75;
-        
-        line.setAttribute("x1", String(x1));
-        line.setAttribute("y1", String(y1));
-        line.setAttribute("x2", String(x2));
-        line.setAttribute("y2", String(y2));
-        
-        if (isRightCentral) {
-          line.setAttribute("stroke", pseudoRandom() > 0.45 ? "#ffffff" : "#ffd24d");
-          line.setAttribute("stroke-width", "2.0");
-          line.setAttribute("opacity", "0.9");
-        } else {
-          line.setAttribute("stroke", "#4b5775");
-          line.setAttribute("stroke-width", "1.2");
-          line.setAttribute("opacity", "0.45");
-        }
-        patternG.appendChild(line);
-      }
-      
-      tileG.appendChild(patternG);
-      svg.appendChild(tileG);
-    }
-  }
-
-  container.appendChild(svg);
+function polylineToPath(
+  line: readonly { x: number; y: number }[],
+  mapPoint: (point: { x: number; y: number }) => { x: number; y: number },
+): string {
+  return line
+    .map((point, index) => {
+      const mapped = mapPoint(point);
+      return `${index === 0 ? "M" : "L"} ${mapped.x} ${mapped.y}`;
+    })
+    .join(" ");
 }
