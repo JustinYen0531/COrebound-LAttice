@@ -18,6 +18,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         totem: resolve(__dirname, "totem-preview.html"),
+        weaving: resolve(__dirname, "totem-weaving.html"),
       },
     },
   },

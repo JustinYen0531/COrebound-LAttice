@@ -113,6 +113,10 @@ export function 渲染主畫面(容器: HTMLElement) {
       <a href="/totem-preview.html" target="_blank" style="color: #ff8a3b; font-weight: bold; text-decoration: underline; cursor: pointer;">
         🔗 點此開啟「圖騰全貌預覽 HTML 頁面 (totem-preview.html)」
       </a>
+      <span style="margin: 0 8px; color: #8f8f9c;">|</span>
+      <a href="/totem-weaving.html" target="_blank" style="color: #ff8a3b; font-weight: bold; text-decoration: underline; cursor: pointer;">
+        🧬 點此開啟「Living Totem 疊加編織模擬器 (totem-weaving.html)」
+      </a>
     </p>
   `;
   root.appendChild(進度摘要);
