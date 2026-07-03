@@ -22,6 +22,8 @@ interface 額外狀態 {
   地圖選中分類: string;
   圖鑑選中OOC: string;
   圖鑑選中IC: string;
+  圖鑑選中條目ID_OOC: string | null;
+  圖鑑選中條目ID_IC: string | null;
 }
 
 export const 背包分類清單 = ["材料", "消耗品", "任務物", "追蹤中"] as const;
@@ -50,6 +52,8 @@ class 應用程式狀態機 {
     地圖選中分類: 地圖分類清單[0],
     圖鑑選中OOC: 圖鑑資料查詢類分頁[0],
     圖鑑選中IC: 圖鑑資料查詢類分頁[0],
+    圖鑑選中條目ID_OOC: null,
+    圖鑑選中條目ID_IC: null,
   };
 
   private 監聽者: Array<() => void> = [];
@@ -181,8 +185,19 @@ class 應用程式狀態機 {
   }
 
   設定圖鑑分頁(情境: "OOC" | "IC", 名稱: string) {
-    if (情境 === "OOC") this.額外.圖鑑選中OOC = 名稱;
-    else this.額外.圖鑑選中IC = 名稱;
+    if (情境 === "OOC") {
+      this.額外.圖鑑選中OOC = 名稱;
+      this.額外.圖鑑選中條目ID_OOC = null;
+    } else {
+      this.額外.圖鑑選中IC = 名稱;
+      this.額外.圖鑑選中條目ID_IC = null;
+    }
+    this.通知();
+  }
+
+  設定圖鑑選中條目(情境: "OOC" | "IC", id: string | null) {
+    if (情境 === "OOC") this.額外.圖鑑選中條目ID_OOC = id;
+    else this.額外.圖鑑選中條目ID_IC = id;
     this.通知();
   }
 

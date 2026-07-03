@@ -1,0 +1,685 @@
+/* ============================================================
+ * 戰鬥 HUD 樣式
+ * 對應「玩家介面_戰鬷HUD與操作骨架.md」
+ * 設計基準:1920×1080,其他解析度由 viewport 等比縮放。
+ * ============================================================ */
+
+:host,
+.hud-root {
+  /* 色彩變數 */
+  --c-hp-full: #22c55e;
+  --c-hp-warn: #f59e0b;
+  --c-hp-danger: #ef4444;
+  --c-shield: #9ca3af;
+  --c-shield-stroke: #d1d5db;
+  --c-energy: #eab308;
+  --c-active: #60a5fa;
+  --c-weapon: #a78bfa;
+  --c-periodic: #f472b6;
+  --c-auto: #38bdf8;
+  --c-bg-panel: rgba(8, 10, 18, 0.78);
+  --c-border: rgba(255, 255, 255, 0.16);
+
+  position: fixed;
+  inset: 0;
+  pointer-events: none; /* 容器不擋戰場,只有子元件可互動 */
+  font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+  color: #fff;
+  user-select: none;
+}
+
+.hud-root * {
+  box-sizing: border-box;
+}
+
+/* ============================================================
+ * 核心三件組(底部中央)— 規格 §1.2
+ * ============================================================ */
+.hud-core-host {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.core-trio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+}
+
+/* 隊長頭像 */
+.core-trio .avatar {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.core-trio .avatar.ready {
+  filter: drop-shadow(0 0 8px var(--c-active));
+  animation: readyPulse 1.8s ease-in-out infinite;
+}
+.core-trio .avatar.dim {
+  filter: brightness(0.5) saturate(0.6);
+}
+.core-trio .avatar.latency {
+  filter: brightness(0.7);
+}
+.core-trio .avatar.lethal::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 3px solid var(--c-hp-danger);
+  animation: lethalPulse 0.8s ease-in-out infinite;
+}
+.core-trio .avatar-face {
+  position: absolute;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+.core-trio .cooldown-ring-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.core-trio .cooldown-ring {
+  transition: stroke-dasharray 0.12s linear;
+}
+.core-trio .energy-ready-dot {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition: all 0.2s;
+}
+.core-trio .energy-ready-dot.on {
+  background: #fff;
+  box-shadow: 0 0 8px var(--c-energy);
+}
+
+/* 生命/能量條 */
+.core-trio .health-bar,
+.core-trio .energy-bar {
+  overflow: visible;
+}
+.core-trio .bar-fill {
+  transition: width 0.18s ease, fill 0.25s ease;
+}
+.core-trio .bar-text {
+  font-weight: 600;
+}
+.core-trio .health-bar.pulse-danger {
+  animation: dangerPulse 1s ease-in-out infinite;
+}
+.core-trio .energy-bar.dim {
+  filter: brightness(0.45);
+}
+
+@keyframes readyPulse {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--c-active)); }
+  50% { filter: drop-shadow(0 0 14px var(--c-active)); }
+}
+@keyframes lethalPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+@keyframes dangerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* ============================================================
+ * 同心圓(置中於頭像正上方)— 規格 §2
+ * ============================================================ */
+.hud-rings-host {
+  position: absolute;
+  /* rings viewBox 是 ~392px,圓心在中心;定位在頭像中心正上方 */
+  bottom: 40px; /* 與核心同高 */
+  left: 50%;
+  transform: translate(-50%, 65px); /* 把圓心對齊頭像中心(頭像 ~55px 上) */
+  width: 392px;
+  height: 392px;
+  margin-bottom: 0;
+  pointer-events: auto;
+  z-index: 9;
+}
+.formation-rings {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.formation-rings .layer {
+  transition: opacity 0.25s ease;
+}
+.formation-rings .spin-group {
+  transform-origin: center;
+  animation-name: spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: 20s; /* 由 JS 個別覆蓋 */
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.formation-rings .slot {
+  transition: opacity 0.15s;
+}
+.formation-rings .slot:hover .slot-fill {
+  opacity: 1 !important;
+  filter: brightness(1.3);
+}
+.formation-rings .slot.empty .slot-fill {
+  opacity: 0.4;
+}
+
+/* ============================================================
+ * 技能圖示列 — 規格 §4.3、§4.4
+ * ============================================================ */
+.hud-strips-host {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  /* 整體往上推到能量條上下 */
+  pointer-events: auto;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.skill-strips {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  /* 把它對齊到能量條上方/下方:用絕對偏移 */
+  position: relative;
+  /* 武器條在上、週期條在下,中間留給核心(由 main 佈局承載) */
+}
+.weapon-strip,
+.periodic-strip {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.weapon-icon,
+.periodic-icon {
+  position: relative;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+.weapon-icon {
+  /* 預設在能量條上方:由 main 佈局 */
+}
+.periodic-icon {
+}
+.weapon-icon .star {
+  position: absolute;
+  left: 1px;
+  bottom: 0;
+  font-size: 9px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+.weapon-icon .lock {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  font-size: 10px;
+}
+.weapon-icon.off,
+.periodic-icon.off {
+  filter: grayscale(1) brightness(0.5);
+}
+.weapon-icon.firing .cooldown {
+  animation: firingFlow 1.5s linear infinite;
+}
+@keyframes firingFlow {
+  to { stroke-dashoffset: -20; }
+}
+.periodic-icon.ready {
+  animation: readyPulse 1.2s ease-in-out infinite;
+}
+
+/* ============================================================
+ * 左右滑抽屜 — 規格 §3、§5
+ * ============================================================ */
+.hud-drawer-slot {
+  position: absolute;
+  bottom: 40px;
+  pointer-events: auto;
+  z-index: 11;
+}
+.hud-drawer-slot-left {
+  right: 50%;
+  margin-right: 320px; /* 從核心左側向外 */
+}
+.hud-drawer-slot-right {
+  left: 50%;
+  margin-left: 320px;
+}
+
+.drawer {
+  background: var(--c-bg-panel);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  width: 260px;
+  opacity: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.weapon-drawer {
+  transform: translateX(-100%);
+  margin-right: 12px;
+}
+.item-drawer {
+  transform: translateX(100%);
+  margin-left: 12px;
+}
+.drawer-title {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+.drawer-hint {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* 武器列表 */
+.weapon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.weapon-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.weapon-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.weapon-item.off {
+  opacity: 0.45;
+}
+.weapon-item.locked {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.wi-glyph {
+  font-size: 22px;
+}
+.wi-meta {
+  flex: 1;
+}
+.wi-name {
+  font-size: 13px;
+}
+.wi-star {
+  font-size: 11px;
+  color: var(--c-energy);
+}
+.wi-cd {
+  font-size: 10px;
+  opacity: 0.6;
+}
+.wi-state {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* 物品 + 隊員 */
+.id-row {
+  display: flex;
+  gap: 10px;
+}
+.potion-list {
+  flex: 0 0 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.roster-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.potion-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.1s;
+}
+.potion-item:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+.pi-glyph {
+  font-size: 22px;
+}
+.pi-name {
+  font-size: 10px;
+  text-align: center;
+  line-height: 1.2;
+}
+.big-tag {
+  color: var(--c-hp-danger);
+  font-weight: 700;
+}
+.pi-count {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.roster-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition: all 0.12s;
+}
+.roster-item.droppable {
+  border-color: var(--c-hp-full);
+  background: rgba(34, 197, 94, 0.12);
+}
+.roster-item.undroppable {
+  opacity: 0.3;
+}
+.roster-item.drop-hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.03);
+}
+.roster-item.dead {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+.roster-item.lethal {
+  border-color: var(--c-hp-danger);
+}
+.roster-item.shielded .ri-face {
+  box-shadow: 0 0 0 2px var(--c-shield-stroke);
+}
+.ri-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ri-face {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ri-role {
+  font-size: 10px;
+  font-weight: 600;
+}
+.ri-bar {
+  height: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ri-fill {
+  height: 100%;
+  transition: width 0.2s;
+}
+.ri-foot {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  opacity: 0.7;
+}
+.ail {
+  background: rgba(239, 68, 68, 0.3);
+  padding: 0 3px;
+  border-radius: 2px;
+  margin-right: 2px;
+}
+.roster-more {
+  font-size: 10px;
+  opacity: 0.5;
+  text-align: center;
+  padding: 4px;
+}
+.empty-hint {
+  font-size: 11px;
+  opacity: 0.4;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* 大藥水確認橫幅 — 規格 §6.5 */
+.big-confirm-banner {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background: rgba(239, 68, 68, 0.95);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+  animation: bannerIn 0.2s ease;
+}
+@keyframes bannerIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.big-confirm-banner .confirm-btn,
+.big-confirm-banner .cancel-btn {
+  border: 0;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.big-confirm-banner .confirm-btn {
+  background: #fff;
+  color: var(--c-hp-danger);
+  font-weight: 700;
+}
+.big-confirm-banner .cancel-btn {
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+}
+.big-confirm-banner .countdown {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+/* 拖曳鬼影 */
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  font-size: 30px;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+}
+
+/* ============================================================
+ * 滑動提示 + 戰鬥抑制提示 — 規格 §3.2、§6.3
+ * ============================================================ */
+.hud-hint {
+  position: absolute;
+  bottom: 90px;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  letter-spacing: 1px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.hud-hint-l {
+  left: calc(50% - 200px);
+  transform: translateX(-100%);
+}
+.hud-hint-r {
+  right: calc(50% - 200px);
+  transform: translateX(100%);
+}
+.hud-suppress-toast {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: var(--c-hp-warn);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.hud-suppress-toast.show {
+  opacity: 1;
+}
+
+/* ============================================================
+ * 測試殼:控制面板與戰場背景
+ * (僅 mock 階段,正式遊戲會移除)
+ * ============================================================ */
+.test-shell {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #1a1f2e 0%, #0a0d14 100%);
+  overflow: hidden;
+}
+.test-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(96, 165, 250, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.6;
+}
+.test-panel {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  background: rgba(8, 10, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #fff;
+  z-index: 1000;
+  max-width: 260px;
+}
+.test-panel h3 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--c-active);
+}
+.test-panel button {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
+  padding: 5px 8px;
+  background: rgba(96, 165, 250, 0.2);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+}
+.test-panel button:hover {
+  background: rgba(96, 165, 250, 0.35);
+}
+.test-panel .hint {
+  margin-top: 8px;
+  opacity: 0.5;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.test-panel kbd {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+.test-log {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  background: rgba(8, 10, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #9ca3af;
+  z-index: 1000;
+  max-width: 280px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: ui-monospace, monospace;
+}
+.test-log .entry {
+  margin: 2px 0;
+}
+.test-log .entry .t {
+  color: #6b7280;
+}
