@@ -24,7 +24,7 @@ import {
 } from "../../data/地圖物件資料";
 
 const PLAYER_GLYPH = "🌀";
-const MOVE_SPEED = 240;
+const MOVE_SPEED = 24;
 const VIEW_PADDING = 140;
 
 let playerPos = { x: 0, y: 0 };
@@ -98,6 +98,27 @@ export function 建立世界地圖層(): HTMLElement {
   playerNode.title = "小隊(玩家)";
   canvas.appendChild(playerNode);
 
+  const miniMap = document.createElement("div");
+  miniMap.className = "世界地圖層-小地圖";
+  canvas.appendChild(miniMap);
+
+  const miniMapInner = document.createElement("div");
+  miniMapInner.className = "世界地圖層-小地圖內層";
+  miniMap.appendChild(miniMapInner);
+
+  const miniZoneNodes = MAP_ZONES.map((zone) => createMiniZoneNode(zone, miniMapInner));
+  const miniObjectNodes = new Map<string, HTMLElement>();
+  for (const object of MAP_OBJECTS) {
+    const node = document.createElement("div");
+    node.className = `世界地圖層-小地圖點 世界地圖層-小地圖點-${object.kind}`;
+    miniMapInner.appendChild(node);
+    miniObjectNodes.set(object.id, node);
+  }
+
+  const miniPlayer = document.createElement("div");
+  miniPlayer.className = "世界地圖層-小地圖玩家";
+  miniMapInner.appendChild(miniPlayer);
+
   const exclaim = document.createElement("button");
   exclaim.className = "世界地圖層-驚嘆號";
   exclaim.innerHTML = "❗";
@@ -152,6 +173,8 @@ export function 建立世界地圖層(): HTMLElement {
     } else {
       exclaim.style.display = "none";
     }
+
+    renderMiniMap(miniMapInner, miniZoneNodes, miniObjectNodes, miniPlayer);
   }
 
   function tick(now: number): void {
@@ -262,4 +285,42 @@ function createZoneNode(zone: MapZone, host: HTMLElement) {
   host.appendChild(label);
 
   return { zone, blob, label };
+}
+
+function createMiniZoneNode(zone: MapZone, host: HTMLElement) {
+  const blob = document.createElement("div");
+  blob.className = `世界地圖層-小地圖區域 世界地圖層-小地圖區域-${zone.region}`;
+  host.appendChild(blob);
+  return { zone, blob };
+}
+
+function renderMiniMap(
+  host: HTMLElement,
+  zones: Array<{ zone: MapZone; blob: HTMLElement }>,
+  objectNodes: Map<string, HTMLElement>,
+  playerNode: HTMLElement,
+): void {
+  const width = host.clientWidth || 180;
+  const height = host.clientHeight || 180;
+  const scaleX = width / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX);
+  const scaleY = height / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY);
+
+  for (const { zone, blob } of zones) {
+    const x = (zone.centerX - MAP_BOUNDS.minX) * scaleX;
+    const y = (zone.centerY - MAP_BOUNDS.minY) * scaleY;
+    blob.style.left = `${x}px`;
+    blob.style.top = `${y}px`;
+    blob.style.width = `${zone.radiusX * 2 * scaleX}px`;
+    blob.style.height = `${zone.radiusY * 2 * scaleY}px`;
+  }
+
+  for (const object of MAP_OBJECTS) {
+    const node = objectNodes.get(object.id);
+    if (!node) continue;
+    node.style.left = `${(object.x - MAP_BOUNDS.minX) * scaleX}px`;
+    node.style.top = `${(object.y - MAP_BOUNDS.minY) * scaleY}px`;
+  }
+
+  playerNode.style.left = `${(playerPos.x - MAP_BOUNDS.minX) * scaleX}px`;
+  playerNode.style.top = `${(playerPos.y - MAP_BOUNDS.minY) * scaleY}px`;
 }

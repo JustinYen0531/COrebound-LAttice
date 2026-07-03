@@ -819,19 +819,19 @@ button.禁用:hover {
   color: rgba(216, 180, 106, 0.7);
 }
 .世界地圖層-區域-geometry {
-  background: radial-gradient(circle, rgba(111, 168, 255, 0.16), rgba(111, 168, 255, 0.04) 55%, transparent 82%);
+  background: radial-gradient(circle, rgba(111, 168, 255, 0.18), rgba(111, 168, 255, 0.08) 58%, transparent 94%);
   border: 1px solid rgba(111, 168, 255, 0.15);
 }
 .世界地圖層-區域-organic {
-  background: radial-gradient(circle, rgba(111, 220, 140, 0.14), rgba(111, 220, 140, 0.04) 55%, transparent 82%);
+  background: radial-gradient(circle, rgba(111, 220, 140, 0.17), rgba(111, 220, 140, 0.08) 58%, transparent 94%);
   border: 1px solid rgba(111, 220, 140, 0.14);
 }
 .世界地圖層-區域-fractal {
-  background: radial-gradient(circle, rgba(200, 155, 255, 0.16), rgba(200, 155, 255, 0.04) 55%, transparent 82%);
+  background: radial-gradient(circle, rgba(200, 155, 255, 0.18), rgba(200, 155, 255, 0.08) 58%, transparent 94%);
   border: 1px solid rgba(200, 155, 255, 0.14);
 }
 .世界地圖層-區域-mechanical {
-  background: radial-gradient(circle, rgba(255, 197, 111, 0.14), rgba(255, 197, 111, 0.04) 55%, transparent 82%);
+  background: radial-gradient(circle, rgba(255, 197, 111, 0.17), rgba(255, 197, 111, 0.08) 58%, transparent 94%);
   border: 1px solid rgba(255, 197, 111, 0.12);
 }
 .世界地圖層-區域標籤 {
@@ -924,6 +924,67 @@ button.禁用:hover {
 @keyframes 驚嘆號彈跳 {
   0%, 100% { transform: translate(-50%, -50%); }
   50% { transform: translate(-50%, -70%); }
+}
+.世界地圖層-小地圖 {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 196px;
+  height: 196px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(8, 12, 20, 0.72);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(8px);
+  z-index: 25;
+}
+.世界地圖層-小地圖內層 {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(111, 140, 255, 0.1), transparent 60%),
+    rgba(7, 10, 17, 0.9);
+}
+.世界地圖層-小地圖區域 {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  opacity: 0.82;
+}
+.世界地圖層-小地圖區域-plaza {
+  border: 1px dashed rgba(216, 180, 106, 0.65);
+  background: rgba(216, 180, 106, 0.12);
+}
+.世界地圖層-小地圖區域-geometry { background: rgba(111, 168, 255, 0.24); }
+.世界地圖層-小地圖區域-organic { background: rgba(111, 220, 140, 0.22); }
+.世界地圖層-小地圖區域-fractal { background: rgba(200, 155, 255, 0.24); }
+.世界地圖層-小地圖區域-mechanical { background: rgba(255, 197, 111, 0.22); }
+.世界地圖層-小地圖點,
+.世界地圖層-小地圖玩家 {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+.世界地圖層-小地圖點 {
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.45);
+}
+.世界地圖層-小地圖點-熔爐 { background: #ff8a3d; }
+.世界地圖層-小地圖點-合成 { background: #85b7ff; }
+.世界地圖層-小地圖點-雕像 { background: #d9dde5; }
+.世界地圖層-小地圖點-商店 { background: #86e39d; }
+.世界地圖層-小地圖點-召喚 { background: #f0cf7b; }
+.世界地圖層-小地圖玩家 {
+  width: 8px;
+  height: 8px;
+  background: #6f8cff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 0 10px rgba(111, 140, 255, 0.8);
+  z-index: 3;
 }
 
 /* ============================================================

@@ -88,18 +88,18 @@ export interface GeneratedMap {
 // ============================================================
 
 export const MAP_BOUNDS = {
-  minX: -720,
-  maxX: 720,
-  minY: -720,
-  maxY: 720,
+  minX: -4200,
+  maxX: 4200,
+  minY: -4200,
+  maxY: 4200,
 };
 
-export const PLAZA_RADIUS = 90;
-export const NEAR_RADIUS = 52;
+export const PLAZA_RADIUS = 520;
+export const NEAR_RADIUS = 70;
 
 const WORLD_HALF_SIZE = MAP_BOUNDS.maxX;
-const WORLD_ANCHOR_DISTANCE = 460;
-const OBJECT_MIN_DISTANCE = 48;
+const WORLD_ANCHOR_DISTANCE = 1500;
+const OBJECT_MIN_DISTANCE = 120;
 
 const FURNACE_DISTRIBUTION: { family: Family; world: World }[] = [
   { family: "shield", world: "geometry" },
@@ -179,8 +179,10 @@ function buildZones(random: RandomSource): MapZone[] {
   for (const world of worlds) {
     const dir = REGION_DIRECTION[world];
     const tangent = { dx: -dir.dy, dy: dir.dx };
-    const axialJitter = random.range(-70, 70);
-    const lateralJitter = random.range(-180, 180);
+    const axialJitter = random.range(-180, 180);
+    const lateralJitter = random.range(-420, 420);
+    const radiusX = random.range(1550, 2050);
+    const radiusY = random.range(1450, 1950);
     const centerX = dir.dx * (WORLD_ANCHOR_DISTANCE + axialJitter) + tangent.dx * lateralJitter;
     const centerY = dir.dy * (WORLD_ANCHOR_DISTANCE + axialJitter) + tangent.dy * lateralJitter;
 
@@ -188,10 +190,10 @@ function buildZones(random: RandomSource): MapZone[] {
       region: world,
       centerX,
       centerY,
-      radiusX: random.range(190, 320),
-      radiusY: random.range(190, 320),
-      labelX: centerX + tangent.dx * random.range(-80, 80),
-      labelY: centerY + tangent.dy * random.range(-80, 80),
+      radiusX,
+      radiusY,
+      labelX: centerX + tangent.dx * random.range(-280, 280),
+      labelY: centerY + tangent.dy * random.range(-280, 280),
     });
   }
 
@@ -249,8 +251,8 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
     id: "summon_cola",
     kind: "召喚",
     region: "plaza",
-    x: random.range(-24, 24),
-    y: random.range(-24, 24),
+    x: random.range(-80, 80),
+    y: random.range(-80, 80),
     label: "COLA 裝配儀",
     detail: "集滿四枚世界晶核印記後，插入印記召喚最終 Boss COLA。",
     summonType: "cola",
@@ -263,7 +265,7 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
     const worldMembers = MEMBERS.filter((member) => member.world === world);
     const workbenchCount = world === "geometry" || world === "organic" ? 2 : 3;
 
-    const altarPoint = placePoint(usedPoints, zone, random, [0.08, 0.22], 72);
+    const altarPoint = placePoint(usedPoints, zone, random, [0.08, 0.2], 180);
     objects.push({
       id: `altar_${world}`,
       kind: "召喚",
@@ -275,7 +277,7 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
       summonType: "guardian",
     });
 
-    const shopPoint = placePoint(usedPoints, zone, random, [0.28, 0.48], 72);
+    const shopPoint = placePoint(usedPoints, zone, random, [0.22, 0.42], 180);
     objects.push({
       id: `shop_${world}`,
       kind: "商店",
@@ -287,7 +289,7 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
     });
 
     for (let i = 0; i < workbenchCount; i++) {
-      const point = placePoint(usedPoints, zone, random, [0.35, 0.72], 64);
+      const point = placePoint(usedPoints, zone, random, [0.32, 0.74], 165);
       objects.push({
         id: `workbench_${world}_${i + 1}`,
         kind: "合成",
@@ -300,7 +302,7 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
     }
 
     for (const member of worldMembers) {
-      const point = placePoint(usedPoints, zone, random, [0.48, 0.95], 56);
+      const point = placePoint(usedPoints, zone, random, [0.46, 0.96], 150);
       objects.push({
         id: `statue_${member.id}`,
         kind: "雕像",
@@ -327,8 +329,8 @@ function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
       usedPoints,
       zone,
       random,
-      furnacesPerWorld[furnace.world] === 0 ? [0.42, 0.78] : [0.56, 0.98],
-      68,
+      furnacesPerWorld[furnace.world] === 0 ? [0.38, 0.78] : [0.58, 0.98],
+      180,
     );
     furnacesPerWorld[furnace.world] += 1;
 
