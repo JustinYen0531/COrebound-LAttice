@@ -25,6 +25,8 @@ interface 額外狀態 {
   圖鑑選中條目ID_OOC: string | null;
   圖鑑選中條目ID_IC: string | null;
   圖鑑選中星級: number;
+  圖鑑列表展開_OOC: boolean;
+  圖鑑列表展開_IC: boolean;
 }
 
 export const 背包分類清單 = ["材料", "消耗品", "任務物", "追蹤中"] as const;
@@ -56,6 +58,8 @@ class 應用程式狀態機 {
     圖鑑選中條目ID_OOC: null,
     圖鑑選中條目ID_IC: null,
     圖鑑選中星級: 3,
+    圖鑑列表展開_OOC: true,
+    圖鑑列表展開_IC: true,
   };
 
   private 監聽者: Array<() => void> = [];
@@ -190,16 +194,29 @@ class 應用程式狀態機 {
     if (情境 === "OOC") {
       this.額外.圖鑑選中OOC = 名稱;
       this.額外.圖鑑選中條目ID_OOC = null;
+      this.額外.圖鑑列表展開_OOC = true;
     } else {
       this.額外.圖鑑選中IC = 名稱;
       this.額外.圖鑑選中條目ID_IC = null;
+      this.額外.圖鑑列表展開_IC = true;
     }
     this.通知();
   }
 
   設定圖鑑選中條目(情境: "OOC" | "IC", id: string | null) {
-    if (情境 === "OOC") this.額外.圖鑑選中條目ID_OOC = id;
-    else this.額外.圖鑑選中條目ID_IC = id;
+    if (情境 === "OOC") {
+      this.額外.圖鑑選中條目ID_OOC = id;
+      this.額外.圖鑑列表展開_OOC = id === null;
+    } else {
+      this.額外.圖鑑選中條目ID_IC = id;
+      this.額外.圖鑑列表展開_IC = id === null;
+    }
+    this.通知();
+  }
+
+  設定圖鑑列表展開(情境: "OOC" | "IC", 展開: boolean) {
+    if (情境 === "OOC") this.額外.圖鑑列表展開_OOC = 展開;
+    else this.額外.圖鑑列表展開_IC = 展開;
     this.通知();
   }
 

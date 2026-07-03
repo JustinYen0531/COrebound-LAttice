@@ -643,6 +643,36 @@ button.禁用:hover {
 .圖鑑瀏覽器-卡片格 {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   margin-top: 0;
+  max-height: 420px;
+  overflow: hidden;
+  transition: max-height 0.22s ease, opacity 0.18s ease, margin 0.18s ease;
+}
+.圖鑑瀏覽器-卡片格.已收起 {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  pointer-events: none;
+}
+.圖鑑瀏覽器-選中列 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.圖鑑瀏覽器-選中摘要 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+}
+.圖鑑瀏覽器-選中標籤 {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-transform: uppercase;
 }
 .圖鑑瀏覽器-條目按鈕 {
   --cut-sm: var(--cut-sm);
@@ -764,17 +794,16 @@ button.禁用:hover {
 .圖鑑詳情-角色視口 {
   position: relative;
   z-index: 2;
-  width: 210px;
-  height: 304px;
+  width: 250px;
+  height: 340px;
   display: flex;
   align-items: end;
   justify-content: center;
 }
-.圖鑑詳情-角色立繪 {
+.圖鑑詳情-角色立繪圖 {
   width: 100%;
   height: 100%;
-  background-size: 400% 500%;
-  background-repeat: no-repeat;
+  object-fit: contain;
   filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.52));
 }
 .圖鑑詳情-小舞台 {
@@ -803,13 +832,27 @@ button.禁用:hover {
   gap: 8px;
 }
 .圖鑑星級按鈕 {
-  padding: 5px 12px;
-  font-size: 0.76rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 56px;
+  padding: 6px 8px;
+  font-size: 0.72rem;
   color: var(--ink);
   background: rgba(6, 8, 14, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.12);
   clip-path: none;
   border-radius: 999px;
+}
+.圖鑑星級頭像 {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+.圖鑑星級文字 {
+  line-height: 1;
 }
 .圖鑑星級按鈕.作用中 {
   color: #10131e;

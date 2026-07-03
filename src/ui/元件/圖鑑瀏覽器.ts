@@ -16,13 +16,6 @@ import {
   圖鑑條目,
 } from "../資料/圖鑑資料庫";
 
-const 成員世界合圖: Record<string, string> = {
-  geometry: "幾何世界所有成員立繪與頭像.png",
-  organic: "有機世界所有成員立繪與頭像.png",
-  fractal: "分形世界所有成員立繪與頭像.png",
-  mechanical: "機械世界所有成員立繪與頭像.png",
-};
-
 function 尋找對應成員(條目ID: string) {
   return MEMBERS.find((item) => {
     if (item.id === 條目ID) return true;
@@ -69,7 +62,8 @@ function 建立星級切換(選中星級: number): string {
     .map(
       (lv) => `
         <button class="圖鑑星級按鈕 ${選中星級 === lv ? "作用中" : ""}" data-star="${lv}" type="button">
-          ${lv}★
+          <img class="圖鑑星級頭像" src="assets/transparent-portraits/avatars/__MEMBER___s${lv}.png" alt="${lv}星頭像" />
+          <span class="圖鑑星級文字">${lv}★</span>
         </button>
       `
     )
@@ -80,27 +74,19 @@ function 建立成員立繪HTML(條目ID: string): string {
   const m = 尋找對應成員(條目ID);
   if (!m) return "";
 
-  const imgFile = 成員世界合圖[m.world] ?? 成員世界合圖.geometry;
-  const 同世界成員 = MEMBERS.filter((item) => item.world === m.world);
-  const row = 同世界成員.findIndex((item) => item.id === m.id);
   const 選中星級 = 應用程式狀態.額外.圖鑑選中星級 ?? 3;
-  const col = Math.max(0, Math.min(2, 選中星級 - 1));
-  const posX = (col * 100) / 3;
-  const posY = (row * 100) / 4;
-  const imageUrl = `assets/transparent-portraits/${imgFile}`;
+  const imageUrl = `assets/transparent-portraits/members/${m.id}_s${選中星級}.png`;
+  const 星級列HTML = 建立星級切換(選中星級).replaceAll("__MEMBER__", m.id);
 
   return `
     <div class="圖鑑詳情-角色構圖">
       <div class="圖鑑詳情-舞台框">
         <div class="圖鑑詳情-角色視口">
-          <div
-            class="圖鑑詳情-角色立繪"
-            style="background-image: url('${imageUrl}'); background-position: ${posX}% ${posY}%;"
-          ></div>
+          <img class="圖鑑詳情-角色立繪圖" src="${imageUrl}" alt="${m.nameZh}" />
         </div>
         <div class="圖鑑詳情-小舞台"></div>
         <div class="圖鑑詳情-星級列">
-          ${建立星級切換(選中星級)}
+          ${星級列HTML}
         </div>
       </div>
     </div>
@@ -173,6 +159,8 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
   if (!選中條目 && 當前資料列表.length > 0) {
     選中條目 = 當前資料列表[0];
   }
+  const 列表展開 =
+    情境 === "OOC" ? 應用程式狀態.額外.圖鑑列表展開_OOC : 應用程式狀態.額外.圖鑑列表展開_IC;
 
   const wrap = document.createElement("div");
   wrap.className = "資料夾式版面 圖鑑瀏覽器-版面";
@@ -197,12 +185,29 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
   標題列.innerHTML = `
     <div>
       <h3>${選中名稱}</h3>
-      <p class="占位說明">共 ${當前資料列表.length} 筆資料。點一筆後，其餘會收斂，說明會往下展開。</p>
+      <p class="占位說明">共 ${當前資料列表.length} 筆資料。點一筆後，上方列表會自動收起，避免擋住下面內容。</p>
     </div>
   `;
 
+  if (選中條目) {
+    const 工具列 = document.createElement("div");
+    工具列.className = "圖鑑瀏覽器-選中列";
+    工具列.innerHTML = `
+      <div class="圖鑑瀏覽器-選中摘要">
+        <span class="圖鑑瀏覽器-選中標籤">已選中</span>
+        <strong>${選中條目.名稱}</strong>
+      </div>
+      <button type="button" class="三級按鈕 圖鑑瀏覽器-切換列表">${列表展開 ? "收起上方列表" : "展開角色列表"}</button>
+    `;
+    工具列.querySelector("button")?.addEventListener("click", () => {
+      應用程式狀態.設定圖鑑列表展開(情境, !列表展開);
+    });
+    標題列.appendChild(工具列);
+  }
+
   const 卡片格 = document.createElement("div");
   卡片格.className = "占位卡片格 圖鑑瀏覽器-卡片格";
+  if (!列表展開 && 選中條目)卡片格.classList.add("已收起");
   const 有選中條目 = Boolean(選中條目);
 
   for (const 條目 of 當前資料列表) {
