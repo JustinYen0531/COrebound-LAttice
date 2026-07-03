@@ -22,7 +22,7 @@ export interface 極座標 {
 export type 圖騰筆畫 =
   | { 型: "線"; 起: 極座標; 終: 極座標; 粗?: number; 淡?: boolean }
   | { 型: "折線"; 點: 極座標[]; 粗?: number; 閉合?: boolean; 淡?: boolean }
-  | { 型: "圓"; 中心: 極座標; 半徑: number; 填充?: boolean; 淡?: boolean }
+  | { 型: "圓"; 中心: 極座標; 半徑: number; 填充?: boolean; 粗?: number; 淡?: boolean }
   | { 型: "弧"; 半徑: number; 起角: number; 終角: number; 粗?: number; 淡?: boolean }
   | { 型: "多邊形"; 點: 極座標[]; 填充?: boolean; 淡?: boolean };
 

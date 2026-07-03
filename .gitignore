@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+output/
+
+# Editor / IDE
+.claude/
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+nul
+
+# Debug / temp
+debug_*.txt
+.tmp_*
+*.log
+
+# 本地預覽與測試殼(不進版控)
+hud-preview.html
+totem-preview.html

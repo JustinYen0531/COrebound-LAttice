@@ -266,7 +266,8 @@ function 背包分頁內容(): HTMLElement {
         organic: "有機世界",
         fractal: "分形世界",
         mechanical: "機械世界",
-      }[選中背包物品.world] ?? "幾何世界";
+        core: "通關道具",
+      }[選中背包物品.world as "geometry" | "organic" | "fractal" | "mechanical" | "core"] ?? "幾何世界";
       
       specDetails = `
         <div style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; line-height: 1.6;">

@@ -14,10 +14,10 @@
 
 import { 應用程式狀態 } from "../應用程式狀態";
 import type { 互動設施 } from "../共用型別";
-import { FAMILY_LABEL } from "../../data/成員型別";
+import { FAMILY_LABEL, type Family } from "../../data/成員型別";
 import { STAR_RECIPE, MEMBERS } from "../../data/成員資料庫";
 import { MATERIALS, sellPriceOfMaterial, shardFromMaterial } from "../../data/素材資料庫";
-import { MATERIAL_RARITY_LABEL, SHARD_YIELD, type Family, type MaterialStar } from "../../data/戰鬥原語";
+import { MATERIAL_RARITY_LABEL, SHARD_YIELD, type MaterialStar } from "../../data/戰鬥原語";
 
 // ============================================================
 // 共享沙盒玩家背包狀態 (全局持久，操作會即時扣減顯示)
@@ -52,6 +52,12 @@ const sandboxInv: 沙盒背包 = {
 };
 
 // ============================================================
+// 推斷玩家目前所在世界(供地緣 +20% 加成提示用)
+// 正式版應由地圖層寫入狀態;沙盒模式預設 geometry,讓玩家可完整操作。
+function regionNearby(): import("../../data/成員型別").World {
+  return "geometry";
+}
+
 // 離線模擬警示 Banner
 // ============================================================
 function 建立狀態警示條(設施: 互動設施): HTMLElement {

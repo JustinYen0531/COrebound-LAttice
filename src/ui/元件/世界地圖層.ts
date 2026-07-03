@@ -26,6 +26,7 @@ import {
 import { ENV_OBJECTS, type EnvObjectInstance } from "../../data/環境物件資料";
 import type { Family, World } from "../../data/成員型別";
 import { buildEinsteinHatSupertile, type EinsteinPoint } from "../../world/愛因斯坦地板";
+import { 建立玩家標記圖騰 } from "./玩家標記圖騰";
 import { buildPenroseSupertile, type PenrosePoint } from "../../world/彭羅斯地板";
 
 // 障礙物體積最大、資源礦物次之、環境機關最小，呼應立繪本身的視覺份量
@@ -35,7 +36,6 @@ const ENV_ICON_SIZE: Record<EnvObjectInstance["category"], number> = {
   環境機關: 200,
 };
 
-const PLAYER_GLYPH = "🌀";
 const MOVE_SPEED = 24;
 const VIEW_PADDING = 140;
 
@@ -144,8 +144,9 @@ export function 建立世界地圖層(): HTMLElement {
 
   const playerNode = document.createElement("div");
   playerNode.className = "世界地圖層-玩家";
-  playerNode.textContent = PLAYER_GLYPH;
-  playerNode.title = "小隊(玩家)";
+  // 真正移動的是「9 層疊加編織圖騰」(隊長六邊形印襯 + 9 成員差速互旋),取代漩渦 emoji
+  playerNode.appendChild(建立玩家標記圖騰({ size: 140 }));
+  playerNode.title = "小隊(玩家)· 9 層疊加編織圖騰";
   canvas.appendChild(playerNode);
 
   const miniMap = document.createElement("div");
