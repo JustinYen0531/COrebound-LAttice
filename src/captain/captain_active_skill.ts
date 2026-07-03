@@ -1,4 +1,0 @@
-/**
- * @file captain_active_skill.ts
- * @description 處理隊長主動位移技能的種類切換、施放條件、冷卻限制、能量消耗，以及與小隊本體移動行為之間的銜接。
- */

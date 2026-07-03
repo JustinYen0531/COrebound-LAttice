@@ -1,4 +1,0 @@
-/**
- * @file resource_drop_system.ts
- * @description 整理怪物、寶箱、礦物與特殊互動來源的原石、生物材料、家族碎片等掉落內容與品質階級規則。
- */
