@@ -623,6 +623,277 @@ button.禁用:hover {
   color: var(--ink-dim);
 }
 
+.圖鑑瀏覽器-版面 {
+  grid-template-columns: 170px minmax(0, 1fr);
+  align-items: start;
+}
+.圖鑑瀏覽器-主區 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.圖鑑瀏覽器-標題列 {
+  background: linear-gradient(180deg, rgba(16, 19, 30, 0.95), rgba(16, 19, 30, 0.82));
+  border: 1px solid var(--line);
+  padding: 18px 20px;
+}
+.圖鑑瀏覽器-標題列 h3 {
+  margin: 0 0 6px;
+}
+.圖鑑瀏覽器-卡片格 {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: 0;
+}
+.圖鑑瀏覽器-條目按鈕 {
+  --cut-sm: var(--cut-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 132px;
+  padding: 16px;
+  text-align: left;
+  color: var(--ink);
+  background: linear-gradient(180deg, rgba(23, 27, 41, 0.95), rgba(12, 15, 24, 0.9));
+  border: 1px solid rgba(111, 140, 255, 0.18);
+  transition: transform 0.16s ease, opacity 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+.圖鑑瀏覽器-條目按鈕:hover {
+  transform: translateY(-2px);
+}
+.圖鑑瀏覽器-條目按鈕.收斂 {
+  min-height: 92px;
+  opacity: 0.72;
+  filter: saturate(0.8);
+}
+.圖鑑瀏覽器-條目按鈕.作用中 {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(216, 180, 106, 0.16), rgba(18, 22, 34, 0.96));
+}
+.圖鑑瀏覽器-條目標題 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--ink-warm);
+}
+.圖鑑瀏覽器-條目簡述 {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.圖鑑瀏覽器-展開區 {
+  background: linear-gradient(180deg, rgba(17, 20, 32, 0.98), rgba(10, 12, 19, 0.98));
+  border: 1px solid var(--line);
+  padding: 20px;
+}
+.圖鑑詳情 {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.圖鑑詳情-頂部 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.圖鑑詳情-眉標 {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.圖鑑詳情-標題 {
+  margin: 0 0 8px;
+  font-size: 1.32rem;
+  color: var(--ink-warm);
+}
+.圖鑑詳情-屬性 {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+}
+.圖鑑詳情-摘要 {
+  margin: 0;
+  align-self: center;
+  padding: 14px 16px;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 2px solid var(--gold);
+}
+.圖鑑詳情-下半 {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.圖鑑詳情-角色構圖,
+.圖鑑詳情-佔位圖 {
+  min-height: 420px;
+  display: flex;
+  align-items: end;
+}
+.圖鑑詳情-舞台框 {
+  position: relative;
+  width: 100%;
+  min-height: 420px;
+  padding: 26px 18px 24px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(216, 180, 106, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(18, 24, 39, 0.84), rgba(8, 10, 17, 0.98));
+  border: 1px solid rgba(216, 180, 106, 0.18);
+  overflow: hidden;
+}
+.圖鑑詳情-舞台框::before {
+  content: "";
+  position: absolute;
+  inset: 18px 16px auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+}
+.圖鑑詳情-角色視口 {
+  position: relative;
+  z-index: 2;
+  width: 210px;
+  height: 304px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+}
+.圖鑑詳情-角色立繪 {
+  width: 100%;
+  height: 100%;
+  background-size: 400% 500%;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.52));
+}
+.圖鑑詳情-小舞台 {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  width: 78%;
+  height: 46px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(216, 180, 106, 0.3), rgba(70, 83, 116, 0.12) 55%, transparent 74%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.16), transparent 66%);
+  box-shadow:
+    0 14px 24px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.圖鑑詳情-星級列 {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 14px;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.圖鑑星級按鈕 {
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  color: var(--ink);
+  background: rgba(6, 8, 14, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  clip-path: none;
+  border-radius: 999px;
+}
+.圖鑑星級按鈕.作用中 {
+  color: #10131e;
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(216, 180, 106, 0.24);
+}
+.圖鑑詳情-文案區 {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.圖鑑詳情-內文 {
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+.圖鑑詳情-段落 {
+  margin: 0 0 8px;
+  line-height: 1.7;
+}
+.圖鑑詳情-小標 {
+  margin: 12px 0 8px;
+  color: var(--gold);
+  font-size: 0.9rem;
+}
+.圖鑑詳情-列表項 {
+  margin: 0 0 8px 18px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+.圖鑑詳情-表格區 {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 14px;
+}
+.圖鑑詳情-表格 {
+  width: 100%;
+  border-collapse: collapse;
+}
+.圖鑑詳情-表格 th,
+.圖鑑詳情-表格 td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 7px 8px;
+  font-size: 0.78rem;
+  text-align: center;
+}
+.圖鑑詳情-表格 th {
+  color: var(--ink-warm);
+  background: rgba(216, 180, 106, 0.08);
+}
+.圖鑑詳情-佔位圖 {
+  justify-content: center;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+@media (max-width: 980px) {
+  .圖鑑詳情-頂部,
+  .圖鑑詳情-下半 {
+    grid-template-columns: 1fr;
+  }
+
+  .圖鑑詳情-角色構圖,
+  .圖鑑詳情-佔位圖 {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 760px) {
+  .圖鑑瀏覽器-版面 {
+    grid-template-columns: 1fr;
+  }
+
+  .圖鑑瀏覽器-卡片格 {
+    grid-template-columns: 1fr;
+  }
+
+  .圖鑑瀏覽器-條目按鈕,
+  .圖鑑瀏覽器-條目按鈕.收斂 {
+    min-height: 88px;
+  }
+}
+
 /* ---------- 操作頁面 ---------- */
 .操作頁面-root {
   position: fixed;
