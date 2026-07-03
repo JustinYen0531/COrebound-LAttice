@@ -15,6 +15,7 @@ In Corebound Lattice, players do not see individual character portraits. Instead
 
 * **生命圖騰 (Living Totem)**: 玩家操控的不是單一角色，而是一個由眾多隊員共同組成的 Corebound Lattice。每一位隊員都會為整個圖騰貢獻自己的「紋理」。
 * **共同編織 (Co-woven)**: 每位角色都是圖騰的一筆，而非圖騰本身。
+* **角色肖像定位 (Character Emblem)**: 圖騰紋理不應只是偏向功能辨識的「技能圖示 (Skill Icon)」，而是展現角色獨特身份的「角色肖像 (Character Emblem)」。即使縮小至極限尺寸，也必須具備無可取代的專屬幾何主輪廓。
 
 ---
 
@@ -36,6 +37,7 @@ In Corebound Lattice, players do not see individual character portraits. Instead
   * **Blade (小刀/刀刃)** → 刀尖、長三角、刀背折線
   * **Eye (眼睛)** → 橢圓、同心圓
   * **Horn (骨刺/角)** → 外彎曲線、尖端
+* **中空圓環佈局 (Doughnut Ring Layout)**: 為了最大化外輪廓的特徵辨識，最內層（r: 0 ~ 55px）為強制中空留白，所有視覺元素等比擠壓在外層圓環（r: 55px ~ 140px）區間內，呈甜甜圈形狀。
 * **銜接性**: 左右邊界必須能自然銜接，以防映射後產生雜亂或斷裂感。
 
 ---
@@ -68,15 +70,16 @@ AI 不生成完整萬花筒，而是生成一份 **Signature Slice**。
 2. **黑底 (Black background)**
 3. **白色線條 (White lines / stroke)**
 4. **SVG / CSS Friendly** (向量/程式友善)
-5. **可鏡射與旋轉 (Mirrorable and rotatable)**
-6. **左右邊界自然銜接 (Seamless boundary connection)**
-7. **萃取元素語彙，不畫完整物件 (Extract elemental vocabulary, no complete objects)**
-8. **保持 Zen / Mandala 美感 (Maintain Zen/Mandala aesthetics)**
+5. **中空圓環佈局 (Doughnut layout with empty inner core)**
+6. **可鏡射與旋轉 (Mirrorable and rotatable)**
+7. **左右邊界自然銜接 (Seamless boundary connection)**
+8. **萃取元素語彙，不畫完整物件 (Extract elemental vocabulary, no complete objects)**
+9. **保持 Zen / Mandala 美感 (Maintain Zen/Mandala aesthetics)**
 
 ### Prompt 模板
 ```text
-A 45-degree sector (wedge-shaped slice) of a Mandala pattern, black background, white lines. 
+A 45-degree sector (wedge-shaped slice) of a Mandala pattern with an empty inner core (doughnut layout), black background, white lines. 
 Subject: [Elemental vocabulary, e.g., feather curves and radiating lines for Wing / sharp triangle and geometric bevels for Blade].
 Style: Clean vector line art, SVG/CSS friendly, high contrast, geometric, Zen art, tribal totem style.
-Constraints: Must not depict a complete object. The patterns must organically touch the 45-degree wedge boundaries to allow seamless rotation, reflection, and point symmetry tiling into a full circle kaleidoscope. No colors, no gradients, pure white lines on pure black background.
+Constraints: Must not depict a complete object. No details near the center core vertex (keep inner 35% radius empty). The patterns must organically touch the 45-degree wedge boundaries to allow seamless rotation, reflection, and point symmetry tiling into a full circle kaleidoscope. No colors, no gradients, pure white lines on pure black background.
 ```
