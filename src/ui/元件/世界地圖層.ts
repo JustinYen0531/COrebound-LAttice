@@ -28,6 +28,7 @@ import type { Family, World } from "../../data/成員型別";
 import { buildEinsteinHatSupertile, type EinsteinPoint } from "../../world/愛因斯坦地板";
 import { 建立玩家標記圖騰 } from "./玩家標記圖騰";
 import { buildPenroseSupertile, type PenrosePoint } from "../../world/彭羅斯地板";
+import { buildEscherBirdField, type EscherPoint } from "../../world/艾雪鳥地板";
 
 // 障礙物體積最大、資源礦物次之、環境機關最小，呼應立繪本身的視覺份量
 const ENV_ICON_SIZE: Record<EnvObjectInstance["category"], number> = {
@@ -126,6 +127,7 @@ export function 建立世界地圖層(): HTMLElement {
   const regionPaths = createRegionPaths(zoneSvg);
   const geometryCoreBoundaries = createGeometryEinsteinFloor(zoneSvg);
   const fractalCoreBoundaries = createFractalPenroseFloor(zoneSvg);
+  const organicCoreBoundaries = createOrganicBirdFloor(zoneSvg);
   const dividerPaths = createDividerPaths(zoneSvg);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
@@ -166,6 +168,7 @@ export function 建立世界地圖層(): HTMLElement {
   const miniRegionPaths = createMiniRegionPaths(miniSvg);
   const miniGeometryCore = createMiniGeometryCore(miniSvg);
   const miniFractalCore = createMiniFractalCore(miniSvg);
+  const miniOrganicCore = createMiniOrganicCore(miniSvg);
   const miniDividerPaths = createMiniDividerPaths(miniSvg);
   const miniObjectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
@@ -239,6 +242,8 @@ export function 建立世界地圖層(): HTMLElement {
       geometryCoreBoundaries,
       miniFractalCore,
       fractalCoreBoundaries,
+      miniOrganicCore,
+      organicCoreBoundaries,
       miniDividerPaths,
       miniObjectNodes,
       miniPlayer,
@@ -388,6 +393,8 @@ function renderMiniMap(
   geometryCoreBoundaries: EinsteinPoint[][],
   fractalCore: { path: SVGPathElement; label: SVGTextElement },
   fractalCoreBoundaries: PenrosePoint[][],
+  organicCore: { path: SVGPathElement; label: SVGTextElement },
+  organicCoreBoundaries: EscherPoint[][],
   dividers: { vertical: SVGPathElement; horizontal: SVGPathElement },
   objectNodes: Map<string, HTMLElement>,
   playerNode: HTMLElement,
@@ -422,6 +429,16 @@ function renderMiniMap(
     const coreCenter = toMini({ x: fractalZone.centerX, y: fractalZone.centerY });
     fractalCore.label.setAttribute("x", String(coreCenter.x));
     fractalCore.label.setAttribute("y", String(coreCenter.y));
+  }
+  organicCore.path.setAttribute(
+    "d",
+    organicCoreBoundaries.map((boundary) => polygonToPath(boundary, toMini)).join(" "),
+  );
+  const organicZone = MAP_ZONES.find((zone) => zone.region === "organic");
+  if (organicZone) {
+    const coreCenter = toMini({ x: organicZone.centerX, y: organicZone.centerY });
+    organicCore.label.setAttribute("x", String(coreCenter.x));
+    organicCore.label.setAttribute("y", String(coreCenter.y));
   }
   dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, toMini));
   dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, toMini));
@@ -686,6 +703,102 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
   return coreBoundaries;
 }
 
+/**
+ * 有機世界地板：架構比照 createFractalPenroseFloor，鋪磚來源換成艾雪鳥地板.ts。
+ * 與 Hat／Penrose 不同的是，平移鑲嵌不需要「先生成一份固定拼塊再找縮放比例覆蓋區域」，
+ * 直接依區域外框的世界座標範圍算出需要幾格鳥即可，密度由 cellSize 直接控制。
+ */
+function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const organicPolygon = buildRegionPolygons().organic;
+  const organicPath = polygonToPath(organicPolygon, (point) => point);
+  const organicZone = MAP_ZONES.find((zone) => zone.region === "organic");
+  if (!organicZone) return [];
+
+  const definitions = document.createElementNS(svgNamespace, "defs");
+  const clipPath = document.createElementNS(svgNamespace, "clipPath");
+  clipPath.setAttribute("id", "organic-world-floor-clip");
+  const clipShape = document.createElementNS(svgNamespace, "path");
+  clipShape.setAttribute("d", organicPath);
+  clipPath.appendChild(clipShape);
+  definitions.appendChild(clipPath);
+
+  for (const zone of ["outer", "core"] as const) {
+    for (let variant = 0; variant < 6; variant += 1) {
+      const pattern = document.createElementNS(svgNamespace, "pattern");
+      pattern.setAttribute("id", `organic-floor-${zone}-${variant}`);
+      pattern.setAttribute("patternUnits", "objectBoundingBox");
+      pattern.setAttribute("width", "1");
+      pattern.setAttribute("height", "1");
+      const halfStart = zone === "outer" ? 0 : 887;
+      pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
+      pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+      const image = document.createElementNS(svgNamespace, "image");
+      image.setAttribute("href", "/有機世界地板.png");
+      image.setAttribute("width", "1774");
+      image.setAttribute("height", "887");
+      image.setAttribute("x", "0");
+      image.setAttribute("y", "0");
+      const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
+      const transforms = [
+        "",
+        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+        "translate(0 887) scale(1 -1)",
+        `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
+        "",
+        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+      ];
+      image.setAttribute("transform", transforms[variant]);
+      pattern.appendChild(image);
+
+      const tint = document.createElementNS(svgNamespace, "rect");
+      tint.setAttribute("x", String(halfStart));
+      tint.setAttribute("y", "0");
+      tint.setAttribute("width", "887");
+      tint.setAttribute("height", "887");
+      // 外圍＝暗黃綠森林，中央＝暖綠生命搏動，呼應世界觀與視覺圖鑑.md §8.2
+      tint.setAttribute("fill", zone === "outer" ? "#1a4321" : "#5a9c5f");
+      tint.setAttribute("fill-opacity", zone === "outer" ? "0.82" : "0.7");
+      tint.setAttribute("style", "mix-blend-mode: multiply");
+      pattern.appendChild(tint);
+      definitions.appendChild(pattern);
+    }
+  }
+
+  host.appendChild(definitions);
+
+  const tileGroup = document.createElementNS(svgNamespace, "g");
+  tileGroup.setAttribute("class", "世界地圖層-艾雪鳥地板");
+  tileGroup.setAttribute("clip-path", "url(#organic-world-floor-clip)");
+
+  const targetBounds = boundsOf(organicPolygon);
+  const field = buildEscherBirdField(targetBounds, 260);
+
+  const regionArea = Math.abs(polygonArea(organicPolygon));
+  const coreRadius = Math.sqrt((regionArea * 0.3) / Math.PI);
+  const coreTiles = field.tiles.filter((tile) =>
+    Math.hypot(tile.center.x - organicZone.centerX, tile.center.y - organicZone.centerY) <= coreRadius,
+  );
+  const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
+
+  for (let index = 0; index < field.tiles.length; index += 1) {
+    const tile = field.tiles[index];
+    const tilePath = polygonToPath(tile.points, (point) => point);
+    const distanceToCore = Math.hypot(tile.center.x - organicZone.centerX, tile.center.y - organicZone.centerY);
+    const floorZone = distanceToCore <= coreRadius ? "core" : "outer";
+    const variant = stableTileVariant(tile.center, index);
+    const path = document.createElementNS(svgNamespace, "path");
+    path.setAttribute("d", tilePath);
+    path.setAttribute("fill", `url(#organic-floor-${floorZone}-${variant})`);
+    path.setAttribute("class", `世界地圖層-艾雪鳥磁磚 世界地圖層-艾雪鳥磁磚-${floorZone}`);
+    tileGroup.appendChild(path);
+  }
+
+  host.appendChild(tileGroup);
+  return coreBoundaries;
+}
+
 function buildTileBoundaryLoops(tiles: EinsteinPoint[][]): EinsteinPoint[][] {
   const boundaryEdges = new Map<string, { a: EinsteinPoint; b: EinsteinPoint }>();
   for (const tile of tiles) {
@@ -852,6 +965,20 @@ function createMiniFractalCore(host: SVGSVGElement): { path: SVGPathElement; lab
 
   const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
   label.setAttribute("class", "世界地圖層-小地圖中央區標籤 世界地圖層-小地圖中央區標籤-fractal");
+  label.setAttribute("text-anchor", "middle");
+  label.setAttribute("dominant-baseline", "middle");
+  label.textContent = "中央區";
+  host.appendChild(label);
+  return { path, label };
+}
+
+function createMiniOrganicCore(host: SVGSVGElement): { path: SVGPathElement; label: SVGTextElement } {
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("class", "世界地圖層-小地圖中央區 世界地圖層-小地圖中央區-organic");
+  host.appendChild(path);
+
+  const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  label.setAttribute("class", "世界地圖層-小地圖中央區標籤 世界地圖層-小地圖中央區標籤-organic");
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "middle");
   label.textContent = "中央區";
