@@ -588,7 +588,8 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    path.setAttribute("fill", `url(#geometry-floor-${floorZone}-${variant})`);
+    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "geometry", floorZone, variant, index, tile.center, svgNamespace);
+    path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
     tileGroup.appendChild(path);
   }
@@ -708,7 +709,8 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    path.setAttribute("fill", `url(#fractal-floor-${floorZone}-${variant})`);
+    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "fractal", floorZone, variant, index, tile.center, svgNamespace);
+    path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute(
       "class",
       `世界地圖層-彭羅斯磁磚 世界地圖層-彭羅斯磁磚-${floorZone} 世界地圖層-彭羅斯磁磚-${tile.kind}`,
@@ -807,7 +809,8 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    path.setAttribute("fill", `url(#organic-floor-${floorZone}-${variant})`);
+    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "organic", floorZone, variant, index, tile.center, svgNamespace);
+    path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-艾雪鳥磁磚 世界地圖層-艾雪鳥磁磚-${floorZone}`);
     tileGroup.appendChild(path);
   }
@@ -907,7 +910,8 @@ function createMechanicalCairoFloor(host: SVGSVGElement): CairoPoint[][] {
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    path.setAttribute("fill", `url(#mechanical-floor-${floorZone}-${variant})`);
+    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "mechanical", floorZone, variant, index, tile.center, svgNamespace);
+    path.setAttribute("fill", `url(#${uniqueId})`);
     path.setAttribute("class", `世界地圖層-開羅磁磚 世界地圖層-開羅磁磚-${floorZone}`);
     tileGroup.appendChild(path);
   }
@@ -1036,6 +1040,38 @@ function polygonArea(points: EinsteinPoint[]): number {
 function stableTileVariant(center: EinsteinPoint, index: number): number {
   const hash = Math.abs(Math.floor(center.x * 17 + center.y * 31 + index * 101));
   return hash % 6;
+}
+
+function 創建並綁定隨機偏移旋轉圖樣(
+  definitions: SVGDefsElement,
+  region: string,
+  floorZone: string,
+  variant: number,
+  tileIndex: number,
+  center: { x: number; y: number },
+  svgNamespace: string
+): string {
+  const uniquePatternId = `${region}-tile-pat-${tileIndex}-${Math.floor(center.x)}-${Math.floor(center.y)}`;
+  
+  const uniquePattern = document.createElementNS(svgNamespace, "pattern");
+  uniquePattern.setAttribute("id", uniquePatternId);
+  uniquePattern.setAttribute("href", `#${region}-floor-${floorZone}-${variant}`);
+  
+  const hashX = Math.sin(center.x * 12.9898 + center.y * 78.233) * 43758.5453;
+  const randOffset = hashX - Math.floor(hashX);
+  
+  const hashY = Math.sin(center.x * 37.719 + center.y * 91.327) * 54321.9876;
+  const randRot = hashY - Math.floor(hashY);
+  
+  // 偏移量：-40px 到 40px，旋轉角度：0 到 360 度，圍繞瓷磚的幾何中心點旋轉
+  const dx = (randOffset * 80) - 40;
+  const dy = (randRot * 80) - 40;
+  const rotateDeg = randRot * 360;
+  
+  uniquePattern.setAttribute("patternTransform", `translate(${dx} ${dy}) rotate(${rotateDeg} ${center.x} ${center.y})`);
+  definitions.appendChild(uniquePattern);
+  
+  return uniquePatternId;
 }
 
 function createDividerPaths(host: SVGSVGElement) {
