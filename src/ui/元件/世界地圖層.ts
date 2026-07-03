@@ -38,7 +38,7 @@ const ENV_ICON_SIZE: Record<EnvObjectInstance["category"], number> = {
   環境機關: 200,
 };
 
-const MOVE_SPEED = 24;
+const MOVE_SPEED = 72;
 const VIEW_PADDING = 140;
 
 const GUARDIAN_ALTAR_IMAGE: Record<World, string> = {
@@ -683,7 +683,7 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "rgba(255, 255, 255, 0.28)");
+      mask.setAttribute("fill", "#ffffff");
       mask.setAttribute("stroke", "none");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
@@ -855,7 +855,7 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "rgba(255, 255, 255, 0.28)");
+      mask.setAttribute("fill", "#ffffff");
       mask.setAttribute("stroke", "none");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
@@ -999,7 +999,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "rgba(255, 255, 255, 0.28)");
+      mask.setAttribute("fill", "#ffffff");
       mask.setAttribute("stroke", "none");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
@@ -1170,7 +1170,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     if (occupiedIndices.has(index)) {
       const mask = document.createElementNS(svgNamespace, "path");
       mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "rgba(255, 255, 255, 0.28)");
+      mask.setAttribute("fill", "#ffffff");
       mask.setAttribute("stroke", "none");
       mask.setAttribute("style", "pointer-events: none;");
       tileGroup.appendChild(mask);
