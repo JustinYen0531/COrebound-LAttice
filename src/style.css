@@ -802,19 +802,37 @@ button.禁用:hover {
   inset: 0;
   pointer-events: none;
 }
-.世界地圖層-區域-plaza {
+.世界地圖層-區域 {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 260px;
-  height: 260px;
   border-radius: 50%;
-  border: 2px dashed rgba(216, 180, 106, 0.4);
-  background: radial-gradient(circle, rgba(216,180,106,0.08), transparent 70%);
   display: flex;
   align-items: center;
   justify-content: center;
+  mix-blend-mode: screen;
+  opacity: 0.88;
+}
+.世界地圖層-區域-plaza {
+  border: 2px dashed rgba(216, 180, 106, 0.4);
+  background: radial-gradient(circle, rgba(216,180,106,0.08), transparent 70%);
   font-size: 12px;
   color: rgba(216, 180, 106, 0.7);
+}
+.世界地圖層-區域-geometry {
+  background: radial-gradient(circle, rgba(111, 168, 255, 0.16), rgba(111, 168, 255, 0.04) 55%, transparent 82%);
+  border: 1px solid rgba(111, 168, 255, 0.15);
+}
+.世界地圖層-區域-organic {
+  background: radial-gradient(circle, rgba(111, 220, 140, 0.14), rgba(111, 220, 140, 0.04) 55%, transparent 82%);
+  border: 1px solid rgba(111, 220, 140, 0.14);
+}
+.世界地圖層-區域-fractal {
+  background: radial-gradient(circle, rgba(200, 155, 255, 0.16), rgba(200, 155, 255, 0.04) 55%, transparent 82%);
+  border: 1px solid rgba(200, 155, 255, 0.14);
+}
+.世界地圖層-區域-mechanical {
+  background: radial-gradient(circle, rgba(255, 197, 111, 0.14), rgba(255, 197, 111, 0.04) 55%, transparent 82%);
+  border: 1px solid rgba(255, 197, 111, 0.12);
 }
 .世界地圖層-區域標籤 {
   position: absolute;
@@ -823,6 +841,7 @@ button.禁用:hover {
   font-weight: 700;
   letter-spacing: 2px;
   white-space: nowrap;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.85);
 }
 .世界地圖層-區域標籤-geometry { color: #6fa8ff; }
 .世界地圖層-區域標籤-organic { color: #6fdc8c; }

@@ -1,25 +1,19 @@
 /**
  * @file 地圖物件資料.ts
- * @description 大地圖上所有 placeholder 物件的資料模型與實例。
- *              對應「doc/世界觀/世界觀與視覺圖鑑.md」§9(全局地圖佈局與物件數量分佈)。
+ * @description 戰場世界地圖的程序生成資料層。
  *
- *              地圖結構(§9.1):中央廣場為起點,四大世界向四方位星狀延伸。
- *              - 中央廣場 (0,0):安全區,含中央傳送陣 + COLA 裝配儀
- *              - 幾何世界(+X 東):2 熔爐 + 2 工作台 + 5 雕像 + 1 商店 + 1 祭壇
- *              - 有機世界(-Y 南):2 熔爐 + 2 工作台 + 5 雕像 + 1 商店 + 1 祭壇
- *              - 分形世界(-X 西):3 熔爐 + 3 工作台 + 5 雕像 + 1 商店 + 1 祭壇
- *              - 機械世界(+Y 北):3 熔爐 + 3 工作台 + 5 雕像 + 1 商店 + 1 祭壇
- *
- *              座標系:網格座標 (x, y),1 單位 = 1 格。
- *              玩家與物件的「靠近」以歐幾里得距離 ≤ NEAR_RADIUS 判定。
+ *              本版從「固定小地圖展示板」改成：
+ *              - 大尺寸世界座標(遠大於畫面)
+ *              - 每次載入生成一張地圖
+ *              - 各世界互動物件分散且不對稱
+ *              - 玩家與設施的互動改用連續座標距離判定
  */
 
-import type { World } from "./成員型別";
 import { MEMBERS } from "./成員資料庫";
-import type { Family } from "./成員型別";
+import type { Family, World } from "./成員型別";
 
 // ============================================================
-// 一、地圖區域
+// 一、基礎列舉
 // ============================================================
 
 export type Region = "plaza" | World;
@@ -32,25 +26,14 @@ export const REGION_LABEL: Record<Region, string> = {
   mechanical: "機械世界",
 };
 
-/** 各世界相對中央的方位單位向量(星狀延伸) */
 export const REGION_DIRECTION: Record<Exclude<Region, "plaza">, { dx: number; dy: number }> = {
-  geometry: { dx: 1, dy: 0 }, // 東
-  organic: { dx: 0, dy: -1 }, // 南
-  fractal: { dx: -1, dy: 0 }, // 西
-  mechanical: { dx: 0, dy: 1 }, // 北
+  geometry: { dx: 1, dy: 0 },
+  organic: { dx: 0, dy: 1 },
+  fractal: { dx: -1, dy: 0 },
+  mechanical: { dx: 0, dy: -1 },
 };
 
-// ============================================================
-// 二、物件種類(對應既有 互動設施 型別 + 非互動裝飾)
-// ============================================================
-
-/** 可互動的設施種類(對應 共用型別.互動設施,擴充工作台與裝配儀) */
-export type FacilityKind =
-  | "合成" // 裝備工作台(合成/升星/附魔/技能升級)
-  | "熔爐" // 家族專用熔爐(材料 → 家族碎片)
-  | "雕像" // 成員解鎖雕像(0→1★)
-  | "商店" // 流浪商店(藥水買賣 + 材料回收)
-  | "召喚"; // 守護者祭壇 / COLA 裝配儀
+export type FacilityKind = "合成" | "熔爐" | "雕像" | "商店" | "召喚";
 
 export const FACILITY_GLYPH: Record<FacilityKind, string> = {
   合成: "🛠️",
@@ -68,60 +51,56 @@ export const FACILITY_LABEL: Record<FacilityKind, string> = {
   召喚: "召喚祭壇",
 };
 
-// ============================================================
-// 三、地圖物件定義
-// ============================================================
-
 export interface MapObject {
-  /** 穩定 id */
   id: string;
-  /** 種類 */
   kind: FacilityKind;
-  /** 所屬區域 */
   region: Region;
-  /** 網格座標 */
   x: number;
   y: number;
-  /** 顯示名稱 */
   label: string;
-  /** 細節(滑鼠停留提示用) */
   detail?: string;
-  /** 熔爐所屬家族(僅 kind=熔爐) */
   family?: Family;
-  /** 雕像對應的成員 no(僅 kind=雕像) */
   memberNo?: number;
-  /** 召喚祭壇的類型(T3 守護者 vs T4 COLA 裝配儀) */
   summonType?: "guardian" | "cola";
 }
 
-// ============================================================
-// 四、靠近判定
-// ============================================================
-
-/** 玩家與物件相距多少格內視為「靠近」(可互動) */
-export const NEAR_RADIUS = 1.5;
-
-export function distance(a: { x: number; y: number }, b: { x: number; y: number }): number {
-  return Math.hypot(a.x - b.x, a.y - b.y);
+export interface MapZone {
+  region: Region;
+  centerX: number;
+  centerY: number;
+  radiusX: number;
+  radiusY: number;
+  labelX: number;
+  labelY: number;
 }
 
-export function isNear(player: { x: number; y: number }, obj: MapObject): boolean {
-  return distance(player, obj) <= NEAR_RADIUS;
+export interface GeneratedMap {
+  seed: number;
+  worldHalfSize: number;
+  plazaRadius: number;
+  nearRadius: number;
+  zones: MapZone[];
+  objects: MapObject[];
 }
 
 // ============================================================
-// 五、生成大地圖的所有物件(遵循世界觀 §9.2-9.3 數量)
+// 二、地圖尺度
 // ============================================================
 
-/**
- * 家族熔爐在世界間的分佈(§9.2 + 各世界 §9.3):
- * - 護盾熔爐:幾何、機械
- * - 多發熔爐:有機、幾何
- * - 直線熔爐:分形、有機
- * - 地雷熔爐:機械、分形
- * - 激光熔爐:分形、機械
- * 每家族 2 個,共 10 個。
- */
+export const MAP_BOUNDS = {
+  minX: -720,
+  maxX: 720,
+  minY: -720,
+  maxY: 720,
+};
+
+export const PLAZA_RADIUS = 90;
+export const NEAR_RADIUS = 52;
+
+const WORLD_HALF_SIZE = MAP_BOUNDS.maxX;
+const WORLD_ANCHOR_DISTANCE = 460;
+const OBJECT_MIN_DISTANCE = 48;
+
 const FURNACE_DISTRIBUTION: { family: Family; world: World }[] = [
   { family: "shield", world: "geometry" },
   { family: "multishot", world: "geometry" },
@@ -143,153 +122,279 @@ const FAMILY_LABEL_ZH: Record<Family, string> = {
   laser: "激光",
 };
 
-/**
- * 工作台分佈(§9.3):幾何 2、有機 2、分形 3、機械 3 = 10 個
- * 雕像分佈:每世界 5 尊,對應該世界 5 名成員
- * 商店:每世界中途 1 個,共 4 個
- * 守護者祭壇:每世界中央 1 個,共 4 個
- */
-function buildMapObjects(): MapObject[] {
-  const objs: MapObject[] = [];
-  const worldDepth = 5;
+// ============================================================
+// 三、亂數工具
+// ============================================================
 
-  // ---- 中央廣場:COLA 裝配儀 + 傳送陣 ----
-  objs.push({
-    id: "summon_cola",
-    kind: "召喚",
-    region: "plaza",
-    x: 0,
-    y: 0,
-    label: "COLA 裝配儀",
-    detail: "集滿四枚世界晶核印記後,插入印記召喚最終 Boss COLA。",
-    summonType: "cola",
-  });
+interface RandomSource {
+  next(): number;
+  range(min: number, max: number): number;
+  int(min: number, max: number): number;
+}
 
-  // ---- 各世界的物件 ----
+function createRandom(seed: number): RandomSource {
+  let state = seed >>> 0;
+  const next = () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 0xffffffff;
+  };
+  return {
+    next,
+    range(min, max) {
+      return min + (max - min) * next();
+    },
+    int(min, max) {
+      return Math.floor(min + (max - min + 1) * next());
+    },
+  };
+}
+
+function createMapSeed(): number {
+  const base = Date.now() & 0xffffffff;
+  return base ^ 0x51c0ffee;
+}
+
+function distance(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+// ============================================================
+// 四、生成邏輯
+// ============================================================
+
+function buildZones(random: RandomSource): MapZone[] {
+  const zones: MapZone[] = [
+    {
+      region: "plaza",
+      centerX: 0,
+      centerY: 0,
+      radiusX: PLAZA_RADIUS,
+      radiusY: PLAZA_RADIUS,
+      labelX: 0,
+      labelY: 0,
+    },
+  ];
+
   const worlds: World[] = ["geometry", "organic", "fractal", "mechanical"];
   for (const world of worlds) {
     const dir = REGION_DIRECTION[world];
-    // 該世界沿方位向延伸,物件散落在距中央 4~10 格的範圍
+    const tangent = { dx: -dir.dy, dy: dir.dx };
+    const axialJitter = random.range(-70, 70);
+    const lateralJitter = random.range(-180, 180);
+    const centerX = dir.dx * (WORLD_ANCHOR_DISTANCE + axialJitter) + tangent.dx * lateralJitter;
+    const centerY = dir.dy * (WORLD_ANCHOR_DISTANCE + axialJitter) + tangent.dy * lateralJitter;
 
-    // 守護者祭壇(該世界正中央區域) — 放在 baseR 處
-    objs.push({
+    zones.push({
+      region: world,
+      centerX,
+      centerY,
+      radiusX: random.range(190, 320),
+      radiusY: random.range(190, 320),
+      labelX: centerX + tangent.dx * random.range(-80, 80),
+      labelY: centerY + tangent.dy * random.range(-80, 80),
+    });
+  }
+
+  return zones;
+}
+
+function findZone(zones: MapZone[], region: Region): MapZone {
+  const zone = zones.find((entry) => entry.region === region);
+  if (!zone) throw new Error(`找不到區域 ${region}`);
+  return zone;
+}
+
+function samplePointInZone(
+  zone: MapZone,
+  random: RandomSource,
+  radialBand: [number, number],
+): { x: number; y: number } {
+  const angle = random.range(0, Math.PI * 2);
+  const t = Math.sqrt(random.next());
+  const bandRatio = radialBand[0] + (radialBand[1] - radialBand[0]) * t;
+  const x = zone.centerX + Math.cos(angle) * zone.radiusX * bandRatio;
+  const y = zone.centerY + Math.sin(angle) * zone.radiusY * bandRatio;
+  return { x, y };
+}
+
+function placePoint(
+  usedPoints: Array<{ x: number; y: number }>,
+  zone: MapZone,
+  random: RandomSource,
+  radialBand: [number, number],
+  minDistance = OBJECT_MIN_DISTANCE,
+): { x: number; y: number } {
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const point = samplePointInZone(zone, random, radialBand);
+    if (
+      usedPoints.every((used) => distance(used, point) >= minDistance) &&
+      Math.abs(point.x) <= WORLD_HALF_SIZE - 20 &&
+      Math.abs(point.y) <= WORLD_HALF_SIZE - 20
+    ) {
+      usedPoints.push(point);
+      return point;
+    }
+  }
+
+  const fallback = samplePointInZone(zone, random, radialBand);
+  usedPoints.push(fallback);
+  return fallback;
+}
+
+function buildObjects(zones: MapZone[], random: RandomSource): MapObject[] {
+  const usedPoints: Array<{ x: number; y: number }> = [];
+  const objects: MapObject[] = [];
+
+  objects.push({
+    id: "summon_cola",
+    kind: "召喚",
+    region: "plaza",
+    x: random.range(-24, 24),
+    y: random.range(-24, 24),
+    label: "COLA 裝配儀",
+    detail: "集滿四枚世界晶核印記後，插入印記召喚最終 Boss COLA。",
+    summonType: "cola",
+  });
+  usedPoints.push({ x: 0, y: 0 });
+
+  const worlds: World[] = ["geometry", "organic", "fractal", "mechanical"];
+  for (const world of worlds) {
+    const zone = findZone(zones, world);
+    const worldMembers = MEMBERS.filter((member) => member.world === world);
+    const workbenchCount = world === "geometry" || world === "organic" ? 2 : 3;
+
+    const altarPoint = placePoint(usedPoints, zone, random, [0.08, 0.22], 72);
+    objects.push({
       id: `altar_${world}`,
       kind: "召喚",
       region: world,
-      x: dir.dx * worldDepth,
-      y: dir.dy * worldDepth,
+      x: altarPoint.x,
+      y: altarPoint.y,
       label: `${REGION_LABEL[world]}守護者祭壇`,
-      detail: `擊殺 ${REGION_LABEL[world]} 的 T2 精英 3 隻 + T1 雜兵三種各 5 隻後,在此召喚 T3 守護者。`,
+      detail: `擊殺 ${REGION_LABEL[world]} 的 T2 精英 3 隻 + T1 雜兵三種各 5 隻後，在此召喚 T3 守護者。`,
       summonType: "guardian",
     });
 
-    // 商店(中途安全屋) — 放在 baseR+2 處的側偏
-    const perp = { dx: -dir.dy, dy: dir.dx }; // 垂直方向
-    objs.push({
+    const shopPoint = placePoint(usedPoints, zone, random, [0.28, 0.48], 72);
+    objects.push({
       id: `shop_${world}`,
       kind: "商店",
       region: world,
-      x: dir.dx * (worldDepth + 2) + perp.dx * 1,
-      y: dir.dy * (worldDepth + 2) + perp.dy * 1,
-      label: `${REGION_LABEL[world]} 流浪商店`,
-      detail: "出售生命/能量/混合藥水與本世界特色 Buff;收購材料(本世界材料 +20% 溢價)。",
+      x: shopPoint.x,
+      y: shopPoint.y,
+      label: `${REGION_LABEL[world]}流浪商店`,
+      detail: "出售生命/能量/混合藥水與本世界特色 Buff；收購材料(本世界材料 +20% 溢價)。",
     });
 
-    // 雕像(5 尊,對應該世界成員)
-    const worldMembers = MEMBERS.filter((m) => m.world === world);
-    worldMembers.forEach((m, i) => {
-      const offset = i - 2; // -2..2
-      objs.push({
-        id: `statue_${m.id}`,
-        kind: "雕像",
-        region: world,
-        x: dir.dx * (worldDepth + 3) + perp.dx * offset,
-        y: dir.dy * (worldDepth + 3) + perp.dy * offset,
-        label: `${m.nameZh} 雕像`,
-        detail: `一次性 0→1★ 解鎖 ${m.nameZh}(${m.nameEn})。解鎖後雕像永久消失。`,
-        memberNo: m.no,
-      });
-    });
-
-    // 工作台(幾何/有機各 2,分形/機械各 3)
-    const workbenchCount = world === "geometry" || world === "organic" ? 2 : 3;
     for (let i = 0; i < workbenchCount; i++) {
-      const offset = (i - (workbenchCount - 1) / 2) * 2;
-      objs.push({
-        id: `workbench_${world}_${i}`,
+      const point = placePoint(usedPoints, zone, random, [0.35, 0.72], 64);
+      objects.push({
+        id: `workbench_${world}_${i + 1}`,
         kind: "合成",
         region: world,
-        x: dir.dx * (worldDepth + 5) + perp.dx * offset,
-        y: dir.dy * (worldDepth + 5) + perp.dy * offset,
-        label: `${REGION_LABEL[world]} 工作台 ${i + 1}`,
+        x: point.x,
+        y: point.y,
+        label: `${REGION_LABEL[world]}工作台 ${i + 1}`,
         detail: "小隊管理、附魔鑲嵌、技能升級、成員合成與升星。",
+      });
+    }
+
+    for (const member of worldMembers) {
+      const point = placePoint(usedPoints, zone, random, [0.48, 0.95], 56);
+      objects.push({
+        id: `statue_${member.id}`,
+        kind: "雕像",
+        region: world,
+        x: point.x,
+        y: point.y,
+        label: `${member.nameZh} 雕像`,
+        detail: `一次性 0→1★ 解鎖 ${member.nameZh}(${member.nameEn})。解鎖後雕像永久消失。`,
+        memberNo: member.no,
       });
     }
   }
 
-  // ---- 家族熔爐(依 FURNACE_DISTRIBUTION)----
-  // 每世界 2~3 個,放在該世界更深處
-  const furnacesPerWorld: Record<World, number> = { geometry: 0, organic: 0, fractal: 0, mechanical: 0 };
-  FURNACE_DISTRIBUTION.forEach((f, idx) => {
-    const dir = REGION_DIRECTION[f.world];
-    const perp = { dx: -dir.dy, dy: dir.dx };
-    const localIdx = furnacesPerWorld[f.world]++;
-    const offset = (localIdx - 0.5) * 3;
-    objs.push({
-      id: `furnace_${f.family}_${f.world}`,
-      kind: "熔爐",
-      region: f.world,
-      x: dir.dx * (worldDepth + 7) + perp.dx * offset,
-      y: dir.dy * (worldDepth + 7) + perp.dy * offset,
-      label: `${FAMILY_LABEL_ZH[f.family]}家族熔爐(${REGION_LABEL[f.world]})`,
-      detail: `投入生物材料熔煉為${FAMILY_LABEL_ZH[f.family]}家族碎片。投入本世界特產材料額外 +20% 產出。`,
-      family: f.family,
-    });
-    void idx;
-  });
+  const furnacesPerWorld: Record<World, number> = {
+    geometry: 0,
+    organic: 0,
+    fractal: 0,
+    mechanical: 0,
+  };
 
-  return objs;
+  for (const furnace of FURNACE_DISTRIBUTION) {
+    const zone = findZone(zones, furnace.world);
+    const point = placePoint(
+      usedPoints,
+      zone,
+      random,
+      furnacesPerWorld[furnace.world] === 0 ? [0.42, 0.78] : [0.56, 0.98],
+      68,
+    );
+    furnacesPerWorld[furnace.world] += 1;
+
+    objects.push({
+      id: `furnace_${furnace.family}_${furnace.world}_${furnacesPerWorld[furnace.world]}`,
+      kind: "熔爐",
+      region: furnace.world,
+      x: point.x,
+      y: point.y,
+      label: `${FAMILY_LABEL_ZH[furnace.family]}熔爐`,
+      detail: `投入生物材料熔煉為${FAMILY_LABEL_ZH[furnace.family]}家族碎片。投入本世界特產材料額外 +20% 產出。`,
+      family: furnace.family,
+    });
+  }
+
+  return objects;
 }
 
-/** 全地圖所有物件(常數,啟動時生成一次) */
-export const MAP_OBJECTS: readonly MapObject[] = buildMapObjects();
+function buildGeneratedMap(seed: number): GeneratedMap {
+  const random = createRandom(seed);
+  const zones = buildZones(random);
+  const objects = buildObjects(zones, random);
+
+  return {
+    seed,
+    worldHalfSize: WORLD_HALF_SIZE,
+    plazaRadius: PLAZA_RADIUS,
+    nearRadius: NEAR_RADIUS,
+    zones,
+    objects,
+  };
+}
 
 // ============================================================
-// 六、查詢 API
+// 五、對外輸出
 // ============================================================
+
+export const MAP_SEED = createMapSeed();
+export const GENERATED_MAP = buildGeneratedMap(MAP_SEED);
+export const MAP_OBJECTS: readonly MapObject[] = GENERATED_MAP.objects;
+export const MAP_ZONES: readonly MapZone[] = GENERATED_MAP.zones;
 
 export function objectsByRegion(region: Region): MapObject[] {
-  return MAP_OBJECTS.filter((o) => o.region === region);
+  return MAP_OBJECTS.filter((object) => object.region === region);
 }
 
 export function objectsByKind(kind: FacilityKind): MapObject[] {
-  return MAP_OBJECTS.filter((o) => o.kind === kind);
+  return MAP_OBJECTS.filter((object) => object.kind === kind);
 }
 
-/** 找出玩家目前「靠近」的所有物件(可能多個,取最近的主要) */
 export function nearbyObjects(player: { x: number; y: number }): MapObject[] {
-  return MAP_OBJECTS.filter((o) => isNear(player, o)).sort(
+  return MAP_OBJECTS.filter((object) => isNear(player, object)).sort(
     (a, b) => distance(player, a) - distance(player, b),
   );
 }
 
-/** 地圖邊界(供玩家移動限制) */
-export const MAP_BOUNDS = {
-  minX: -14,
-  maxX: 14,
-  minY: -14,
-  maxY: 14,
-};
+export function isNear(player: { x: number; y: number }, object: MapObject): boolean {
+  return distance(player, object) <= NEAR_RADIUS;
+}
 
-// ============================================================
-// 七、數量自檢常數(供測試對照世界觀 §9.2)
-// ============================================================
 export const EXPECTED_COUNTS = {
-  furnace: 10, // 5 家族 × 2
-  workbench: 10, // 2+2+3+3
-  statue: 20, // 4 世界 × 5
-  shop: 4, // 4 世界 × 1
-  guardianAltar: 4, // 4 世界 × 1
-  colaAltar: 1, // 中央
-  totalFacilities: 49, // 10+10+20+4+4+1
+  furnace: 10,
+  workbench: 10,
+  statue: 20,
+  shop: 4,
+  guardianAltar: 4,
+  colaAltar: 1,
+  totalFacilities: 49,
 } as const;
