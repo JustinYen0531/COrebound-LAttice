@@ -131,6 +131,10 @@ export function 建立世界地圖層(): HTMLElement {
   const organicCoreBoundaries = createOrganicBirdFloor(zoneSvg);
   const mechanicalCoreBoundaries = createMechanicalCairoFloor(zoneSvg);
   const dividerPaths = createDividerPaths(zoneSvg);
+  // 區域外框、分界線、地板花紋都是「世界座標固定」的靜態幾何，
+  // 不會隨玩家移動改變；只在建圖時設定一次 d 屬性即可，
+  // 之後每幀只靠 viewBox 平移鏡頭，避免反覆 setAttribute 觸發瀏覽器重算路徑幾何。
+  initRegionPaths(regionPaths, dividerPaths);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
@@ -185,6 +189,20 @@ export function 建立世界地圖層(): HTMLElement {
   const miniOrganicCore = createMiniOrganicCore(miniSvg);
   const miniMechanicalCore = createMiniMechanicalCore(miniSvg);
   const miniDividerPaths = createMiniDividerPaths(miniSvg);
+  // 小地圖的區域外框、中央區邊界、分界線同樣是固定幾何，初始化時綁定一次即可，
+  // 不再每幀重設 d（中央區邊界含數百個頂點，逐幀重設是移動卡頓的主因）。
+  initMiniStaticPaths(
+    miniRegionPaths,
+    miniGeometryCore,
+    geometryCoreBoundaries,
+    miniFractalCore,
+    fractalCoreBoundaries,
+    miniOrganicCore,
+    organicCoreBoundaries,
+    miniMechanicalCore,
+    mechanicalCoreBoundaries,
+    miniDividerPaths,
+  );
   const miniObjectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
     const node = document.createElement("div");
@@ -217,7 +235,8 @@ export function 建立世界地圖層(): HTMLElement {
     playerNode.style.top = `${playerScreen.y}px`;
     playerNode.style.transform = `translate(-50%, -50%) rotate(${playerRotation}deg)`;
 
-    renderRegionPaths(regionPaths, dividerPaths, viewport);
+    // 區域/分界線/地板的 d 已在建圖時固定，這裡只要平移鏡頭 viewBox。
+    updateMapViewBox(zoneSvg, viewport);
     renderZoneLabels(zoneLabels, viewport);
 
     for (const env of ENV_OBJECTS) {
@@ -252,21 +271,7 @@ export function 建立世界地圖層(): HTMLElement {
       exclaim.style.display = "none";
     }
 
-    renderMiniMap(
-      miniMapInner,
-      miniRegionPaths,
-      miniGeometryCore,
-      geometryCoreBoundaries,
-      miniFractalCore,
-      fractalCoreBoundaries,
-      miniOrganicCore,
-      organicCoreBoundaries,
-      miniMechanicalCore,
-      mechanicalCoreBoundaries,
-      miniDividerPaths,
-      miniObjectNodes,
-      miniPlayer,
-    );
+    renderMiniMapDynamic(miniMapInner, miniObjectNodes, miniPlayer);
   }
 
   function tick(now: number): void {
@@ -413,8 +418,11 @@ function renderZoneLabels(
   }
 }
 
-function renderMiniMap(
-  host: HTMLElement,
+// 小地圖的區域外框、中央區邊界、分界線與物件點位都是「世界座標固定」的靜態內容，
+// 在此一次性寫入 d / 位置，之後不再逐幀重設。
+// 之所以獨立於 renderMiniMapDynamic，是因為中央區邊界含數百個頂點，
+// 每幀重設 d 會迫使瀏覽器重建路徑幾何快取，是移動卡頓的主因。
+function initMiniStaticPaths(
   regions: Record<World, SVGPathElement>,
   geometryCore: { path: SVGPathElement; label: SVGTextElement },
   geometryCoreBoundaries: EinsteinPoint[][],
@@ -425,11 +433,11 @@ function renderMiniMap(
   mechanicalCore: { path: SVGPathElement; label: SVGTextElement },
   mechanicalCoreBoundaries: CairoPoint[][],
   dividers: { vertical: SVGPathElement; horizontal: SVGPathElement },
-  objectNodes: Map<string, HTMLElement>,
-  playerNode: HTMLElement,
 ): void {
-  const width = host.clientWidth || 180;
-  const height = host.clientHeight || 180;
+  // 小地圖的內層尺寸固定為 196px - padding，這裡取一個穩定值即可；
+  // toMini 用同一個比例縮放，與舊 renderMiniMap 的行為一致。
+  const width = 176;
+  const height = 176;
   const toMini = (point: { x: number; y: number }) => ({
     x: ((point.x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width,
     y: ((point.y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY)) * height,
@@ -481,18 +489,35 @@ function renderMiniMap(
   }
   dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, toMini));
   dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, toMini));
+}
 
+// 每幀只需更新小地圖上「會動」的東西：玩家點位置。
+// 區域/邊界/物件點位都在 initMiniStaticPaths 寫死，不再逐幀重算。
+function renderMiniMapDynamic(
+  host: HTMLElement,
+  objectNodes: Map<string, HTMLElement>,
+  playerNode: HTMLElement,
+): void {
+  const width = host.clientWidth || 176;
+  const height = host.clientHeight || 176;
+  const toMiniX = (x: number) => ((x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width;
+  const toMiniY = (y: number) => ((y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY)) * height;
+
+  // 物件點位同樣是固定的，但舊版每幀重寫；這裡改成只在首次繪製時設定一次，
+  // 之後動態幀跳過，避免反覆寫 style 觸發 layout。
   for (const object of MAP_OBJECTS) {
     const node = objectNodes.get(object.id);
     if (!node) continue;
-    const pos = toMini(object);
-    node.style.left = `${pos.x}px`;
-    node.style.top = `${pos.y}px`;
+    if (node.dataset.placed === "1") continue;
+    node.style.left = `${toMiniX(object.x)}px`;
+    node.style.top = `${toMiniY(object.y)}px`;
+    node.dataset.placed = "1";
   }
 
-  const player = toMini(playerPos);
-  playerNode.style.left = `${player.x}px`;
-  playerNode.style.top = `${player.y}px`;
+  const px = toMiniX(playerPos.x);
+  const py = toMiniY(playerPos.y);
+  playerNode.style.left = `${px}px`;
+  playerNode.style.top = `${py}px`;
 }
 
 function createRegionPaths(host: SVGSVGElement): Record<World, SVGPathElement> {
@@ -1194,23 +1219,29 @@ function createMiniDividerPaths(host: SVGSVGElement) {
   return { vertical, horizontal };
 }
 
-function renderRegionPaths(
+// 建圖時呼叫一次：把區域外框與分界線的 d 屬性寫死。
+// 這些幾何是世界座標固定的，不隨玩家移動改變，所以不需要逐幀重設。
+function initRegionPaths(
   regions: Record<World, SVGPathElement>,
   dividers: { vertical: SVGPathElement; horizontal: SVGPathElement },
+): void {
+  const polygons = buildRegionPolygons();
+  (Object.keys(regions) as World[]).forEach((world) => {
+    regions[world].setAttribute("d", polygonToPath(polygons[world], (point) => point));
+  });
+  dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, (point) => point));
+  dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, (point) => point));
+}
+
+// 每幀只平移鏡頭：靠 viewBox 把固定幾何平移到玩家所在位置，
+// 不再重設任何 path 的 d，避免觸發瀏覽器重算路徑幾何快取。
+function updateMapViewBox(
+  host: SVGSVGElement,
   viewport: { w: number; h: number },
 ): void {
   const viewLeft = playerPos.x - viewport.w / 2;
   const viewTop = playerPos.y - viewport.h / 2;
-  const host = regions.geometry.ownerSVGElement;
-  host?.setAttribute("viewBox", `${viewLeft} ${viewTop} ${viewport.w} ${viewport.h}`);
-  const polygons = buildRegionPolygons();
-
-  (Object.keys(regions) as World[]).forEach((world) => {
-    regions[world].setAttribute("d", polygonToPath(polygons[world], (point) => point));
-  });
-
-  dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, (point) => point));
-  dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, (point) => point));
+  host.setAttribute("viewBox", `${viewLeft} ${viewTop} ${viewport.w} ${viewport.h}`);
 }
 
 function buildRegionPolygons(): Record<World, Array<{ x: number; y: number }>> {
