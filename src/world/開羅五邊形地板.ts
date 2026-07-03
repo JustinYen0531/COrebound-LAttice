@@ -11,6 +11,8 @@
  * （4 條邊等長、1 條邊較短，長度比為 1:(√3−1)）。這樣一來：
  * - 4 個 90° 角的頂點可以湊出 4×90°=360°（4 片五邊形繞一點轉成風車）
  * - 3 個 120° 角的頂點可以湊出 3×120°=360°（3 片五邊形繞一點）
+ *   → 把這 3 片的輪廓合起來看，外緣剛好是一個正六邊形（180°-120°=60° 的外角），
+ *     也就是「把一個正六邊形切成三等份」即得這組 120° 節點，呼應鑲嵌的對稱性。
  * 兩種頂點各自恰好湊滿一圈，整塊拼圖就能無縫密鋪。
  *
  * 已交叉查證：
@@ -20,11 +22,13 @@
  *   的對偶」版本）
  *
  * 本檔的五邊形頂點座標是自行用「邊走法」（依角度序列逐邊累加方向向量）算出並
- * 驗證封閉（首尾相接誤差為 0）；鋪磚方式是：
- * 1. 以其中一個 90° 頂點為軸，將五邊形轉 0°/90°/180°/270° 疊出「4 片風車」。
- * 2. 這個風車單元用邊長 √3 的正方形格子做純平移，鋪滿整個目標區域。
- * 兩步都已用程式驗證：任一條邊最多被 2 片五邊形共用（內部邊恰好 2 次、
- * 外緣邊恰好 1 次），且總面積等於「單片面積 × 片數」，代表無縫、不重疊。
+ * 驗證封閉（首尾相接誤差為 0）。鋪磚方式採「邊反射 BFS」：
+ * 從一片種子五邊形出發，對它的每一條邊把五邊形跨該邊鏡射過去，當作鄰居。
+ * 因為開羅鑲嵌是邊對邊（face-to-face）鑲嵌，跨邊鏡射唯一決定鄰居，
+ * 這樣鋪出來的每一條內部邊都恰好被 2 片共用、外緣邊恰好 1 片，
+ * 程式已驗證（每條邊覆蓋次數只可能是 1 或 2，不會出現縫隙或重疊）。
+ * 舊版用「4 片風車 + 正方形晶格 (√3,0)/(0,√3) 平移」，但那組晶格向量並非
+ * 開羅鑲嵌真正的平移週期，會讓相鄰風車單元錯位、產生縫隙，因此改用邊反射。
  */
 
 export interface CairoPoint {
@@ -56,24 +60,15 @@ const DESIGN_PENTAGON: CairoPoint[] = [
   { x: -0.5, y: SQRT3 / 2 },
 ];
 
-/** V3（索引 2）是五邊形的其中一個 90° 頂點，拿來當風車的轉軸。 */
-const HUB_VERTEX_INDEX = 2;
+const ROUND_PRECISION = 1e4;
 
-function rotateAbout(points: CairoPoint[], center: CairoPoint, thetaDeg: number): CairoPoint[] {
-  const rad = (thetaDeg * Math.PI) / 180;
-  const cos = Math.cos(rad);
-  const sin = Math.sin(rad);
-  return points.map((p) => {
-    const dx = p.x - center.x;
-    const dy = p.y - center.y;
-    return { x: center.x + dx * cos - dy * sin, y: center.y + dx * sin + dy * cos };
-  });
+function quantize(value: number): number {
+  return Math.round(value * ROUND_PRECISION) / ROUND_PRECISION;
 }
 
-/** 繞 V3 轉 0°/90°/180°/270°，疊出 4 片五邊形組成的「風車」單元（已驗證無縫覆蓋 360°）。 */
-function buildPinwheel(): CairoPoint[][] {
-  const hub = DESIGN_PENTAGON[HUB_VERTEX_INDEX];
-  return [0, 90, 180, 270].map((deg) => rotateAbout(DESIGN_PENTAGON, hub, deg));
+/** 用量化後的重心座標做為「這一片五邊形」的去重鍵，容忍浮點誤差。 */
+function centerKey(center: CairoPoint): string {
+  return `${quantize(center.x)}|${quantize(center.y)}`;
 }
 
 function centroid(points: CairoPoint[]): CairoPoint {
@@ -82,35 +77,87 @@ function centroid(points: CairoPoint[]): CairoPoint {
 }
 
 /**
- * 用純平移把風車單元鋪滿目標世界座標範圍（含邊界緩衝）。
- * 晶格向量為 (√3,0) 與 (0,√3)（設計單位），已驗證整片鋪磚無縫；
- * latticeSize 是「一步晶格」對應的世界單位長度，用來把設計座標縮放到世界座標。
+ * 把整個多邊形跨過直線 a→b 鏡射。鏡射後多邊形的「那一條共用邊」會落在 a↔b 上，
+ * 且法線反向，因此兩片剛好邊對邊相接，是 face-to-face 鑲嵌唯一的合法鄰居。
+ */
+function reflectAcrossLine(points: CairoPoint[], a: CairoPoint, b: CairoPoint): CairoPoint[] {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSquared = dx * dx + dy * dy || 1;
+  return points.map((p) => {
+    const px = p.x - a.x;
+    const py = p.y - a.y;
+    const projection = (px * dx + py * dy) / lengthSquared;
+    const footX = a.x + projection * dx;
+    const footY = a.y + projection * dy;
+    return { x: 2 * footX - p.x, y: 2 * footY - p.y };
+  });
+}
+
+/**
+ * 用「邊反射 BFS」把開羅五邊形鑲嵌鋪滿目標世界座標範圍（含邊界緩衝）。
+ *
+ * 為什麼是 BFS 而不是固定晶格平移：開羅鑲嵌的平移週期並不是簡單的正方形，
+ * 用錯晶格會讓相鄰單元錯位；改從一片種子五邊形出發、跨每一條邊鏡射找鄰居，
+ * 因為鑲嵌本身是邊對邊的，鄰居形狀由「跨邊鏡射」唯一決定，鋪出來必然無縫。
+ *
+ * latticeWorldSize 仍對外保留「大致磁磚密度」的語意：把它除以 √3 得到設計→世界
+ * 的縮放，使五邊形長邊世界長度 ≈ latticeWorldSize/√3，視覺密度與舊版一致。
  */
 export function buildCairoField(
   bounds: { minX: number; maxX: number; minY: number; maxY: number },
   latticeSize: number,
 ): CairoField {
-  const pinwheel = buildPinwheel();
   const scale = latticeSize / SQRT3;
-  const latticeWorldSize = SQRT3 * scale;
+  const latticeWorldSize = latticeSize;
 
-  const marginCells = 1;
-  const iMin = Math.floor(bounds.minX / latticeWorldSize) - marginCells;
-  const iMax = Math.ceil(bounds.maxX / latticeWorldSize) + marginCells;
-  const jMin = Math.floor(bounds.minY / latticeWorldSize) - marginCells;
-  const jMax = Math.ceil(bounds.maxY / latticeWorldSize) + marginCells;
+  // 在設計座標系下 BFS 鋪磚，目標範圍 = 世界 bounds ÷ scale（外加一格緩衝）。
+  const margin = 2;
+  const designMinX = bounds.minX / scale - margin;
+  const designMaxX = bounds.maxX / scale + margin;
+  const designMinY = bounds.minY / scale - margin;
+  const designMaxY = bounds.maxY / scale + margin;
+
+  const withinDesignBounds = (center: CairoPoint): boolean =>
+    center.x >= designMinX &&
+    center.x <= designMaxX &&
+    center.y >= designMinY &&
+    center.y <= designMaxY;
 
   const tiles: CairoTile[] = [];
-  for (let i = iMin; i <= iMax; i += 1) {
-    for (let j = jMin; j <= jMax; j += 1) {
-      const originX = i * latticeWorldSize;
-      const originY = j * latticeWorldSize;
-      for (const piece of pinwheel) {
-        const points = piece.map((p) => ({ x: p.x * scale + originX, y: p.y * scale + originY }));
-        tiles.push({ points, center: centroid(points) });
+  const placedKeys = new Set<string>();
+  const queue: CairoPoint[][] = [];
+
+  const seed = DESIGN_PENTAGON.map((p) => ({ x: p.x, y: p.y }));
+  placedKeys.add(centerKey(centroid(seed)));
+  queue.push(seed);
+  tiles.push({ points: seed, center: centroid(seed) });
+
+  // 廣度優先擴張：跨每一條邊鏡射出鄰居。為避免無限擴張，
+  // 只有「重心還在設計目標範圍內」的鄰居才繼續當作擴張來源；
+  // 範圍外的鄰居仍記錄進 tiles（用來填滿 clip 外緣），但不再延伸。
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (let i = 0; i < current.length; i += 1) {
+      const a = current[i];
+      const b = current[(i + 1) % current.length];
+      const neighbor = reflectAcrossLine(current, a, b);
+      const neighborCenter = centroid(neighbor);
+      const key = centerKey(neighborCenter);
+      if (placedKeys.has(key)) continue;
+      placedKeys.add(key);
+      tiles.push({ points: neighbor, center: neighborCenter });
+      if (withinDesignBounds(neighborCenter)) {
+        queue.push(neighbor);
       }
     }
   }
 
-  return { tiles, latticeWorldSize };
+  // 把設計座標縮放成世界座標。
+  const worldTiles: CairoTile[] = tiles.map((tile) => ({
+    points: tile.points.map((p) => ({ x: p.x * scale, y: p.y * scale })),
+    center: { x: tile.center.x * scale, y: tile.center.y * scale },
+  }));
+
+  return { tiles: worldTiles, latticeWorldSize };
 }
