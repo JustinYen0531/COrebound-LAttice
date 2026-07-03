@@ -1,4 +1,3 @@
-import { resolve } from "path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -16,9 +15,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, "index.html"),
-        totem: resolve(__dirname, "totem-preview.html"),
-        weaving: resolve(__dirname, "totem-weaving.html"),
+        main: "index.html",
+        totem: "totem-preview.html",
+        weaving: "totem-weaving.html",
       },
     },
   },
