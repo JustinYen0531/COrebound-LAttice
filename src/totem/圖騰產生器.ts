@@ -28,9 +28,15 @@ export type 圖騰筆畫 =
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+export const 甜甜圈內半徑 = 55;
+export const 甜甜圈外半徑 = 140;
+export const 甜甜圈壓縮比 = (甜甜圈外半徑 - 甜甜圈內半徑) / 甜甜圈外半徑;
+
 function 極座標轉直角(p: 極座標, cx = 畫布中心, cy = 畫布中心) {
   const rad = (p.deg * Math.PI) / 180;
-  return { x: cx + p.r * Math.sin(rad), y: cy - p.r * Math.cos(rad) };
+  // 甜甜圈變換：擠壓中心向外推，中空半徑為 55px，並等比壓縮剩餘半徑
+  const 新半徑 = 甜甜圈內半徑 + p.r * 甜甜圈壓縮比;
+  return { x: cx + 新半徑 * Math.sin(rad), y: cy - 新半徑 * Math.cos(rad) };
 }
 
 function 弧上的點(半徑: number, 角度: number, cx = 畫布中心, cy = 畫布中心) {
@@ -77,10 +83,12 @@ function 畫筆畫(筆畫: 圖騰筆畫): SVGElement {
     }
     case "圓": {
       const c = 極座標轉直角(筆畫.中心);
+      // 圓半徑同步按比例壓縮，以維持精確的圓形視覺比例
+      const 縮放半徑 = 筆畫.半徑 * 甜甜圈壓縮比;
       return 建立元素("circle", {
         cx: c.x,
         cy: c.y,
-        r: 筆畫.半徑,
+        r: 縮放半徑,
         ...(筆畫.填充
           ? { fill: "#ffffff", stroke: "none", opacity: 筆畫.淡 ? 0.45 : 1 }
           : 描邊屬性(1.5, 筆畫.淡)),
