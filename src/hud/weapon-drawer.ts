@@ -24,6 +24,7 @@ export class WeaponDrawer {
   /** 目前抽屜展開比例 0~1(由 controller 推入) */
   private openRatio = 0;
   private weapons: WeaponGroupState[] = [];
+  private renderKey = "";
 
   constructor() {
     this.el = document.createElement("div");
@@ -45,6 +46,11 @@ export class WeaponDrawer {
   }
 
   render(weapons: WeaponGroupState[]): void {
+    const nextKey = weapons
+      .map((w) => `${w.family}:${w.star}:${w.active ? 1 : 0}:${w.disabledByRoster ? 1 : 0}:${Math.round(w.cooldownRatio * 100)}`)
+      .join("|");
+    if (nextKey === this.renderKey) return;
+    this.renderKey = nextKey;
     this.weapons = weapons;
     this.list.innerHTML = "";
     for (const w of weapons) {

@@ -135,8 +135,8 @@ export class HudController {
     this.rings.render(snap);
     this.strips.renderWeapons(snap.weapons);
     this.strips.renderPeriodics(snap.periodics);
-    this.itemDrawer.render(snap);
-    this.weaponDrawer.render(snap.weapons);
+    if (this.state === "right_open") this.itemDrawer.render(snap);
+    if (this.state === "left_open") this.weaponDrawer.render(snap.weapons);
     // 處理自動收回(移動 / 離開)
     this.handleAutoDismissTriggers(snap);
     // 清理過期大藥水確認
@@ -191,6 +191,8 @@ export class HudController {
       this.cancelExpandTimers();
       this.rings.setExpandedCount(0);
       this.core.showBarText(next === "right_open"); // 右滑時頭像顯示雙條數值 — §3.4
+      if (this.snapshot && next === "left_open") this.weaponDrawer.render(this.snapshot.weapons);
+      if (this.snapshot && next === "right_open") this.itemDrawer.render(this.snapshot);
       // 離開前一個抽屜
       if (prev === "left_open" && next === "right_open") {
         this.weaponDrawer.setOpenRatio(0);

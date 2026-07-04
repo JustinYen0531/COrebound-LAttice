@@ -35,6 +35,7 @@ export class ItemDrawer {
   private openRatio = 0;
   private potions: PotionItem[] = [];
   private roster: RosterMember[] = [];
+  private renderKey = "";
   private dragging: { potion: PotionItem; ghost: HTMLElement } | null = null;
   /** 大藥水待確認狀態 */
   private pendingBig:
@@ -64,6 +65,12 @@ export class ItemDrawer {
   }
 
   render(snap: HudSnapshot): void {
+    const nextKey = this.snapshotKey(snap);
+    if (nextKey === this.renderKey) {
+      this.tickPendingBig(Date.now());
+      return;
+    }
+    this.renderKey = nextKey;
     this.potions = snap.potions;
     this.roster = snap.roster;
     this.renderPotions();
@@ -376,5 +383,23 @@ export class ItemDrawer {
     if (ratio > 0.7) return "var(--c-hp-full)";
     if (ratio > 0.3) return "var(--c-hp-warn)";
     return "var(--c-hp-danger)";
+  }
+
+  private snapshotKey(snap: HudSnapshot): string {
+    const potions = snap.potions
+      .map((potion) => `${potion.id}:${potion.count}:${potion.size}:${potion.effect}`)
+      .join("|");
+    const roster = snap.roster
+      .map((member) =>
+        [
+          member.id,
+          Math.round(member.hpRatio * 100),
+          member.shielded ? 1 : 0,
+          member.dead ? 1 : 0,
+          member.ailments.join(","),
+        ].join(":"),
+      )
+      .join("|");
+    return `${potions}::${roster}`;
   }
 }

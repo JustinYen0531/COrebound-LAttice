@@ -33,6 +33,8 @@ export class SkillStrips {
   readonly el: HTMLElement;
   private readonly weaponStrip: HTMLElement;
   private readonly periodicStrip: HTMLElement;
+  private readonly weaponNodes = new Map<string, HTMLElement>();
+  private readonly periodicNodes = new Map<string, HTMLElement>();
 
   constructor() {
     this.el = document.createElement("div");
@@ -46,18 +48,36 @@ export class SkillStrips {
 
   /** 渲染武器群組(第二層) — 規格 §4.3 */
   renderWeapons(weapons: WeaponGroupState[]): void {
-    this.weaponStrip.innerHTML = "";
+    const seen = new Set<string>();
     for (const w of weapons) {
-      this.weaponStrip.appendChild(this.buildWeaponIcon(w));
+      seen.add(w.family);
+      const existing = this.weaponNodes.get(w.family);
+      if (existing) {
+        this.updateWeaponIcon(existing, w);
+      } else {
+        const node = this.buildWeaponIcon(w);
+        this.weaponNodes.set(w.family, node);
+        this.weaponStrip.appendChild(node);
+      }
     }
+    this.pruneMissing(this.weaponNodes, seen);
   }
 
   /** 渲染週期/自動施法(第三層) — 規格 §4.4 */
   renderPeriodics(periodics: PeriodicSkillState[]): void {
-    this.periodicStrip.innerHTML = "";
+    const seen = new Set<string>();
     for (const p of periodics) {
-      this.periodicStrip.appendChild(this.buildPeriodicIcon(p));
+      seen.add(p.id);
+      const existing = this.periodicNodes.get(p.id);
+      if (existing) {
+        this.updatePeriodicIcon(existing, p);
+      } else {
+        const node = this.buildPeriodicIcon(p);
+        this.periodicNodes.set(p.id, node);
+        this.periodicStrip.appendChild(node);
+      }
     }
+    this.pruneMissing(this.periodicNodes, seen);
   }
 
   // ----------------------------------------------------------
@@ -96,6 +116,28 @@ export class SkillStrips {
     return node;
   }
 
+  private updateWeaponIcon(node: HTMLElement, w: WeaponGroupState): void {
+    node.classList.toggle("off", !w.active);
+    node.classList.toggle("locked", w.disabledByRoster);
+    node.classList.toggle("firing", w.active && w.cooldownRatio < 1);
+    const circ = 2 * Math.PI * ICON_R;
+    const filled = circ * w.cooldownRatio;
+    const cooldown = node.querySelector<SVGCircleElement>(".cooldown");
+    if (cooldown) cooldown.setAttribute("stroke-dasharray", `${filled} ${circ - filled}`);
+    const star = node.querySelector<HTMLElement>(".star");
+    if (star) star.textContent = `${w.star}★`;
+    const lock = node.querySelector<HTMLElement>(".lock");
+    if (w.disabledByRoster && !lock) {
+      const lockNode = document.createElement("span");
+      lockNode.className = "lock";
+      lockNode.innerHTML = lockGlyphSvg();
+      node.appendChild(lockNode);
+    } else if (!w.disabledByRoster && lock) {
+      lock.remove();
+    }
+    node.title = `${FAMILY_LABEL[w.family]} ${w.star}★`;
+  }
+
   private buildPeriodicIcon(p: PeriodicSkillState): HTMLElement {
     const node = document.createElement("div");
     node.className = "periodic-icon";
@@ -123,5 +165,26 @@ export class SkillStrips {
     `;
     node.title = `${p.label} (${p.kind === "periodic" ? "週期" : "自動"})`;
     return node;
+  }
+
+  private updatePeriodicIcon(node: HTMLElement, p: PeriodicSkillState): void {
+    node.dataset.kind = p.kind;
+    node.classList.toggle("ready", p.chargeRatio >= 1);
+    const circ = 2 * Math.PI * (ICON_R - 2);
+    const filled = circ * p.chargeRatio;
+    const charge = node.querySelector<SVGCircleElement>(".charge");
+    if (charge) {
+      charge.setAttribute("stroke", p.kind === "periodic" ? "var(--c-periodic)" : "var(--c-auto)");
+      charge.setAttribute("stroke-dasharray", `${filled} ${circ - filled}`);
+    }
+    node.title = `${p.label} (${p.kind === "periodic" ? "週期" : "自動"})`;
+  }
+
+  private pruneMissing(nodes: Map<string, HTMLElement>, seen: Set<string>): void {
+    for (const [id, node] of nodes) {
+      if (seen.has(id)) continue;
+      node.remove();
+      nodes.delete(id);
+    }
   }
 }
