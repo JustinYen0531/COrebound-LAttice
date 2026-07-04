@@ -1289,12 +1289,6 @@ button.禁用:hover {
   background: rgba(255, 255, 255, 0.06);
   border: 2px solid rgba(255, 255, 255, 0.18);
 }
-.圖鑑星級頭像 {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-}
 .圖鑑星級文字 {
   line-height: 1;
 }
@@ -1307,6 +1301,139 @@ button.禁用:hover {
 .圖鑑星級按鈕.作用中 .圖鑑星級頭像框 {
   border-color: #fff;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+.角色迷你頭像 {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--avatar-c) 78%, white) 0%, transparent 34%),
+    linear-gradient(var(--avatar-angle), var(--avatar-b), var(--avatar-dark) 62%, #04060d 100%);
+}
+.角色迷你頭像-背光,
+.角色迷你頭像-底盤,
+.角色迷你頭像-左翼,
+.角色迷你頭像-右翼,
+.角色迷你頭像-輪廓,
+.角色迷你頭像-冠飾,
+.角色迷你頭像-核心 {
+  position: absolute;
+  inset: 0;
+}
+.角色迷你頭像-背光 {
+  background:
+    radial-gradient(circle at 50% 78%, color-mix(in srgb, var(--avatar-a) 48%, transparent) 0 22%, transparent 52%),
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--avatar-c) 18%, transparent) 0 40%, transparent 72%);
+  opacity: calc(0.72 + var(--avatar-glow));
+}
+.角色迷你頭像-底盤 {
+  inset: 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255,255,255,0.16), transparent 28%),
+    linear-gradient(180deg, rgba(255,255,255,0.12), rgba(0,0,0,0) 40%),
+    radial-gradient(circle at 50% 68%, color-mix(in srgb, var(--avatar-a) 58%, #0a0d16) 0 44%, transparent 68%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+}
+.角色迷你頭像-左翼,
+.角色迷你頭像-右翼 {
+  top: calc(var(--avatar-rise) - 2%);
+  width: calc(var(--avatar-spread) - 2%);
+  height: 34%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--avatar-c) 85%, white), var(--avatar-a));
+  opacity: 0.92;
+}
+.角色迷你頭像-左翼 {
+  left: 8%;
+  transform: skewY(18deg) rotate(calc(-24deg + var(--avatar-tilt)));
+  clip-path: polygon(18% 10%, 100% 0, 78% 100%, 0 88%);
+}
+.角色迷你頭像-右翼 {
+  right: 8%;
+  transform: skewY(-18deg) rotate(calc(24deg + var(--avatar-tilt)));
+  clip-path: polygon(0 0, 82% 10%, 100% 88%, 22% 100%);
+}
+.角色迷你頭像-輪廓 {
+  left: 24%;
+  right: 24%;
+  top: 18%;
+  bottom: 16%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--avatar-c) 76%, white), color-mix(in srgb, var(--avatar-a) 72%, var(--avatar-b)));
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.14);
+}
+.角色迷你頭像-冠飾 {
+  left: 32%;
+  right: 32%;
+  top: 10%;
+  height: 18%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--avatar-c) 82%, white), var(--avatar-b));
+}
+.角色迷你頭像-核心 {
+  left: 36%;
+  right: 36%;
+  bottom: 18%;
+  height: 16%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--avatar-c) 86%, white);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--avatar-a) 60%, transparent);
+}
+.角色迷你頭像.家族-shield .角色迷你頭像-輪廓 {
+  clip-path: polygon(50% 0, 86% 18%, 82% 62%, 50% 100%, 18% 62%, 14% 18%);
+  border-radius: 24% 24% 40% 40%;
+}
+.角色迷你頭像.家族-multishot .角色迷你頭像-輪廓 {
+  clip-path: polygon(50% 0, 100% 38%, 74% 100%, 26% 100%, 0 38%);
+}
+.角色迷你頭像.家族-straight .角色迷你頭像-輪廓 {
+  clip-path: polygon(50% 0, 72% 24%, 62% 100%, 38% 100%, 28% 24%);
+}
+.角色迷你頭像.家族-mine .角色迷你頭像-輪廓 {
+  clip-path: polygon(24% 14%, 76% 14%, 100% 50%, 76% 86%, 24% 86%, 0 50%);
+}
+.角色迷你頭像.家族-laser .角色迷你頭像-輪廓 {
+  clip-path: polygon(50% 0, 88% 18%, 100% 100%, 0 100%, 12% 18%);
+}
+.角色迷你頭像.世界-organic .角色迷你頭像-左翼,
+.角色迷你頭像.世界-organic .角色迷你頭像-右翼 {
+  border-radius: 60% 40% 58% 42%;
+}
+.角色迷你頭像.世界-fractal .角色迷你頭像-冠飾 {
+  clip-path: polygon(50% 0, 70% 22%, 100% 28%, 76% 50%, 84% 84%, 50% 68%, 16% 84%, 24% 50%, 0 28%, 30% 22%);
+}
+.角色迷你頭像.世界-geometry .角色迷你頭像-冠飾 {
+  clip-path: polygon(20% 100%, 0 38%, 50% 0, 100% 38%, 80% 100%);
+}
+.角色迷你頭像.世界-mechanical .角色迷你頭像-冠飾 {
+  clip-path: polygon(12% 18%, 34% 18%, 42% 0, 58% 0, 66% 18%, 88% 18%, 100% 50%, 88% 82%, 12% 82%, 0 50%);
+}
+.角色迷你頭像.星級-2 .角色迷你頭像-核心 {
+  left: 33%;
+  right: 33%;
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--avatar-a) 60%, transparent),
+    0 0 0 2px rgba(255,255,255,0.12);
+}
+.角色迷你頭像.星級-3 .角色迷你頭像-核心 {
+  left: 30%;
+  right: 30%;
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--avatar-a) 72%, transparent),
+    0 0 0 2px rgba(255,255,255,0.16);
+}
+.角色迷你頭像.星級-3 .角色迷你頭像-背光 {
+  opacity: 1;
+}
+.角色迷你頭像-徽章容器 {
+  width: 32px;
+  height: 32px;
+}
+.角色迷你頭像-徽章 {
+  width: 32px;
+  height: 32px;
 }
 .圖鑑詳情-文案區 {
   display: flex;

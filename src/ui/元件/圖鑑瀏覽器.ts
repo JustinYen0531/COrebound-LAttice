@@ -63,7 +63,7 @@ function 建立星級切換(選中星級: number): string {
       (lv) => `
         <button class="圖鑑星級按鈕 ${選中星級 === lv ? "作用中" : ""}" data-star="${lv}" type="button">
           <span class="圖鑑星級頭像框">
-            <img class="圖鑑星級頭像" src="assets/transparent-portraits/avatars/__MEMBER___s${lv}.png" alt="${lv}星頭像" />
+            ${生成角色迷你頭像HTML("__MEMBER__", lv, "圖鑑星級頭像")}
           </span>
           <span class="圖鑑星級文字">${lv}★</span>
         </button>
@@ -247,3 +247,4 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
 
   return wrap;
 }
+import { 生成角色迷你頭像HTML } from "./css角色頭像";
