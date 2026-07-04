@@ -82,6 +82,27 @@ export class GameSnapshotSource {
     this.moving = moving;
   }
 
+  /** 每次正式局或訓練局進場時，清除上一局的戰鬥消耗與冷卻。 */
+  resetForRun(): void {
+    this.moving = false;
+    this.lastHitAt = 0;
+    this.lastPlayerHp = 0;
+    this.energySystem.reset();
+    this.activeSkill = new CaptainActiveSkill(ACTIVE_SKILL_DEFS[this.captainId], this.energySystem);
+    this.weapons.forEach((weapon) => {
+      const index = FAMILY_ORDER.indexOf(weapon.family);
+      weapon.star = (index < 4 ? (1 + (index % 3)) : 1) as 1 | 2 | 3;
+      weapon.cooldownRatio = 1;
+      weapon.active = weapon.family !== "laser";
+      weapon.disabledByRoster = weapon.family === "laser";
+    });
+    const periodicRatios = [0.2, 0.55, 0.35, 0.8];
+    this.periodics.forEach((periodic, index) => {
+      periodic.chargeRatio = periodicRatios[index] ?? 0;
+    });
+    this.potions.splice(0, this.potions.length, ...STATIC_POTIONS.map((potion) => ({ ...potion })));
+  }
+
   tick(dt: number): void {
     this.energySystem.tick(dt);
     this.activeSkill.tick(dt);

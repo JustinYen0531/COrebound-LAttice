@@ -153,12 +153,14 @@ class 應用程式狀態機 {
       重置對局進度();
       重置正式戰場();
     }
+    window.dispatchEvent(new CustomEvent("combat-run-reset", { detail: { mode: 訓練道場 ? "dojo" : "formal" } }));
     this.更新畫面({ 層: "操作頁面", 訓練道場 });
   }
 
   進入訓練道場() {
     this.額外.世界時鐘秒數 = 0;
     this.額外.縮圈警戒 = false;
+    window.dispatchEvent(new CustomEvent("combat-run-reset", { detail: { mode: "dojo" } }));
     this.更新畫面({ 層: "操作頁面", 訓練道場: true });
   }
 

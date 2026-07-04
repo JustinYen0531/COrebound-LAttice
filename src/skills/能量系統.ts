@@ -18,12 +18,14 @@ export interface EnergySnapshot {
 
 export class EnergySystem {
   private readonly max: number;
+  private readonly initial: number;
   private readonly regenPerSecond: number;
   private current: number;
 
   constructor(config: EnergyConfig) {
     this.max = config.max;
-    this.current = Math.max(0, Math.min(config.max, config.initial));
+    this.initial = Math.max(0, Math.min(config.max, config.initial));
+    this.current = this.initial;
     this.regenPerSecond = config.regenPerSecond;
   }
 
@@ -43,6 +45,10 @@ export class EnergySystem {
 
   restore(amount: number): void {
     this.current = Math.min(this.max, this.current + Math.max(0, amount));
+  }
+
+  reset(): void {
+    this.current = this.initial;
   }
 
   snapshot(): EnergySnapshot {
