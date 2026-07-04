@@ -1286,6 +1286,28 @@ button.禁用:hover {
   align-items: flex-end;
   justify-content: center;
 }
+.世界地圖層-物件-視覺層::after,
+.世界地圖層-環境物件-視覺層::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--world-object-size, 720px) * 0.045);
+  width: calc(var(--world-object-size, 720px) * 0.44);
+  height: calc(var(--world-object-size, 720px) * 0.14);
+  transform: translateX(-50%) skewX(-18deg) scaleX(1.08);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(122, 126, 136, 0.64) 0%,
+    rgba(122, 126, 136, 0.42) 38%,
+    rgba(122, 126, 136, 0.18) 58%,
+    rgba(122, 126, 136, 0) 80%
+  );
+  filter: blur(8px);
+  opacity: 0.95;
+  pointer-events: none;
+  z-index: 1;
+}
 .世界地圖層-視覺層-禁走地板::before {
   content: none;
   position: absolute;

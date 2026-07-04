@@ -1230,13 +1230,13 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
       pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
       pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
-      // 底層純色 bg 托底以維持顏色飽和
+      // 底層純色 bg 托底以維持顏色飽和；機械外層改為深棕，避免整片偏冷灰。
       const bg = document.createElementNS(svgNamespace, "rect");
       bg.setAttribute("x", String(halfStart));
       bg.setAttribute("y", "0");
       bg.setAttribute("width", "887");
       bg.setAttribute("height", "887");
-      bg.setAttribute("fill", zone === "outer" ? "#4a4750" : "#c9a227");
+      bg.setAttribute("fill", zone === "outer" ? "#4b3426" : "#c9a227");
       bg.setAttribute("fill-opacity", "1.0");
       pattern.appendChild(bg);
 
@@ -1266,7 +1266,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
       tint.setAttribute("y", "0");
       tint.setAttribute("width", "887");
       tint.setAttribute("height", "887");
-      tint.setAttribute("fill", zone === "outer" ? "#4a4750" : "#c9a227");
+      tint.setAttribute("fill", zone === "outer" ? "#4b3426" : "#c9a227");
       tint.setAttribute("fill-opacity", "0.6");
       tint.setAttribute("style", "mix-blend-mode: multiply");
       pattern.appendChild(tint);
