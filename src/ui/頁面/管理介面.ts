@@ -16,6 +16,8 @@ import { MEMBERS } from "../../data/成員資料庫";
 import { MATERIALS } from "../../data/素材資料庫";
 import { FAMILY_LABEL } from "../../data/成員型別";
 import { MATERIAL_RARITY_LABEL } from "../../data/戰鬥原語";
+import * as 背包 from "../../economy/背包狀態";
+import { POTIONS } from "../../economy/流浪商店";
 import { 選文 } from "../語系";
 
 function 雙語(中文: string, 英文: string): string {
@@ -220,6 +222,7 @@ function 小隊分頁內容(): HTMLElement {
 function 背包分頁內容(): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "資料夾式版面";
+  const inventory = 背包.背包快照();
 
   const 書籤欄 = document.createElement("div");
   書籤欄.className = "資料夾式版面-書籤欄";
@@ -243,7 +246,44 @@ function 背包分頁內容(): HTMLElement {
   內容區.className = "資料夾式版面-內容區";
   
   const activeTab = 應用程式狀態.額外.背包選中分類 as keyof typeof bagItems;
-  const items = bagItems[activeTab] || [];
+  const realMaterials = inventory.材料明細
+    .map(({ no, count }) => {
+      const def = MATERIALS.find((m) => m.no === no);
+      return def ? {
+        id: def.id,
+        name: def.nameZh,
+        star: def.star,
+        count,
+        rarity: def.rarity,
+        info: def.visual,
+        world: def.world,
+      } : null;
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null && item.count > 0);
+  const potionName: Record<keyof typeof POTIONS, string> = {
+    hp_small: "生命藥水 (小)",
+    hp_big: "生命藥水 (大)",
+    energy_small: "能量藥水 (小)",
+    energy_big: "能量藥水 (大)",
+    hybrid_small: "混合藥水 (小)",
+    hybrid_big: "混合藥水 (大)",
+  };
+  const realPotions = inventory.藥水明細
+    .map(({ id, count }) => {
+      const def = POTIONS[id];
+      return def ? {
+        id,
+        name: potionName[id],
+        count,
+        effect: `${def.hpRatio > 0 ? `HP +${Math.round(def.hpRatio * 100)}%` : ""}${def.hpRatio > 0 && def.energyRatio > 0 ? " / " : ""}${def.energyRatio > 0 ? `能量 +${Math.round(def.energyRatio * 100)}%` : ""}`,
+        desc: def.big ? "大型藥水，需要在戰鬥中確認後使用。" : "小型藥水，可作為戰鬥補給。",
+      } : null;
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null && item.count > 0);
+  const items =
+    activeTab === "材料" ? realMaterials :
+    activeTab === "消耗品" ? realPotions :
+    bagItems[activeTab] || [];
 
   const itemsGrid = document.createElement("div");
   itemsGrid.style.display = "grid";
