@@ -773,10 +773,8 @@ button.禁用:hover {
 .圖鑑詳情-舞台框 {
   position: relative;
   width: 100%;
-  height: 480px;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
+  /* 高度由立繪內容撐開，不再寫死，徹底避免裁切。 */
+  padding: 0;
   /* 聚光燈舞台：從上方打下的暖光錐 + 深色劇場背幕，讓去背立繪更立體突出。 */
   background:
     radial-gradient(ellipse 70% 55% at 50% 0%, rgba(216, 180, 106, 0.28), transparent 60%),
@@ -791,24 +789,20 @@ button.禁用:hover {
   inset: 14px 14px auto;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  z-index: 3;
 }
 .圖鑑詳情-角色視口 {
   position: relative;
   z-index: 2;
-  /* 視口固定高度（與舞台框一致），立繪在裡面等比 contain 置中。 */
   width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
 }
 .圖鑑詳情-角色立繪圖 {
-  /* contain 保證全身完整顯示、絕不裁切；等比縮放至視口內最大尺寸。 */
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
+  /* width:100% 讓立繪填滿欄寬，height:auto 等比縮放——完全不裁切、完整顯示。
+     display:block + margin auto 水平置中。 */
+  display: block;
+  width: 100%;
   height: auto;
-  object-fit: contain;
   filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.6));
   animation: 圖鑑立繪進場 0.4s ease-out;
 }
@@ -935,10 +929,6 @@ button.禁用:hover {
   .圖鑑詳情-頂部,
   .圖鑑詳情-下半 {
     grid-template-columns: 1fr;
-  }
-
-  .圖鑑詳情-舞台框 {
-    height: 420px;
   }
 }
 
