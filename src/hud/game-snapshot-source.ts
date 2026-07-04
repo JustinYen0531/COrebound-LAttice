@@ -209,7 +209,7 @@ export class GameSnapshotSource {
           hpRatio: summary.playerMaxHp > 0 ? summary.playerHp / summary.playerMaxHp : 0,
           shielded: member.family === "shield",
           dead: summary.playerHp <= 0,
-          ailments: [],
+          ailments: [] as string[],
         } satisfies RosterMember;
       })
       .filter((member): member is RosterMember => member !== null);

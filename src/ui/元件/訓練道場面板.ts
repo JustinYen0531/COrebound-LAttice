@@ -1,5 +1,6 @@
 import { MEMBERS } from "../../data/成員資料庫";
 import { FAMILY_LABEL, WORLD_LABEL } from "../../data/成員型別";
+import type { CaptainId } from "../../data/戰鬥原語";
 import { 幾何世界圖騰清單 } from "../../totem/資料/幾何世界圖騰";
 import { 有機世界圖騰清單 } from "../../totem/資料/有機世界圖騰";
 import { 分形世界圖騰清單 } from "../../totem/資料/分形世界圖騰";
@@ -493,7 +494,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
     btn.textContent = captain.名稱;
     btn.style.setProperty("--隊長色", captain.代表色);
     btn.onclick = () => {
-      設定訓練隊長(captain.id);
+      設定訓練隊長(captain.id as CaptainId);
       刷新();
     };
     captainRow.appendChild(btn);
@@ -671,7 +672,8 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
   select.className = "二級按鈕";
   const groups = new Map<string, HTMLOptGroupElement>();
   catalog.forEach((monster) => {
-    const key = `${WORLD_LABEL[monster.world]}世界`;
+    const worldName = monster.world === "core" ? "核心" : WORLD_LABEL[monster.world];
+    const key = `${worldName}世界`;
     let group = groups.get(key);
     if (!group) {
       group = document.createElement("optgroup");

@@ -99,7 +99,7 @@ function 小隊分頁內容(): HTMLElement {
         <p style="font-size: 0.82rem; line-height: 1.5;">點選左側圓盤的任一槽位，即可查看該成員的戰鬥定位、屬性星級與升星食譜配方。</p>
       </div>
     `;
-  } else if (!訓練道場模式) {
+  } else if (!訓練道場模式 && 選中槽位 !== null) {
     // 槽位編號映射到對應成員數據 (槽位 0~8 對應資料庫成員)
     const mIndex = 選中槽位 % MEMBERS.length;
     const m = MEMBERS[mIndex];

@@ -6,6 +6,7 @@
  *              本版新增:嵌入「世界地圖層」,玩家可用 WASD 在 placeholder 地圖上移動,
  *              靠近熔爐/雕像/工作台/商店/祭壇時自動觸發靠近狀態並顯示驚嘆號。
  */
+import type { World } from "../../data/成員型別";
 import { 應用程式狀態 } from "../應用程式狀態";
 import { 戰鬥HUD接線 } from "../戰鬥HUD接線";
 import { 建立世界地圖層, 讀取玩家位置 } from "../元件/世界地圖層";
@@ -208,12 +209,14 @@ function 建立訓練道場快捷面板(): HTMLElement {
     const selectedEnemyId = summary.selectedEnemyMonsterId;
     const groups = new Map<string, HTMLOptGroupElement>();
     catalog.forEach((monster) => {
-      const worldLabel = {
+      const worldLabelMap: Record<World | "core", string> = {
         geometry: "幾何",
         organic: "有機",
         fractal: "分形",
         mechanical: "機械",
-      }[monster.world];
+        core: "核心",
+      };
+      const worldLabel = worldLabelMap[monster.world];
       let group = groups.get(worldLabel);
       if (!group) {
         group = document.createElement("optgroup");
