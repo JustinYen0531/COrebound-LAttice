@@ -13,6 +13,7 @@ import { MEMBERS } from "../data/成員資料庫";
 import type { CaptainId, WeaponFamily } from "../data/戰鬥原語";
 import { POTIONS, type PotionId } from "../economy/流浪商店";
 import * as 背包 from "../economy/背包狀態";
+import { 取得上陣養成 } from "../progression/養成狀態";
 import type {
   HudSnapshot,
   Layer,
@@ -273,12 +274,13 @@ export class GameSnapshotSource {
       (acc, family) => ({ ...acc, [family]: [] as number[] }),
       {} as Record<WeaponFamily, number[]>,
     );
-    const roster = Array.from({ length: 9 }, (_, slotId) => slotId)
-      .map((slotId) => {
-        const member = MEMBERS[slotId];
+    const formalSquad = 取得上陣養成();
+    const roster = formalSquad
+      .map((entry, slotId) => {
+        const member = MEMBERS.find((candidate) => candidate.no === entry.memberNo);
         if (!member) return null;
         const { layer, role } = slotToLayerRole(slotId);
-        familyStars[member.family].push(3);
+        familyStars[member.family].push(entry.star);
         return {
           id: member.id,
           label: member.nameZh,

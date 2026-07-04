@@ -31,6 +31,7 @@ import { smelt } from "../../economy/熔爐熔煉";
 import * as 背包 from "../../economy/背包狀態";
 import { buyPotion, POTIONS, type PotionId } from "../../economy/流浪商店";
 import { 取得上陣養成, 升星上陣隊員 } from "../../progression/養成狀態";
+import { 刷新正式最大生命 } from "../正式對局小隊狀態";
 
 // ============================================================
 // 共享沙盒玩家背包狀態 (全局持久，操作會即時扣減顯示)
@@ -218,6 +219,7 @@ function 合成面板(): HTMLElement {
         return;
       }
       const member = 取得上陣養成()[index];
+      刷新正式最大生命();
       alert(`升星成功：${member.nameZh} 已提升到 ${result.newStar}★。`);
       應用程式狀態.進入管理介面("互動");
     });
