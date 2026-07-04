@@ -10,6 +10,7 @@ import { 重置世界寶箱 } from "./世界寶箱狀態";
 import { 重置對局進度 } from "./對局進度狀態";
 import { 重置正式戰場 } from "./正式戰場狀態";
 import { 重置死亡遺落物 } from "./死亡遺落狀態";
+import { 重置Boss召喚佇列 } from "./Boss召喚佇列";
 import type { 語言代碼 } from "./語系";
 
 type 滑動面板 = "無" | "左" | "右";
@@ -154,6 +155,7 @@ class 應用程式狀態機 {
       重置對局進度();
       重置正式戰場();
       重置死亡遺落物();
+      重置Boss召喚佇列();
     }
     window.dispatchEvent(new CustomEvent("combat-run-reset", { detail: { mode: 訓練道場 ? "dojo" : "formal" } }));
     this.更新畫面({ 層: "操作頁面", 訓練道場 });

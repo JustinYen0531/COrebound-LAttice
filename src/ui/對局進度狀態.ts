@@ -116,11 +116,13 @@ export function 對局進度摘要(mode: 對局進度模式 = "formal") {
       world: w,
       ready: 可召喚守護者(w, mode),
       defeated: 狀態.guardian[w].guardianDefeated,
+      spawned: 狀態.guardianSpawned[w],
       enraged: 狀態.enrage.isEnraged(w),
       readiness: summonReadiness(狀態.guardian[w]),
     })),
     印記數: 狀態.sigils.size,
     可召喚COLA: 可召喚COLA(mode),
+    COLA已召喚: 狀態.colaSpawned,
     全守護者已倒: 狀態.enrage.allGuardiansDown(),
   };
 }

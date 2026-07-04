@@ -116,6 +116,7 @@ import {
   新增死亡遺落物,
   type 死亡遺落物,
 } from "../死亡遺落狀態";
+import { 取出Boss召喚 } from "../Boss召喚佇列";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -1543,6 +1544,21 @@ export function 建立世界地圖層(): HTMLElement {
     設定驗收事件("COLA 已被召喚至場上。");
   }
 
+  function 處理待召喚Boss(): void {
+    if (訓練道場中) return;
+    for (const request of 取出Boss召喚()) {
+      if (request.kind === "cola") {
+        生成Boss到場(finalBoss(), "cola");
+        設定驗收事件("COLA 已由中央裝配儀召喚至場上。");
+        continue;
+      }
+      const def = worldGuardian(request.world);
+      if (!def) continue;
+      生成Boss到場(def, "guardian", request.world);
+      設定驗收事件(`${REGION_LABEL[request.world]}守護者已由祭壇召喚至場上。`);
+    }
+  }
+
   function 顯示技能提示(text: string): void {
     skillToast.textContent = text;
     skillToast.style.opacity = "1";
@@ -1646,6 +1662,7 @@ export function 建立世界地圖層(): HTMLElement {
     );
   }
 
+  處理待召喚Boss();
   syncNearbyToState();
   render();
   rafId = window.requestAnimationFrame(tick);

@@ -18,6 +18,15 @@ import { FAMILY_LABEL, type Family } from "../../data/成員型別";
 import { STAR_RECIPE, MEMBERS } from "../../data/成員資料庫";
 import { MATERIALS, sellPriceOfMaterial, shardFromMaterial } from "../../data/素材資料庫";
 import { MATERIAL_RARITY_LABEL, SHARD_YIELD, type MaterialStar } from "../../data/戰鬥原語";
+import type { World } from "../../data/成員型別";
+import {
+  可召喚COLA,
+  可召喚守護者,
+  對局進度摘要,
+  標記COLA已召喚,
+  標記守護者已召喚,
+} from "../對局進度狀態";
+import { 排入Boss召喚 } from "../Boss召喚佇列";
 
 // ============================================================
 // 共享沙盒玩家背包狀態 (全局持久，操作會即時扣減顯示)
@@ -27,7 +36,6 @@ interface 沙盒背包 {
   materials: Record<string, number>;
   shards: Record<Family, number>;
   unlockedMembers: Set<number>;
-  sigils: Record<"geometry" | "organic" | "fractal" | "mechanical", boolean>;
   skills: Record<string, number>; // 紀錄技能等級
 }
 
@@ -47,7 +55,6 @@ const sandboxInv: 沙盒背包 = {
   },
   shards: { shield: 35, multishot: 12, straight: 18, mine: 8, laser: 15 },
   unlockedMembers: new Set([1, 2, 3, 6, 11, 16]), // 預設解鎖幾位
-  sigils: { geometry: false, organic: false, fractal: false, mechanical: false },
   skills: { shield: 1, multishot: 1, straight: 1, mine: 1, laser: 1 },
 };
 
@@ -602,11 +609,18 @@ function 召喚面板(): HTMLElement {
   container.style.flexDirection = "column";
   container.style.gap = "14px";
 
-  const allSigilsGot = Object.values(sandboxInv.sigils).every(Boolean);
+  const progress = 對局進度摘要("formal");
+  const online = 應用程式狀態.額外.靠近的互動設施 === "召喚";
+  const labels: Record<World, string> = {
+    geometry: "幾何世界",
+    organic: "有機世界",
+    fractal: "分形世界",
+    mechanical: "機械世界",
+  };
 
   container.innerHTML = `
     <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 12px; border-radius: 8px;">
-      <h4 style="margin: 0 0 6px; color: #ff8a3b; font-size: 0.85rem;">🔱 世界守護者召喚與 Boss 進度</h4>
+      <h4 style="margin: 0 0 6px; color: #ff8a3b; font-size: 0.85rem;">世界守護者召喚與 Boss 進度</h4>
       <p style="font-size: 0.76rem; color: #8d93ad; margin: 0; line-height: 1.4;">
         玩家必須擊敗四大世界的 T3 守護者來奪取四枚「世界晶核印記」。當四印記集齊後，可前往地圖中央廣場的裝配儀召喚最終 Boss COLA。
       </p>
@@ -618,29 +632,26 @@ function 召喚面板(): HTMLElement {
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
           <thead>
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #ff8a3b;">
-              <th style="padding: 4px 0;">世界世界</th>
+              <th style="padding: 4px 0;">世界</th>
               <th>守護者狀態</th>
               <th>操作</th>
             </tr>
           </thead>
           <tbody>
-            ${(["geometry", "organic", "fractal", "mechanical"] as const).map((w) => {
-              const label = {
-                geometry: "幾何世界",
-                organic: "有機世界",
-                fractal: "分形世界",
-                mechanical: "機械世界",
-              }[w];
-              const got = sandboxInv.sigils[w];
+            ${progress.守護者.map((guardian) => {
+              const status = guardian.defeated
+                ? "已擊敗，印記已取得"
+                : guardian.spawned
+                  ? "已召喚，正在戰場"
+                  : guardian.ready
+                    ? "條件完成，可召喚"
+                    : `T1 ${guardian.readiness.minionTypesDone}/${guardian.readiness.minionTypesNeeded}｜T2 ${guardian.readiness.eliteKills}/${guardian.readiness.eliteNeeded}`;
               return `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                  <td style="padding: 8px 0; font-weight: bold;">${label}</td>
-                  <td style="color: ${got ? "#4d8dff" : "#ff4d5e"};">${got ? "✅ 已擊敗，印記已奪取" : "❌ 未擊敗"}</td>
+                  <td style="padding: 8px 0; font-weight: bold;">${labels[guardian.world]}</td>
+                  <td style="color: ${guardian.defeated ? "#4d8dff" : guardian.ready ? "#ffd24d" : "#8d93ad"};">${status}</td>
                   <td>
-                    ${got 
-                      ? `<span style="color:#8d93ad;">已通關</span>` 
-                      : `<button class="三級按鈕 召喚-守護者" data-world="${w}">進行召喚</button>`
-                    }
+                    <button class="三級按鈕 召喚-守護者" data-world="${guardian.world}" ${online && guardian.ready ? "" : "disabled"}>召喚</button>
                   </td>
                 </tr>
               `;
@@ -652,20 +663,18 @@ function 召喚面板(): HTMLElement {
       <!-- 右側 COLA 裝配儀 -->
       <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;">
         <div>
-          <h4 style="margin: 0 0 8px; color: #ff8a3b; font-size: 0.82rem;">🌀 COLA 裝配狀態</h4>
+          <h4 style="margin: 0 0 8px; color: #ff8a3b; font-size: 0.82rem;">COLA 裝配狀態</h4>
           <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; color: #8d93ad; margin-bottom: 12px;">
-            <div>幾何印記: ${sandboxInv.sigils.geometry ? "✅" : "❌"}</div>
-            <div>有機印記: ${sandboxInv.sigils.organic ? "✅" : "❌"}</div>
-            <div>分形印記: ${sandboxInv.sigils.fractal ? "✅" : "❌"}</div>
-            <div>機械印記: ${sandboxInv.sigils.mechanical ? "✅" : "❌"}</div>
+            <div>世界印記：${progress.印記數} / 4</div>
+            <div>全世界狂暴：${progress.全守護者已倒 ? "是" : "否"}</div>
+            <div>場上狀態：${progress.COLA已召喚 ? "COLA 已在場" : "尚未召喚"}</div>
           </div>
-          <button class="危險按鈕 最終召喚" style="width: 100%; padding: 8px 0; font-size: 0.8rem;" ${allSigilsGot ? "" : "disabled"}>
+          <button class="危險按鈕 最終召喚" style="width: 100%; padding: 8px 0; font-size: 0.8rem;" ${online && progress.可召喚COLA ? "" : "disabled"}>
             召喚 COLA Boss
           </button>
         </div>
         
         <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 12px;">
-          <button class="三級按鈕 快捷獲取印記" style="font-size: 0.7rem; padding: 4px 0;">[沙盒] 取得全印記</button>
           <button class="三級按鈕 召喚-離開" style="font-size: 0.75rem; padding: 4px 0;">離開</button>
         </div>
       </div>
@@ -675,24 +684,18 @@ function 召喚面板(): HTMLElement {
   // 綁定事件
   container.querySelectorAll(".召喚-守護者").forEach((btn) => {
     btn.addEventListener("click", (e) => {
-      const w = (e.currentTarget as HTMLElement).dataset.world as keyof typeof sandboxInv.sigils;
-      sandboxInv.sigils[w] = true;
-      alert(`🔱 已為你召喚該世界的守護者！\n[模擬戰鬥] 擊殺成功！你已獲得「${w}」世界晶核印記！`);
-      應用程式狀態.進入管理介面("互動");
+      const w = (e.currentTarget as HTMLElement).dataset.world as World;
+      if (!online || !可召喚守護者(w, "formal")) return;
+      標記守護者已召喚(w, "formal");
+      排入Boss召喚({ kind: "guardian", world: w });
+      應用程式狀態.返回戰場();
     });
   });
 
-  container.querySelector(".快捷獲取印記")!.addEventListener("click", () => {
-    sandboxInv.sigils.geometry = true;
-    sandboxInv.sigils.organic = true;
-    sandboxInv.sigils.fractal = true;
-    sandboxInv.sigils.mechanical = true;
-    alert("⚡ [沙盒測試] 已為你裝配全部四枚世界印記！");
-    應用程式狀態.進入管理介面("互動");
-  });
-
   container.querySelector(".最終召喚")!.addEventListener("click", () => {
-    alert("💥 警報！大地震顫！\n最終毀滅級守護者【COrebound LAttence (COLA)】已在中央廣場降臨！準備戰鬥！");
+    if (!online || !可召喚COLA("formal")) return;
+    標記COLA已召喚("formal");
+    排入Boss召喚({ kind: "cola" });
     應用程式狀態.返回戰場();
   });
 
