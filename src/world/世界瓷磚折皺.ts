@@ -39,13 +39,54 @@ type 折皺層設定 = {
   opacity: number;
   scale: number;
   rotationOffset: number;
+  blendMode: string;
 };
 
 const 折皺層列表: 折皺層設定[] = [
-  { sizeBase: 340, sizeRange: 120, offsetRange: 140, opacity: 0.62, scale: 1.55, rotationOffset: 0 },
-  { sizeBase: 220, sizeRange: 90, offsetRange: 90, opacity: 0.46, scale: 1.68, rotationOffset: 67 },
-  { sizeBase: 150, sizeRange: 70, offsetRange: 56, opacity: 0.34, scale: 1.84, rotationOffset: 131 },
+  { sizeBase: 300, sizeRange: 120, offsetRange: 150, opacity: 0.78, scale: 1.72, rotationOffset: 0, blendMode: "multiply" },
+  { sizeBase: 210, sizeRange: 90, offsetRange: 110, opacity: 0.62, scale: 1.84, rotationOffset: 67, blendMode: "multiply" },
+  { sizeBase: 148, sizeRange: 72, offsetRange: 72, opacity: 0.46, scale: 1.96, rotationOffset: 131, blendMode: "darken" },
+  { sizeBase: 104, sizeRange: 56, offsetRange: 42, opacity: 0.3, scale: 2.08, rotationOffset: 211, blendMode: "darken" },
 ];
+
+function 確保折皺濾鏡(defs: SVGDefsElement): string {
+  const filterId = "world-tile-wrinkle-contrast";
+  if (defs.querySelector(`#${filterId}`)) return filterId;
+
+  const filter = document.createElementNS(SVG_NS, "filter");
+  filter.setAttribute("id", filterId);
+  filter.setAttribute("x", "-20%");
+  filter.setAttribute("y", "-20%");
+  filter.setAttribute("width", "140%");
+  filter.setAttribute("height", "140%");
+
+  const desaturate = document.createElementNS(SVG_NS, "feColorMatrix");
+  desaturate.setAttribute("type", "saturate");
+  desaturate.setAttribute("values", "0");
+  filter.appendChild(desaturate);
+
+  const contrast = document.createElementNS(SVG_NS, "feComponentTransfer");
+  const alpha = document.createElementNS(SVG_NS, "feFuncA");
+  alpha.setAttribute("type", "gamma");
+  alpha.setAttribute("amplitude", "1.22");
+  alpha.setAttribute("exponent", "0.88");
+  alpha.setAttribute("offset", "0");
+  contrast.appendChild(alpha);
+
+  const channelSlope = "1.24";
+  const channelOffset = "-0.08";
+  ["R", "G", "B"].forEach((channel) => {
+    const fn = document.createElementNS(SVG_NS, `feFunc${channel}`);
+    fn.setAttribute("type", "linear");
+    fn.setAttribute("slope", channelSlope);
+    fn.setAttribute("intercept", channelOffset);
+    contrast.appendChild(fn);
+  });
+
+  filter.appendChild(contrast);
+  defs.appendChild(filter);
+  return filterId;
+}
 
 function 建立折皺圖樣(
   defs: SVGDefsElement,
@@ -97,6 +138,7 @@ function 建立折皺覆層(tile: SVGPathElement, index: number): void {
 
   const pathData = tile.getAttribute("d") ?? `${world}-${index}`;
   const hash = 穩定雜湊(pathData);
+  const filterId = 確保折皺濾鏡(defs);
   const overlays = 折皺層列表.map((config, layerIndex) => {
     const patternId = 建立折皺圖樣(defs, world, hash, index, layerIndex, config);
     const overlay = tile.cloneNode(false) as SVGPathElement;
@@ -106,7 +148,8 @@ function 建立折皺覆層(tile: SVGPathElement, index: number): void {
     overlay.setAttribute("fill", `url(#${patternId})`);
     overlay.setAttribute("fill-opacity", String(config.opacity));
     overlay.setAttribute("stroke", "none");
-    overlay.setAttribute("style", "mix-blend-mode:multiply;pointer-events:none");
+    overlay.setAttribute("filter", `url(#${filterId})`);
+    overlay.setAttribute("style", `mix-blend-mode:${config.blendMode};pointer-events:none`);
     overlay.dataset.wrinkleOverlay = "true";
     return overlay;
   });
