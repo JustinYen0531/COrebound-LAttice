@@ -5,6 +5,7 @@
  */
 import { 應用程式狀態, 圖鑑資料查詢類分頁 } from "../應用程式狀態";
 import { MEMBERS } from "../../data/成員資料庫";
+import { findMonster } from "../../data/怪物資料庫";
 import {
   成員圖鑑資料,
   怪物圖鑑資料,
@@ -15,6 +16,34 @@ import {
   世界故事資料,
   圖鑑條目,
 } from "../資料/圖鑑資料庫";
+import { 生成角色迷你頭像HTML } from "./css角色頭像";
+
+const 怪物圖鑑編號對照: Record<string, number> = {
+  mon_circle: 1,
+  mon_triangle: 2,
+  mon_square: 3,
+  mon_hexagon: 4,
+  mon_penrose: 5,
+  mon_flower_life: 6,
+  mon_seed: 8,
+  mon_vein: 9,
+  mon_moss: 10,
+  mon_feather: 11,
+  mon_nest: 12,
+  mon_coral: 13,
+  mon_mother: 15,
+  mon_first_fractal: 16,
+  mon_koch: 17,
+  mon_dragon: 18,
+  mon_sierpinski: 19,
+  mon_hilbert: 20,
+  mon_bearing: 22,
+  mon_gear: 23,
+  mon_nut: 24,
+  mon_coil: 25,
+  mon_piston: 26,
+  mon_sentry: 27,
+};
 
 function 尋找對應成員(條目ID: string) {
   return MEMBERS.find((item) => {
@@ -72,6 +101,21 @@ function 建立星級切換(選中星級: number): string {
     .join("");
 }
 
+function 建立圖鑑舞台立繪HTML(立繪路徑: string, alt: string, 附加區塊HTML = ""): string {
+  return `
+    <div class="圖鑑詳情-角色構圖">
+      <div class="圖鑑詳情-舞台框">
+        <div class="圖鑑詳情-角色視口">
+          <div class="圖鑑詳情-角色浮層">
+            <img class="圖鑑詳情-角色立繪圖" src="${立繪路徑}" alt="${alt}" />
+          </div>
+        </div>
+      </div>
+      ${附加區塊HTML}
+    </div>
+  `;
+}
+
 function 建立成員立繪HTML(條目ID: string): string {
   const m = 尋找對應成員(條目ID);
   if (!m) return "";
@@ -80,24 +124,35 @@ function 建立成員立繪HTML(條目ID: string): string {
   const 星級列HTML = 建立星級切換(選中星級).replaceAll("__MEMBER__", m.id);
   const 立繪路徑 = `/assets/transparent-portraits/members/${m.id}_s${選中星級}.png`;
 
-  return `
-    <div class="圖鑑詳情-角色構圖">
-      <div class="圖鑑詳情-舞台框">
-        <div class="圖鑑詳情-角色視口">
-          <div class="圖鑑詳情-角色浮層">
-            <img class="圖鑑詳情-角色立繪圖" src="${立繪路徑}" alt="${m.nameZh} ${選中星級}星立繪" />
-          </div>
-        </div>
-      </div>
+  return 建立圖鑑舞台立繪HTML(
+    立繪路徑,
+    `${m.nameZh} ${選中星級}星立繪`,
+    `
       <div class="圖鑑詳情-星級列">
         ${星級列HTML}
       </div>
-    </div>
-  `;
+    `
+  );
+}
+
+function 建立怪物立繪HTML(條目ID: string): string {
+  const monsterNo = 怪物圖鑑編號對照[條目ID];
+  if (!monsterNo) return "";
+
+  const m = findMonster(monsterNo);
+  if (!m || m.world === "core") return "";
+
+  return 建立圖鑑舞台立繪HTML(
+    `/assets/images/enemies/${m.world}/${m.id}.png`,
+    `${m.nameZh} 立繪`
+  );
 }
 
 function 建立詳情HTML(選中條目: 圖鑑條目): string {
   const 成員立繪HTML = 建立成員立繪HTML(選中條目.id);
+  const 怪物立繪HTML = 建立怪物立繪HTML(選中條目.id);
+  const 立繪HTML =
+    成員立繪HTML || 怪物立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>這筆資料沒有立繪</span></div>`;
   const 表格HTML =
     選中條目.表格數值 && 選中條目.表格數值.length > 0
       ? `
@@ -138,7 +193,7 @@ function 建立詳情HTML(選中條目: 圖鑑條目): string {
         <p class="圖鑑詳情-摘要">${選中條目.簡介}</p>
       </div>
       <div class="圖鑑詳情-下半">
-        ${成員立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>這筆資料沒有立繪</span></div>`}
+        ${立繪HTML}
         <div class="圖鑑詳情-文案區">
           <div class="圖鑑詳情-內文">${渲染Markdown(選中條目.詳細描述)}</div>
           ${表格HTML}
@@ -320,4 +375,3 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
 
   return wrap;
 }
-import { 生成角色迷你頭像HTML } from "./css角色頭像";
