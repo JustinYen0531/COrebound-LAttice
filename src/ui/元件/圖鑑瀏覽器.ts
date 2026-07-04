@@ -16,8 +16,6 @@ import {
   圖鑑條目,
 } from "../資料/圖鑑資料庫";
 
-const 星級素材對應: Record<number, number> = { 1: 2, 2: 3, 3: 1 };
-
 function 尋找對應成員(條目ID: string) {
   return MEMBERS.find((item) => {
     if (item.id === 條目ID) return true;
@@ -65,7 +63,7 @@ function 建立星級切換(選中星級: number): string {
       (lv) => `
         <button class="圖鑑星級按鈕 ${選中星級 === lv ? "作用中" : ""}" data-star="${lv}" type="button">
           <span class="圖鑑星級頭像框">
-            <img class="圖鑑星級頭像" src="assets/transparent-portraits/avatars/__MEMBER___s${星級素材對應[lv]}.png" alt="${lv}星頭像" />
+            <img class="圖鑑星級頭像" src="assets/transparent-portraits/avatars/__MEMBER___s${lv}.png" alt="${lv}星頭像" />
           </span>
           <span class="圖鑑星級文字">${lv}★</span>
         </button>
@@ -80,7 +78,7 @@ function 建立成員立繪HTML(條目ID: string): string {
 
   const 選中星級 = 應用程式狀態.額外.圖鑑選中星級 ?? 3;
   const 星級列HTML = 建立星級切換(選中星級).replaceAll("__MEMBER__", m.id);
-  const 立繪路徑 = `/assets/transparent-portraits/members/${m.id}_s${星級素材對應[選中星級]}.png`;
+  const 立繪路徑 = `/assets/transparent-portraits/members/${m.id}_s${選中星級}.png`;
 
   return `
     <div class="圖鑑詳情-角色構圖">
