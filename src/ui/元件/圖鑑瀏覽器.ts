@@ -16,8 +16,6 @@ import {
   圖鑑條目,
 } from "../資料/圖鑑資料庫";
 
-const 固定圖鑑立繪路徑 = "/assets/images/characters/catalog/fixed-character-portrait.png";
-
 function 尋找對應成員(條目ID: string) {
   return MEMBERS.find((item) => {
     if (item.id === 條目ID) return true;
@@ -80,12 +78,13 @@ function 建立成員立繪HTML(條目ID: string): string {
 
   const 選中星級 = 應用程式狀態.額外.圖鑑選中星級 ?? 3;
   const 星級列HTML = 建立星級切換(選中星級).replaceAll("__MEMBER__", m.id);
+  const 立繪路徑 = `/assets/transparent-portraits/members/${m.id}_s${選中星級}.png`;
 
   return `
     <div class="圖鑑詳情-角色構圖">
       <div class="圖鑑詳情-舞台框">
         <div class="圖鑑詳情-角色視口">
-          <img class="圖鑑詳情-角色立繪圖 圖鑑詳情-角色立繪圖-固定" src="${固定圖鑑立繪路徑}" alt="${m.nameZh}" />
+          <img class="圖鑑詳情-角色立繪圖" src="${立繪路徑}" alt="${m.nameZh} ${選中星級}星立繪" />
         </div>
       </div>
       <div class="圖鑑詳情-星級列">
