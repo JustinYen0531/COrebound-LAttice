@@ -210,21 +210,59 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
 
   const 卡片格 = document.createElement("div");
   卡片格.className = "占位卡片格 圖鑑瀏覽器-卡片格";
-  if (!列表展開 && 選中條目)卡片格.classList.add("已收起");
+  if (!列表展開 && 選中條目) 卡片格.classList.add("已收起");
   const 有選中條目 = Boolean(選中條目);
 
-  for (const 條目 of 當前資料列表) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "占位卡片 圖鑑瀏覽器-條目按鈕";
-    if (有選中條目 && 條目.id !== 選中條目!.id) card.classList.add("收斂");
-    if (有選中條目 && 條目.id === 選中條目!.id) card.classList.add("作用中");
-    card.innerHTML = `
-      <span class="圖鑑瀏覽器-條目標題">${條目.名稱.replace(/^(0[1-9]|[1-2][0-9])\.\s*/, "")}</span>
-      <span class="圖鑑瀏覽器-條目簡述">${條目.簡介}</span>
-    `;
-    card.addEventListener("click", () => 應用程式狀態.設定圖鑑選中條目(情境, 條目.id));
-    卡片格.appendChild(card);
+  if (選中名稱 === "成員圖鑑") {
+    卡片格.classList.add("成員圖鑑-世界分類版");
+
+    const 世界配置 = [
+      { key: "幾何世界", name: "幾何世界 (Geometry)" },
+      { key: "分形世界", name: "分形世界 (Fractal)" },
+      { key: "有機世界", name: "有機世界 (Organic)" },
+      { key: "機械世界", name: "機械世界 (Mechanical)" },
+    ];
+
+    for (const conf of 世界配置) {
+      const 列容器 = document.createElement("div");
+      列容器.className = "圖鑑瀏覽器-世界列";
+
+      const 世界標題 = document.createElement("div");
+      世界標題.className = "圖鑑瀏覽器-世界列標題";
+      世界標題.textContent = conf.name;
+      列容器.appendChild(世界標題);
+
+      const 世界成員 = 當前資料列表.filter((條目) => 條目.所屬.includes(conf.key));
+      for (const 條目 of 世界成員) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "占位卡片 圖鑑瀏覽器-條目按鈕";
+        if (有選中條目 && 條目.id !== 選中條目!.id) card.classList.add("收斂");
+        if (有選中條目 && 條目.id === 選中條目!.id) card.classList.add("作用中");
+        card.innerHTML = `
+          <span class="圖鑑瀏覽器-條目標題">${條目.名稱.replace(/^(0[1-9]|[1-2][0-9])\.\s*/, "")}</span>
+          <span class="圖鑑瀏覽器-條目簡述">${條目.簡介}</span>
+        `;
+        card.addEventListener("click", () => 應用程式狀態.設定圖鑑選中條目(情境, 條目.id));
+        列容器.appendChild(card);
+      }
+      卡片格.appendChild(列容器);
+    }
+  } else {
+    // 其他類別圖鑑（如怪物、材料等）維持原本的平鋪網格
+    for (const 條目 of 當前資料列表) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "占位卡片 圖鑑瀏覽器-條目按鈕";
+      if (有選中條目 && 條目.id !== 選中條目!.id) card.classList.add("收斂");
+      if (有選中條目 && 條目.id === 選中條目!.id) card.classList.add("作用中");
+      card.innerHTML = `
+        <span class="圖鑑瀏覽器-條目標題">${條目.名稱.replace(/^(0[1-9]|[1-2][0-9])\.\s*/, "")}</span>
+        <span class="圖鑑瀏覽器-條目簡述">${條目.簡介}</span>
+      `;
+      card.addEventListener("click", () => 應用程式狀態.設定圖鑑選中條目(情境, 條目.id));
+      卡片格.appendChild(card);
+    }
   }
 
   const 展開區 = document.createElement("div");
