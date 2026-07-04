@@ -1518,6 +1518,105 @@ button.禁用:hover {
 .世界地圖層-怪物-T2 .世界地圖層-怪物-image {
   filter: drop-shadow(0 0 6px rgba(216, 180, 106, 0.4));
 }
+/* 怪物血條（佔位）：受傷後浮現在 token 上方 */
+.世界地圖層-怪物-血條 {
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 5px;
+  background: rgba(6, 7, 12, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  z-index: 4;
+}
+.世界地圖層-怪物-血條填充 {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff5468, #ffd24d);
+  transition: width 0.12s linear;
+}
+
+/* Batch 2 驗收面板（佔位 UI：右下角資源/戰力/擊殺 + 驅動按鈕） */
+.驗收面板 {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 30;
+  width: 300px;
+  padding: 12px 14px;
+  background: rgba(6, 7, 12, 0.9);
+  border: 1px solid rgba(216, 180, 106, 0.35);
+  color: #e9ecf8;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+.驗收面板-標題 {
+  color: #d8b46a;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.驗收面板-隊員 {
+  color: #8d93ad;
+  margin-top: 2px;
+}
+.驗收面板-按鈕列 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 6px;
+}
+.驗收面板-按鈕列 .三級按鈕 {
+  font-size: 0.72rem;
+  padding: 4px 8px;
+}
+.驗收面板-推圖 {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
+  margin-top: 4px;
+}
+.驗收面板-進度 {
+  color: #8d93ad;
+  font-size: 0.7rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
+}
+/* Boss（守護者/COLA）token：放大 + 紅金雙重光暈，凸顯威脅 */
+.世界地圖層-怪物-boss .世界地圖層-怪物-image {
+  filter: drop-shadow(0 0 12px rgba(255, 84, 104, 0.6)) drop-shadow(0 0 24px rgba(216, 180, 106, 0.5));
+  transform: scale(1.5);
+}
+
+/* 投射物圖層（佔位美術：純色小圓點；正式美術待補） */
+.世界地圖層-投射物圖層 {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.世界地圖層-投射物 {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  will-change: left, top;
+}
+.世界地圖層-投射物-player {
+  background: radial-gradient(circle, #ffe9a8 0%, #d8b46a 60%, rgba(216,180,106,0) 100%);
+  box-shadow: 0 0 8px rgba(216, 180, 106, 0.8);
+}
+.世界地圖層-投射物-enemy {
+  background: radial-gradient(circle, #ffd0d5 0%, #ff5468 60%, rgba(255,84,104,0) 100%);
+  box-shadow: 0 0 8px rgba(255, 84, 104, 0.8);
+}
+/* 護盾衝擊波較大、地雷較大且偏方，多發較小（佔位差異化） */
+.世界地圖層-投射物-shield { width: 30px; height: 30px; }
+.世界地圖層-投射物-mine { width: 26px; height: 26px; border-radius: 20%; }
+.世界地圖層-投射物-multishot { width: 12px; height: 12px; }
 
 /* 玩家標記 */
 .世界地圖層-玩家 {

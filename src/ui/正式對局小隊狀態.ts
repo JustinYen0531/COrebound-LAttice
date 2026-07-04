@@ -16,16 +16,7 @@
  *              總重量=12+隊員重量），確保兩個模式數值語意統一。
  */
 
-import { 應用程式狀態 } from "./應用程式狀態";
-import { MEMBERS } from "../data/成員資料庫";
-import { statsAtStar } from "../data/成員型別";
-import { captainStatsAtStar } from "../data/控制引擎";
-import type { CaptainId } from "../data/戰鬥原語";
-
-const 預設隊長: CaptainId = "conductor";
-const 預設成員星級 = 3 as const;
-/** 基礎重量 12，與 訓練道場狀態.ts 的 totalWeight 公式一致。 */
-const 基礎重量 = 12;
+import { 小隊屬性摘要 } from "../progression/養成狀態";
 
 interface 正式對局內部狀態 {
   playerHp: number;
@@ -40,33 +31,18 @@ const 狀態: 正式對局內部狀態 = {
   initialized: false,
 };
 
-function 當前隊長(): CaptainId {
-  const selected = 應用程式狀態.額外.選中隊長;
-  if (selected === "conductor" || selected === "operator" || selected === "launcher" || selected === "architect") {
-    return selected;
-  }
-  return 預設隊長;
-}
-
 /**
  * 取得正式對局的全隊摘要。
- * 預設編隊 = 前 8 名成員 + 當前隊長（3 星），與遊戲準備流程的小隊圓盤預覽一致。
+ * 屬性由 養成狀態 提供（隊長@進化星級 + 8 隊員@各自升星星級），
+ * 因此「打怪→升星」會實際反映到全隊 HP/ATK/重量。
  */
 export function 取得正式小隊摘要() {
-  const captainId = 當前隊長();
-  const captain = captainStatsAtStar(captainId, 4);
-  const members = MEMBERS.slice(0, 8).map((member) => ({
-    member,
-    stats: statsAtStar(member.base, 預設成員星級),
-  }));
-  const totalHp = captain.hp + members.reduce((sum, entry) => sum + entry.stats.hp, 0);
-  const totalAtk = captain.atk + members.reduce((sum, entry) => sum + entry.stats.atk, 0);
-  const totalWeight = 基礎重量 + members.reduce((sum, entry) => sum + entry.stats.weight, 0);
+  const s = 小隊屬性摘要();
   return {
-    captainId,
-    totalHp,
-    totalAtk,
-    totalWeight,
+    captainId: s.captainId,
+    totalHp: s.totalHp,
+    totalAtk: s.totalAtk,
+    totalWeight: s.totalWeight,
     playerHp: 狀態.playerHp,
     playerMaxHp: 狀態.playerMaxHp,
   };
@@ -87,6 +63,20 @@ export function 手動設定正式玩家生命(hp: number): void {
 
 export function 回滿正式玩家生命(): void {
   初始化正式玩家生命();
+}
+
+/**
+ * 升星後刷新最大生命：重算全隊 totalHp 當上限，並維持目前生命百分比。
+ * 讓「升星→血條上限提升」立即反映（不需重進戰局）。
+ */
+export function 刷新正式最大生命(): void {
+  if (!狀態.initialized) {
+    初始化正式玩家生命();
+    return;
+  }
+  const 舊比例 = 狀態.playerMaxHp > 0 ? 狀態.playerHp / 狀態.playerMaxHp : 1;
+  狀態.playerMaxHp = 取得正式小隊摘要().totalHp;
+  狀態.playerHp = Math.round(狀態.playerMaxHp * 舊比例);
 }
 
 /** 玩家是否已經陣亡（正式對局）。 */

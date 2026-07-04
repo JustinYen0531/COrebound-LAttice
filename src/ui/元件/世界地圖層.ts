@@ -22,7 +22,39 @@ import {
   取得正式小隊摘要,
   手動設定正式玩家生命,
   初始化正式玩家生命,
+  正式玩家已陣亡,
 } from "../正式對局小隊狀態";
+import { 取得訓練小隊成員 } from "../訓練道場狀態";
+import { ProjectilePool, type Projectile } from "../../combat/投射物系統";
+import { detectHits, resolveProjectileHit } from "../../combat/碰撞解析";
+import { PLAYABLE_FAMILIES, FAMILY_FIRE_PERIOD } from "../../data/戰鬥原語";
+import { STAR_MULTIPLIER, type StarLevel } from "../../data/成員型別";
+import { computeFamilyWeaponStatus, type DeployedMember } from "../../skills/技能管理";
+import { MEMBERS } from "../../data/成員資料庫";
+import { findMonster } from "../../data/怪物資料庫";
+import { rollMonsterDrop } from "../../economy/資源掉落系統";
+import * as 背包 from "../../economy/背包狀態";
+import {
+  升星上陣隊員,
+  取得上陣養成,
+  小隊屬性摘要,
+  隊員累計總星級,
+  當前隊長星級,
+} from "../../progression/養成狀態";
+import { 刷新正式最大生命 } from "../正式對局小隊狀態";
+import { smelt } from "../../economy/熔爐熔煉";
+import { worldGuardian, finalBoss, type MonsterDef } from "../../data/怪物資料庫";
+import {
+  記錄世界擊殺,
+  可召喚守護者,
+  標記守護者已召喚,
+  擊敗守護者,
+  可召喚COLA,
+  標記COLA已召喚,
+  對局進度摘要,
+} from "../對局進度狀態";
+import { EROSION_DAMAGE_RATIO_PER_TICK } from "../../data/戰鬥原語";
+import { controlEffectAtStar } from "../../data/控制引擎";
 import {
   FACILITY_GLYPH,
   MAP_HORIZONTAL_DIVIDER,
@@ -30,6 +62,7 @@ import {
   MAP_OBJECTS,
   MAP_VERTICAL_DIVIDER,
   MAP_ZONES,
+  PLAZA_RADIUS,
   REGION_DIRECTION,
   REGION_LABEL,
   nearbyObjects,
@@ -48,6 +81,11 @@ import { 建立玩家標記圖騰 } from "./玩家標記圖騰";
 import { buildPenroseSupertile, type PenrosePoint } from "../../world/彭羅斯地板";
 import { buildEscherBirdField, type EscherPoint } from "../../world/艾雪鳥地板";
 import { buildCairoField, type CairoPoint } from "../../world/開羅五邊形地板";
+import {
+  標記驗收結果,
+  記錄驗收擊殺,
+  設定驗收事件,
+} from "../驗收場狀態";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -353,6 +391,164 @@ export function 建立世界地圖層(): HTMLElement {
   let playerVelocity = { x: 0, y: 0 };
   let collisionTickCarry = 0;
 
+  // —— 投射物戰鬥（Batch 1 核心戰鬥迴圈）——
+  // 小隊每個家族依發射週期自動朝最近怪物射擊；遠程怪物朝玩家回擊。
+  // 子彈飛行、命中、扣血、死亡都走既有的 投射物系統 + 碰撞解析 + 重量物理。
+  const projectileLayer = document.createElement("div");
+  projectileLayer.className = "世界地圖層-投射物圖層";
+  canvas.appendChild(projectileLayer);
+  const projectilePool = new ProjectilePool();
+  const projectileNodes = new Map<number, HTMLElement>();
+  // 每個家族的發射計時器（秒）
+  const familyFireTimers: Record<Family, number> = {
+    shield: 0, multishot: 0, straight: 0, mine: 0, laser: 0,
+  };
+  const FIRE_RANGE = 900; // 小隊武器索敵範圍（世界座標）
+  const MONSTER_FIRE_CD = 1.4; // 遠程怪物開火冷卻（秒）
+  // 武器 speed 是「設計單位」(straight=18)，但世界座標尺度極大（怪物在數百~數千）。
+  // 乘上此比例把彈速換算到世界座標，讓子彈能在存活時間內真正飛到目標。
+  const PROJECTILE_SPEED_SCALE = 40;
+  let 已觸發陣亡 = false;
+
+  /** 把剛生成的子彈速度（與地雷衰減率）換算到世界座標尺度。 */
+  function 套用世界彈速(shots: Projectile[]): Projectile[] {
+    for (const p of shots) {
+      p.speed *= PROJECTILE_SPEED_SCALE;
+      if (p.motion === "decaying") p.decel = p.speed / 0.5; // 維持 0.5 秒衰減到 0
+    }
+    return shots;
+  }
+
+  // —— 擊殺掉落與擊殺統計（Batch 2）——
+  let 擊殺數 = 0;
+  /** 各世界各 Tier 擊殺數（供守護者召喚進度，Batch 3 用）。 */
+  const 擊殺統計: Record<string, number> = {};
+
+  /**
+   * 結算新死亡怪物的掉落：擲一次 資源掉落系統，材料/原石寫入背包，並累計擊殺數。
+   * 每隻只結算一次（dropped 旗標）。訓練道場不計入正式掉落。
+   */
+  function 結算死亡掉落(): void {
+    for (const m of monsters) {
+      if (m.inst.hp > 0 || m.dropped) continue;
+      m.dropped = true;
+      m.node.style.display = "none";
+      擊殺數 += 1;
+
+      // Boss 特殊結算：守護者 → 印記+狂暴；COLA → 勝利。
+      if (m.bossKind === "guardian" && m.bossWorld) {
+        const sigil = 擊敗守護者(m.bossWorld);
+        if (sigil) 設定驗收事件(`${REGION_LABEL[m.bossWorld]}守護者已倒下，取得 ${sigil}。`);
+        continue;
+      }
+      if (m.bossKind === "cola") {
+        標記驗收結果("victory", "COLA 已被擊敗，整條驗收主線完成。");
+        if (!訓練道場中) 應用程式狀態.觸發終局事件(); // 勝利進結算頁
+        continue;
+      }
+
+      const def = findMonster(m.inst.monsterNo);
+      if (!def) continue;
+      擊殺統計[`${def.world}_T${def.tier}`] = (擊殺統計[`${def.world}_T${def.tier}`] ?? 0) + 1;
+      記錄驗收擊殺(`${def.world}_T${def.tier}`, `${def.nameZh} 已被擊殺。`);
+      if (def.world !== "core") {
+        記錄世界擊殺(def.world, def.tier, def.id); // 累計守護者召喚進度
+      }
+      const enraged = def.world !== "core" && 世界已狂暴查詢(def.world);
+      const drop = rollMonsterDrop(def, enraged);
+      for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count);
+      背包.加入原石(drop.gems);
+    }
+  }
+
+  /** 查某世界是否狂暴（給掉落用；封裝以免直接依賴狀態物件）。 */
+  function 世界已狂暴查詢(world: World): boolean {
+    return 對局進度摘要().守護者.find((g) => g.world === world)?.enraged ?? false;
+  }
+
+  /**
+   * 網格侵蝕（毒圈）：縮圈警戒啟動後，安全半徑隨時間收縮；
+   * 玩家在安全半徑外，每 Tick 扣最大生命 5%（真實傷害，無視防禦）。
+   * 為方便驗收，這裡以 應用程式狀態.縮圈警戒 作為啟動訊號（世界時鐘 45s 觸發）。
+   */
+  function updateErosion(dt: number): void {
+    if (訓練道場中) return;
+    if (!應用程式狀態.額外.縮圈警戒) return;
+    const 秒 = 應用程式狀態.額外.世界時鐘秒數 ?? 0;
+    // 從警戒點(45s)起 120 秒內由地圖半徑收縮到中央廣場半徑。
+    const t = Math.min(1, Math.max(0, (秒 - 45) / 120));
+    const safeRadius = MAP_BOUNDS.maxX + (PLAZA_RADIUS - MAP_BOUNDS.maxX) * t;
+    const distToCenter = Math.hypot(playerPos.x, playerPos.y);
+    if (distToCenter <= safeRadius) return;
+    const summary = 取得正式小隊摘要();
+    const dmg = summary.playerMaxHp * EROSION_DAMAGE_RATIO_PER_TICK * dt;
+    if (dmg > 0) 手動設定正式玩家生命(summary.playerHp - dmg);
+  }
+
+  /**
+   * 在玩家附近生成一隻怪物到場（守護者/COLA 召喚用）。
+   * tier 對外部渲染統一以 2 呈現（最大 token），但保留真實 def 供結算。
+   */
+  function 生成Boss到場(def: MonsterDef, bossKind: "guardian" | "cola", bossWorld?: World): void {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 520;
+    const spawnX = Math.max(MAP_BOUNDS.minX, Math.min(MAP_BOUNDS.maxX, playerPos.x + Math.cos(angle) * dist));
+    const spawnY = Math.max(MAP_BOUNDS.minY, Math.min(MAP_BOUNDS.maxY, playerPos.y + Math.sin(angle) * dist));
+    const spritePath =
+      def.world === "core"
+        ? "/images/enemies/mechanical/e28_factory.png" // COLA 佔位圖（機械超級工廠）
+        : `/images/enemies/${def.world}/${def.id}.png`;
+    const inst: MonsterInstance = {
+      id: `boss_${def.id}_${Date.now()}`,
+      monsterNo: def.no,
+      world: (def.world === "core" ? "mechanical" : def.world) as World,
+      tier: 2, // 渲染/碰撞相容用；真實威脅由 hp/atk 體現
+      nameZh: def.nameZh,
+      spritePath,
+      x: spawnX,
+      y: spawnY,
+      hp: def.stats.hp,
+      maxHp: def.stats.hp,
+      atk: def.stats.atk,
+      weight: def.stats.weight,
+      speed: def.stats.speed,
+      ranged: true,
+      attackRange: 620,
+      nonHostileInitially: false,
+    };
+    const node = createMonsterNode(inst);
+    node.classList.add("世界地圖層-怪物-boss");
+    monsterLayer.appendChild(node);
+    monsters.push({ inst, pos: { x: spawnX, y: spawnY }, node, bossKind, bossWorld });
+  }
+
+  /** 目前上陣小隊的家族清單（含個人星級），供 技能管理 判定各家族可用武器星級。 */
+  function 目前上陣成員(): DeployedMember[] {
+    if (訓練道場中) {
+      return 取得訓練小隊成員().map((entry) => ({
+        family: entry.member.family,
+        star: entry.slot.star,
+      }));
+    }
+    // 正式對局預設編隊 = 前 8 名成員 @3★（與 正式對局小隊狀態 一致）。
+    return MEMBERS.slice(0, 8).map((m) => ({ family: m.family, star: 3 as StarLevel }));
+  }
+
+  /** 找最近的存活怪物（限 FIRE_RANGE 內）。 */
+  function 最近怪物(withinRange: number): MonsterRuntime | null {
+    let best: MonsterRuntime | null = null;
+    let bestD = withinRange;
+    for (const m of monsters) {
+      if (m.inst.hp <= 0) continue;
+      const d = Math.hypot(m.pos.x - playerPos.x, m.pos.y - playerPos.y);
+      if (d <= bestD) {
+        bestD = d;
+        best = m;
+      }
+    }
+    return best;
+  }
+
   function setCameraZoom(nextZoom: number): void {
     cameraZoom = Math.max(MIN_CAMERA_ZOOM, Math.min(MAX_CAMERA_ZOOM, nextZoom));
     const worldObjectSize = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM * (cameraZoom / WORLD_OBJECT_REFERENCE_CAMERA_ZOOM);
@@ -409,10 +605,31 @@ export function 建立世界地圖層(): HTMLElement {
     }
 
     for (const m of monsters) {
+      if (m.dropped) { m.node.style.display = "none"; continue; }
       const pos = worldToScreen(m.pos, playerPos, viewport);
+      const visible = isVisible(pos, viewport);
       m.node.style.left = `${pos.x}px`;
       m.node.style.top = `${pos.y}px`;
-      m.node.style.display = isVisible(pos, viewport) ? "block" : "none";
+      m.node.style.display = visible ? "block" : "none";
+      // 血條：只在可見且已受傷時顯示。
+      if (visible && m.inst.hp > 0 && m.inst.hp < m.inst.maxHp) {
+        const bar = m.node.lastElementChild as HTMLElement;
+        const fill = bar.firstElementChild as HTMLElement;
+        bar.style.display = "block";
+        fill.style.width = `${Math.max(0, Math.min(100, (m.inst.hp / m.inst.maxHp) * 100))}%`;
+      } else {
+        (m.node.lastElementChild as HTMLElement).style.display = "none";
+      }
+    }
+
+    // 投射物（佔位美術：小圓點，我方金色/敵方紅色），與其他物件共用同一套俯視鏡頭。
+    for (const p of projectilePool.all()) {
+      const node = projectileNodes.get(p.id);
+      if (!node) continue;
+      const pos = worldToScreen(p.position, playerPos, viewport);
+      node.style.left = `${pos.x}px`;
+      node.style.top = `${pos.y}px`;
+      node.style.display = isVisible(pos, viewport) ? "block" : "none";
     }
 
     const near = nearbyObjects(playerPos);
@@ -455,20 +672,25 @@ export function 建立世界地圖層(): HTMLElement {
 
       let moveX = 0;
       let moveY = 0;
-      const worldSpeed = m.inst.speed * MONSTER_SPEED_SCALE;
+      // 隊長減速控制：受影響期間移速打折。
+      const slowed = m.slowUntil !== undefined && performance.now() < m.slowUntil;
+      const worldSpeed = m.inst.speed * MONSTER_SPEED_SCALE * (slowed ? (m.slowMult ?? 1) : 1);
 
       if (active) {
+        const underFire = m.lastHitMs !== undefined && performance.now() - m.lastHitMs < 1500;
         const decision = decideEnemyAction({
           tier: m.inst.tier,
           selfPos: m.pos,
           playerPos,
           attackRange: m.inst.attackRange,
           ranged: m.inst.ranged,
-          underFire: false, // 尚未接子彈系統，暫以 false（T0 因此以游走呈現）
+          underFire,
           elapsedSeconds,
           nonHostileInitially: m.inst.nonHostileInitially,
           immobilized: false,
         });
+        // 想開火且為遠程 → 朝玩家射擊（冷卻節流）。
+        if (decision.wantsFire && m.inst.ranged) 怪物開火(m, dt);
         if (decision.moveDir.x !== 0 || decision.moveDir.y !== 0) {
           moveX = decision.moveDir.x;
           moveY = decision.moveDir.y;
@@ -510,6 +732,152 @@ export function 建立世界地圖層(): HTMLElement {
       m.wanderTimer = 1.5 + Math.random() * 2.5;
     }
     return [m.wanderDir.x * 0.5, m.wanderDir.y * 0.5];
+  }
+
+  /** 依模式設定玩家生命（訓練/正式各自的生命池）。 */
+  function 設當前玩家生命(hp: number): void {
+    if (訓練道場中) 手動設定訓練玩家生命(hp);
+    else 手動設定正式玩家生命(hp);
+  }
+
+  /**
+   * 小隊自動開火（Batch 1）：對每個「已解鎖」的家族累計發射計時，
+   * 到達該家族發射週期就朝最近怪物射出一發（多發家族會自動展成扇形）。
+   * 家族可用星級由 技能管理 依上陣成員人數與累計星級判定。
+   */
+  function updateSquadFire(dt: number): void {
+    const status = computeFamilyWeaponStatus(目前上陣成員());
+    const unlocked = new Map(status.map((s) => [s.family, s.unlockedStar]));
+    for (const family of PLAYABLE_FAMILIES) {
+      const star = unlocked.get(family) ?? 0;
+      if (star < 1) continue;
+      familyFireTimers[family] += dt;
+      const period = FAMILY_FIRE_PERIOD[family] * TICK_SECONDS;
+      if (familyFireTimers[family] < period) continue;
+      familyFireTimers[family] = 0;
+      const target = 最近怪物(FIRE_RANGE);
+      if (!target) continue;
+      const aim = { x: target.pos.x - playerPos.x, y: target.pos.y - playerPos.y };
+      套用世界彈速(
+        projectilePool.spawn({
+          family,
+          faction: "player",
+          origin: { ...playerPos },
+          aim,
+          weaponStar: star as StarLevel,
+        }),
+      );
+    }
+  }
+
+  /** 遠程怪物朝玩家回擊（在 updateMonsters 內以冷卻節流呼叫）。 */
+  function 怪物開火(m: MonsterRuntime, dt: number): void {
+    m.fireCd = (m.fireCd ?? Math.random() * MONSTER_FIRE_CD) - dt;
+    if (m.fireCd > 0) return;
+    m.fireCd = MONSTER_FIRE_CD;
+    const aim = { x: playerPos.x - m.pos.x, y: playerPos.y - m.pos.y };
+    const shots = 套用世界彈速(
+      projectilePool.spawn({
+        family: "straight",
+        faction: "enemy",
+        origin: { ...m.pos },
+        aim,
+        weaponStar: 1,
+      }),
+    );
+    // 敵彈傷害改用怪物自身 ATK（照搬機制但以單體 ATK 計），覆寫預設武器傷害。
+    for (const proj of shots) proj.damage = Math.max(1, Math.round(m.inst.atk * 0.6));
+  }
+
+  /**
+   * 推進所有子彈一幀，並結算命中：
+   * - 我方子彈 vs 怪物：重量對抗 + 扣血 + 死亡。
+   * - 敵方子彈 vs 玩家：扣小隊生命。
+   * 命中後依重量對抗決定子彈是否消散（可穿透則續飛）。
+   */
+  function updateProjectiles(dt: number): void {
+    projectilePool.advance(dt);
+
+    const liveMonsters = monsters.filter((m) => m.inst.hp > 0);
+    const monsterBodies = liveMonsters.map((m) => ({
+      id: m.inst.id,
+      position: m.pos,
+      radius: 訓練敵人碰撞半徑(m.inst.tier as 0 | 1 | 2),
+      hp: m.inst.hp,
+      weight: m.inst.weight,
+      dead: m.inst.hp <= 0,
+    }));
+
+    // 我方子彈打怪物
+    const playerShots = projectilePool.byFaction("player");
+    for (const hit of detectHits(playerShots, monsterBodies)) {
+      const m = liveMonsters.find((x) => x.inst.id === hit.target.id);
+      if (!m || m.inst.hp <= 0) continue;
+      const res = resolveProjectileHit(hit.projectile, {
+        id: m.inst.id, position: m.pos, radius: 0, hp: m.inst.hp, weight: m.inst.weight,
+      });
+      m.inst.hp = Math.max(0, m.inst.hp - res.damage);
+      m.lastHitMs = performance.now();
+      // 隊長控制引擎：命中時套用（此處實作減速；其餘控制為 Batch 3 延伸）。
+      const ctrl = controlEffectAtStar(小隊屬性摘要().captainId, 當前隊長星級());
+      if (ctrl && ctrl.kind === "slow" && ctrl.duration > 0) {
+        m.slowUntil = performance.now() + ctrl.duration * 1000;
+        m.slowMult = 1 - ctrl.magnitude;
+      }
+      if (m.inst.hp <= 0) m.node.style.display = "none";
+      if (res.projectileConsumed) projectilePool.remove(hit.projectile.id);
+      else hit.projectile.remainingWeight = res.projectileRemainingWeight;
+    }
+
+    // 敵方子彈打玩家（玩家為單一圓形碰撞體）
+    const summary = 訓練道場中 ? 取得訓練道場摘要() : 取得正式小隊摘要();
+    const playerBody = {
+      id: "player",
+      position: playerPos,
+      radius: 訓練玩家碰撞半徑(summary.totalWeight),
+      hp: summary.playerHp,
+      weight: summary.totalWeight,
+    };
+    const enemyShots = projectilePool.byFaction("enemy");
+    let 玩家承傷 = 0;
+    for (const hit of detectHits(enemyShots, [playerBody])) {
+      玩家承傷 += hit.projectile.damage;
+      projectilePool.remove(hit.projectile.id);
+    }
+    if (玩家承傷 > 0) 設當前玩家生命(summary.playerHp - 玩家承傷);
+
+    // 同步子彈 DOM 節點：新增缺的、移除已消散的。
+    const alive = new Set<number>();
+    for (const p of projectilePool.all()) {
+      alive.add(p.id);
+      let node = projectileNodes.get(p.id);
+      if (!node) {
+        node = document.createElement("div");
+        node.className = `世界地圖層-投射物 世界地圖層-投射物-${p.faction} 世界地圖層-投射物-${p.family}`;
+        projectileLayer.appendChild(node);
+        projectileNodes.set(p.id, node);
+      }
+    }
+    for (const [id, node] of projectileNodes) {
+      if (!alive.has(id)) {
+        node.remove();
+        projectileNodes.delete(id);
+      }
+    }
+
+    // 正式對局：玩家陣亡 → 進結算頁（失敗），只觸發一次。
+    if (訓練道場中) {
+      if (!已觸發陣亡 && 取得訓練道場摘要().playerHp <= 0) {
+        已觸發陣亡 = true;
+        標記驗收結果("defeat", "隊長已倒下，本輪驗收以失敗收場。");
+      }
+      return;
+    }
+    if (!已觸發陣亡 && 正式玩家已陣亡()) {
+      已觸發陣亡 = true;
+      標記驗收結果("defeat", "正式對局中玩家陣亡，已進入結算。");
+      應用程式狀態.觸發終局事件();
+    }
   }
 
   function 訓練玩家碰撞半徑(weight: number): number {
@@ -715,7 +1083,11 @@ export function 建立世界地圖層(): HTMLElement {
       }
 
       updateMonsters(dt);
+      updateSquadFire(dt);
+      updateProjectiles(dt);
       updateCollisions(dt);
+      結算死亡掉落();
+      updateErosion(dt);
     }
 
     render();
@@ -779,13 +1151,233 @@ export function 建立世界地圖層(): HTMLElement {
     window.removeEventListener("keyup", onKeyUp);
     window.removeEventListener("resize", render);
     root.removeEventListener("wheel", onWheel);
+    window.removeEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
     window.cancelAnimationFrame(rafId);
   });
+
+  function 清空場上敵軍與彈體(): void {
+    for (const monster of monsters) {
+      monster.node.remove();
+    }
+    monsters.length = 0;
+    if (訓練道場中) 覆蓋訓練敵群([]);
+    projectilePool.clear();
+    for (const node of projectileNodes.values()) node.remove();
+    projectileNodes.clear();
+  }
+
+  function 召喚目前可用守護者(): void {
+    let anySummoned = false;
+    for (const g of 對局進度摘要().守護者) {
+      if (!可召喚守護者(g.world)) continue;
+      const def = worldGuardian(g.world);
+      if (!def) continue;
+      生成Boss到場(def, "guardian", g.world);
+      標記守護者已召喚(g.world);
+      anySummoned = true;
+    }
+    if (anySummoned) 設定驗收事件("守護者已被召至場上。");
+  }
+
+  function 召喚COLABoss(): void {
+    if (!可召喚COLA()) return;
+    生成Boss到場(finalBoss(), "cola");
+    標記COLA已召喚();
+    設定驗收事件("COLA 已被召喚至場上。");
+  }
+
+  function onDojoAcceptanceAction(raw: Event): void {
+    if (!訓練道場中) return;
+    const event = raw as CustomEvent<{ type?: string }>;
+    switch (event.detail?.type) {
+      case "summon_guardians":
+        召喚目前可用守護者();
+        render();
+        break;
+      case "summon_cola":
+        召喚COLABoss();
+        render();
+        break;
+      case "reset_battlefield":
+        清空場上敵軍與彈體();
+        render();
+        break;
+      default:
+        break;
+    }
+  }
+
+  window.addEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
+
+  // 驗收面板：正式對局才顯示，讓經濟/養成/推圖閉環可被點擊驗收（佔位 UI）。
+  if (!訓練道場中) {
+    root.appendChild(
+      建立驗收面板({
+        取擊殺數: () => 擊殺數,
+        取擊殺統計: () => 擊殺統計,
+        召喚可用守護者: () => 召喚目前可用守護者(),
+        召喚COLA: () => 召喚COLABoss(),
+      }),
+    );
+  }
 
   syncNearbyToState();
   render();
   rafId = window.requestAnimationFrame(tick);
   return root;
+}
+
+/**
+ * Batch 2 驗收面板：即時顯示背包資源、全隊戰力、擊殺數，並提供按鈕實際驅動
+ * 經濟/養成模組（熔煉、升星、給資源），驗收「打怪→掉落→變強」閉環。UI 僅為佔位。
+ */
+interface 驗收面板回呼 {
+  取擊殺數: () => number;
+  取擊殺統計: () => Record<string, number>;
+  召喚可用守護者: () => void;
+  召喚COLA: () => void;
+}
+
+function 建立驗收面板(cb: 驗收面板回呼): HTMLElement {
+  const { 取擊殺數, 取擊殺統計 } = cb;
+  const panel = document.createElement("div");
+  panel.className = "驗收面板";
+  let timer = 0;
+
+  const render = () => {
+    const snap = 背包.背包快照();
+    const squad = 小隊屬性摘要();
+    const roster = 取得上陣養成();
+    const 碎片列 = (Object.entries(snap.碎片) as [string, number][])
+      .filter(([, n]) => n > 0)
+      .map(([f, n]) => `${f}:${n}`)
+      .join(" ") || "無";
+    panel.innerHTML = "";
+
+    const info = document.createElement("div");
+    info.className = "驗收面板-資訊";
+    info.innerHTML = `
+      <div class="驗收面板-標題">驗收面板 · 經濟/養成閉環</div>
+      <div>擊殺 <b>${取擊殺數()}</b> ｜ 原石 <b>${snap.原石}</b> ｜ 材料 <b>${snap.材料總數}</b></div>
+      <div>碎片：${碎片列}</div>
+      <div>全隊 ATK <b>${squad.totalAtk}</b> ｜ HP <b>${squad.totalHp}</b> ｜ 隊長 ${當前隊長星級()}★（累計 ${隊員累計總星級()}★）</div>
+      <div class="驗收面板-隊員">${roster
+        .map((r) => `${r.nameZh}${r.star}★`)
+        .join("、")}</div>
+    `;
+    panel.appendChild(info);
+
+    const 按鈕列 = document.createElement("div");
+    按鈕列.className = "驗收面板-按鈕列";
+
+    const 加按鈕 = (label: string, fn: () => void) => {
+      const b = document.createElement("button");
+      b.className = "三級按鈕";
+      b.textContent = label;
+      b.onclick = () => {
+        fn();
+        render();
+      };
+      按鈕列.appendChild(b);
+    };
+
+    // 給測試資源：直接灌入原石＋每種材料若干＋碎片，方便驗收升星/購買。
+    加按鈕("給測試資源", () => {
+      背包.加入原石(2000);
+      for (const family of ["shield", "multishot", "straight", "mine", "laser"] as const) {
+        背包.加入碎片(family, 100);
+      }
+      for (let no = 1; no <= 40; no += 1) 背包.加入材料(no, 20);
+    });
+
+    // 熔煉：把背包裡的所有材料丟進「直線熔爐（有機）」煉成碎片（示範熔爐熔煉）。
+    加按鈕("熔煉材料→碎片", () => {
+      const inputs = snap.材料明細.map((m) => ({ materialNo: m.no, count: m.count }));
+      if (inputs.length === 0) return;
+      const result = smelt({ furnace: { family: "straight", world: "organic" }, inputs });
+      // 扣掉投入的材料、加入產出的碎片。
+      for (const line of inputs) 背包.花費材料(line.materialNo, line.count);
+      背包.加入碎片("straight", result.shards);
+    });
+
+    // 升星第一位可升的隊員（消耗背包資源；成功則刷新最大生命）。
+    加按鈕("升星隊員", () => {
+      for (let i = 0; i < roster.length; i += 1) {
+        if (roster[i].star >= 3) continue;
+        const r = 升星上陣隊員(i);
+        if (r.ok) {
+          刷新正式最大生命();
+          break;
+        }
+      }
+    });
+
+    // 全員盡量升星（驗收「戰力大幅提升」）。
+    加按鈕("全員升星", () => {
+      let 有升 = false;
+      for (let round = 0; round < 6; round += 1) {
+        for (let i = 0; i < roster.length; i += 1) {
+          if (升星上陣隊員(i).ok) 有升 = true;
+        }
+      }
+      if (有升) 刷新正式最大生命();
+    });
+
+    panel.appendChild(按鈕列);
+
+    // —— 推圖進度（Batch 3）——
+    const prog = 對局進度摘要();
+    const 推圖 = document.createElement("div");
+    推圖.className = "驗收面板-推圖";
+    const 守護者文 = prog.守護者
+      .map((g) => {
+        const 世界短 = { geometry: "幾", organic: "有", fractal: "分", mechanical: "機" }[g.world];
+        const 狀 = g.defeated ? "✓倒" : g.ready ? "可召" : `${g.readiness.eliteKills}/3精`;
+        return `${世界短}${g.enraged ? "🔥" : ""}${狀}`;
+      })
+      .join(" ");
+    推圖.innerHTML = `<div class="驗收面板-標題">推圖進度</div><div>${守護者文}</div><div>印記 ${prog.印記數}/4 ｜ COLA ${prog.可召喚COLA ? "可召喚" : "未集齊"}</div>`;
+    panel.appendChild(推圖);
+
+    const 推圖按鈕 = document.createElement("div");
+    推圖按鈕.className = "驗收面板-按鈕列";
+    const 加推圖按鈕 = (label: string, fn: () => void) => {
+      const b = document.createElement("button");
+      b.className = "三級按鈕";
+      b.textContent = label;
+      b.onclick = () => { fn(); render(); };
+      推圖按鈕.appendChild(b);
+    };
+    // 除錯：一鍵灌滿四世界守護者召喚條件（3 精英 + 3 種雜兵各 5）。
+    加推圖按鈕("達成守護者條件", () => {
+      for (const w of ["geometry", "organic", "fractal", "mechanical"] as const) {
+        for (let k = 0; k < 3; k += 1) for (let n = 0; n < 5; n += 1) 記錄世界擊殺(w, 1, `t${k}`);
+        for (let e = 0; e < 3; e += 1) 記錄世界擊殺(w, 2);
+      }
+    });
+    加推圖按鈕("召喚守護者", () => cb.召喚可用守護者());
+    加推圖按鈕("召喚COLA", () => cb.召喚COLA());
+    panel.appendChild(推圖按鈕);
+
+    const 進度 = document.createElement("div");
+    進度.className = "驗收面板-進度";
+    const 統計 = 取擊殺統計();
+    const 統計文 = Object.entries(統計)
+      .map(([k, v]) => `${k}:${v}`)
+      .join(" ") || "尚無擊殺";
+    進度.textContent = `擊殺分布 ${統計文}`;
+    panel.appendChild(進度);
+  };
+
+  render();
+  timer = window.setInterval(() => {
+    if (!panel.isConnected) {
+      window.clearInterval(timer);
+      return;
+    }
+    render();
+  }, 300);
+  return panel;
 }
 
 function regionDirSafe(region: Region): { dx: number; dy: number } {
@@ -890,6 +1482,19 @@ interface MonsterRuntime {
   node: HTMLElement;
   wanderDir?: { x: number; y: number };
   wanderTimer?: number;
+  /** 敵方開火冷卻（秒）；<=0 時可再開火 */
+  fireCd?: number;
+  /** 最近被子彈命中的時間戳（供 AI underFire 判定 T0 逃跑用） */
+  lastHitMs?: number;
+  /** 死亡掉落是否已結算（避免重複掉落） */
+  dropped?: boolean;
+  /** Boss 標記：守護者 / COLA（死亡時走特殊結算，而非一般掉落） */
+  bossKind?: "guardian" | "cola";
+  /** 守護者所屬世界（bossKind="guardian" 時） */
+  bossWorld?: World;
+  /** 隊長減速控制：受影響到此時間戳（ms）為止，期間移速乘 slowMult */
+  slowUntil?: number;
+  slowMult?: number;
 }
 
 /** 建立一隻怪物的 DOM 節點（去背立繪 + 影子，比照環境物件的視覺結構）。 */
@@ -911,8 +1516,16 @@ function createMonsterNode(inst: 可見怪物實例): HTMLElement {
   img.alt = inst.nameZh;
   img.draggable = false;
 
+  // 血條（佔位美術）：受傷後才顯示，讓子彈傷害在畫面上可見。
+  const hpBar = document.createElement("div");
+  hpBar.className = "世界地圖層-怪物-血條";
+  hpBar.style.display = "none";
+  const hpFill = document.createElement("div");
+  hpFill.className = "世界地圖層-怪物-血條填充";
+  hpBar.appendChild(hpFill);
+
   node.title = `${inst.nameZh}（T${inst.tier}）`;
-  node.append(shadow, img);
+  node.append(shadow, img, hpBar);
   return node;
 }
 
