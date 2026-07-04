@@ -324,6 +324,24 @@ button.禁用:hover {
   gap: 18px;
   align-items: flex-start;
 }
+.主畫面-版面.圖鑑模式,
+.主畫面-版面.圖鑑模式 .主畫面-子頁容器 {
+  width: 100%;
+}
+.主畫面-圖鑑返回列 {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.主畫面-圖鑑返回按鈕 {
+  color: var(--ink-warm);
+  font-weight: 700;
+}
+.子頁內容-圖鑑 {
+  width: 100%;
+}
 .主畫面-主按鈕欄 {
   display: flex;
   flex-direction: column;
@@ -1061,8 +1079,12 @@ button.禁用:hover {
 .圖鑑瀏覽器-卡片格 {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   margin-top: 0;
-  max-height: 420px;
-  overflow: hidden;
+  max-height: min(68vh, 720px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) rgba(255, 255, 255, 0.05);
   transition: max-height 0.22s ease, opacity 0.18s ease, margin 0.18s ease;
 }
 .圖鑑瀏覽器-卡片格.已收起 {

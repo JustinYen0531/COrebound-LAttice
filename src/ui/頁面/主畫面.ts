@@ -125,6 +125,7 @@ export function 渲染主畫面(容器: HTMLElement) {
 
   const 版面 = document.createElement("div");
   版面.className = "主畫面-版面";
+  版面.classList.toggle("圖鑑模式", state.子頁 === "圖鑑");
 
   const 主按鈕欄 = document.createElement("div");
   主按鈕欄.className = "主畫面-主按鈕欄";
@@ -152,7 +153,7 @@ export function 渲染主畫面(容器: HTMLElement) {
   離開.title = "刻意不算主按鈕，放在角落次級位置";
   主按鈕欄.appendChild(離開);
 
-  版面.appendChild(主按鈕欄);
+  if (state.子頁 !== "圖鑑") 版面.appendChild(主按鈕欄);
 
   const 子頁容器 = document.createElement("div");
   子頁容器.className = "主畫面-子頁容器";
@@ -161,8 +162,15 @@ export function 渲染主畫面(容器: HTMLElement) {
   if (state.子頁 === "開始遊玩") 子頁容器.appendChild(開始遊玩子頁());
   else if (state.子頁 === "圖鑑") {
     const box = document.createElement("div");
-    box.className = "子頁內容";
-    box.innerHTML = `<h3>圖鑑（主畫面版，共用元件 A）</h3>`;
+    box.className = "子頁內容 子頁內容-圖鑑";
+    const 返回列 = document.createElement("div");
+    返回列.className = "主畫面-圖鑑返回列";
+    const 返回按鈕 = document.createElement("button");
+    返回按鈕.className = "三級按鈕 主畫面-圖鑑返回按鈕";
+    返回按鈕.textContent = "← 回上頁";
+    返回按鈕.onclick = () => 應用程式狀態.切換主畫面子頁("圖鑑");
+    返回列.appendChild(返回按鈕);
+    box.appendChild(返回列);
     box.appendChild(建立圖鑑瀏覽器("OOC"));
     子頁容器.appendChild(box);
   } else if (state.子頁 === "遊玩記錄") 子頁容器.appendChild(遊玩記錄子頁());
