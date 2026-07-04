@@ -62,7 +62,9 @@ function 建立星級切換(選中星級: number): string {
     .map(
       (lv) => `
         <button class="圖鑑星級按鈕 ${選中星級 === lv ? "作用中" : ""}" data-star="${lv}" type="button">
-          <img class="圖鑑星級頭像" src="assets/transparent-portraits/avatars/__MEMBER___s${lv}.png" alt="${lv}星頭像" />
+          <span class="圖鑑星級頭像框">
+            <img class="圖鑑星級頭像" src="assets/transparent-portraits/avatars/__MEMBER___s${lv}.png" alt="${lv}星頭像" />
+          </span>
           <span class="圖鑑星級文字">${lv}★</span>
         </button>
       `
@@ -85,9 +87,9 @@ function 建立成員立繪HTML(條目ID: string): string {
           <img class="圖鑑詳情-角色立繪圖" src="${imageUrl}" alt="${m.nameZh}" />
         </div>
         <div class="圖鑑詳情-小舞台"></div>
-        <div class="圖鑑詳情-星級列">
-          ${星級列HTML}
-        </div>
+      </div>
+      <div class="圖鑑詳情-星級列">
+        ${星級列HTML}
       </div>
     </div>
   `;
