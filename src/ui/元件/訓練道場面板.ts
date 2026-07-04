@@ -1,6 +1,12 @@
 import { MEMBERS } from "../../data/成員資料庫";
 import { FAMILY_LABEL, WORLD_LABEL } from "../../data/成員型別";
+import { 幾何世界圖騰清單 } from "../../totem/資料/幾何世界圖騰";
+import { 有機世界圖騰清單 } from "../../totem/資料/有機世界圖騰";
+import { 分形世界圖騰清單 } from "../../totem/資料/分形世界圖騰";
+import { 機械世界圖騰清單 } from "../../totem/資料/機械世界圖騰";
+import { 隊長圖騰清單 } from "../../totem/資料/隊長圖騰";
 import { 隊長清單 } from "../資料/隊長清單";
+import { 建立玩家標記圖騰 } from "./玩家標記圖騰";
 import {
   交換訓練槽位,
   取得可召喚怪物圖鑑,
@@ -27,7 +33,6 @@ import {
 } from "../訓練道場狀態";
 
 type 職責色 = "保護" | "火力" | "補給";
-type 左側視圖模式 = "編排" | "預覽";
 
 const 槽位職責色票: Record<職責色, { label: string; color: string }> = {
   保護: { label: "保護位", color: "#4d8dff" },
@@ -48,8 +53,10 @@ const 軌道槽位配置: Array<{ slotId: number; layer: "外" | "中" | "內"; 
 ];
 
 const 軌道半徑: Record<"外" | "中" | "內", number> = { 外: 140, 中: 98, 內: 60 };
-let 左側模式: 左側視圖模式 = "編排";
 let 正在編輯槽位: number | null = null;
+const 全部圖騰角色 = [...幾何世界圖騰清單, ...有機世界圖騰清單, ...分形世界圖騰清單, ...機械世界圖騰清單];
+const 成員圖騰索引 = new Map(全部圖騰角色.map((entry) => [entry.名稱, entry]));
+const 隊長圖騰索引 = new Map(隊長圖騰清單.map((entry) => [entry.id, entry]));
 
 function 取得層級標籤(layer: "外" | "中" | "內"): string {
   return `${layer}層`;
@@ -91,42 +98,50 @@ function 以編號套用成員(slotId: number, raw: string): boolean {
   return true;
 }
 
-function 建立圖騰預覽(): HTMLElement {
+function 轉換圖騰職責(role: 職責色): "藍" | "紅" | "黃" {
+  if (role === "保護") return "藍";
+  if (role === "火力") return "紅";
+  return "黃";
+}
+
+function 建立正式圖騰預覽(): HTMLElement {
   const summary = 取得訓練道場摘要();
-  const captain = 隊長清單.find((entry) => entry.id === summary.captainId) ?? 隊長清單[0];
+  const captain = 隊長圖騰索引.get(summary.captainId) ?? 隊長圖騰清單[0];
   const slots = 取得訓練小隊槽位();
+  const totemSquad = 軌道槽位配置
+    .map((item) => {
+      const slot = slots.find((entry) => entry.slotId === item.slotId);
+      const member = MEMBERS.find((entry) => entry.id === slot?.memberId) ?? null;
+      const totemRole = member ? 成員圖騰索引.get(member.nameZh) : null;
+      if (!slot || !member || !totemRole) return null;
+      return {
+        角色: totemRole,
+        大環: item.layer,
+        職責: 轉換圖騰職責(item.role),
+        等級: Math.max(1, Math.min(3, slot.star)),
+      };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
   const root = document.createElement("div");
-  root.className = "訓練圖騰預覽";
+  root.className = "訓練軌道編排器-圖騰預覽浮窗";
+  root.innerHTML = `
+    <div class="訓練軌道編排器-圖騰預覽標題">主畫面圖騰預覽</div>
+    <div class="訓練軌道編排器-圖騰預覽說明">這裡直接套用正式遊戲的圖騰元件。</div>
+  `;
 
-  const stage = document.createElement("div");
-  stage.className = "訓練圖騰預覽-舞台";
-  stage.innerHTML = `<div class="訓練圖騰預覽-核心" style="--captain-color:${captain.代表色};">${captain.名稱.slice(0, 1)}</div>`;
-
-  (["內", "中", "外"] as const).forEach((layer) => {
-    const row = document.createElement("div");
-    row.className = `訓練圖騰預覽-列 訓練圖騰預覽-列-${layer}`;
-    row.innerHTML = `<div class="訓練圖騰預覽-列標">${取得層級標籤(layer)}</div>`;
-    軌道槽位配置
-      .filter((item) => item.layer === layer)
-      .sort((a, b) => a.slotId - b.slotId)
-      .forEach((item) => {
-        const slot = slots.find((entry) => entry.slotId === item.slotId);
-        const member = MEMBERS.find((entry) => entry.id === slot?.memberId) ?? null;
-        const chip = document.createElement("div");
-        chip.className = "訓練圖騰預覽-晶片";
-        chip.style.setProperty("--slot-color", 槽位職責色票[item.role].color);
-        chip.innerHTML = `
-          <span class="訓練圖騰預覽-編號">${item.slotId + 1}</span>
-          <span class="訓練圖騰預覽-名稱">${member ? member.nameZh : "空槽"}</span>
-          <span class="訓練圖騰預覽-星級">${slot?.star ?? 3}★</span>
-        `;
-        row.appendChild(chip);
-      });
-    stage.appendChild(row);
-  });
-
-  root.appendChild(stage);
+  const view = document.createElement("div");
+  view.className = "訓練軌道編排器-圖騰預覽框";
+  view.appendChild(
+    建立玩家標記圖騰({
+      size: 162,
+      隊長: captain,
+      隊長等級: 4,
+      小隊: totemSquad,
+      旋轉: false,
+    }),
+  );
+  root.appendChild(view);
   return root;
 }
 
@@ -145,6 +160,12 @@ function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
   const orbit = document.createElement("div");
   orbit.className = "訓練軌道編排器-軌道";
   orbit.title = "滑鼠停留時會暫停旋轉，方便安排槽位。";
+  orbit.addEventListener("mouseenter", () => {
+    orbit.classList.add("已暫停");
+  });
+  orbit.addEventListener("mouseleave", () => {
+    orbit.classList.remove("已暫停");
+  });
 
   (["外", "中", "內"] as const).forEach((layer, idx) => {
     const ring = document.createElement("div");
@@ -194,6 +215,7 @@ function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
   core.style.setProperty("--captain-color", captain.代表色);
   core.textContent = captain.名稱.slice(0, 1);
   orbit.appendChild(core);
+  orbit.appendChild(建立正式圖騰預覽());
 
   stage.appendChild(orbit);
 
@@ -356,25 +378,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
     <div class="訓練軌道編排器-隊長描述">${captain.主動位移技能} ｜ ${captain.週期技能}</div>
   `;
   leftPane.appendChild(captainCard);
-  const modeRow = document.createElement("div");
-  modeRow.className = "按鈕列";
-  const plannerBtn = document.createElement("button");
-  plannerBtn.className = 左側模式 === "編排" ? "一級按鈕" : "二級按鈕";
-  plannerBtn.textContent = "編排視圖";
-  plannerBtn.onclick = () => {
-    左側模式 = "編排";
-    刷新();
-  };
-  const previewBtn = document.createElement("button");
-  previewBtn.className = 左側模式 === "預覽" ? "一級按鈕" : "二級按鈕";
-  previewBtn.textContent = "→ 圖騰預覽";
-  previewBtn.onclick = () => {
-    左側模式 = "預覽";
-    刷新();
-  };
-  modeRow.append(plannerBtn, previewBtn);
-  leftPane.appendChild(modeRow);
-  leftPane.appendChild(左側模式 === "編排" ? 建立訓練軌道編排器(刷新) : 建立圖騰預覽());
+  leftPane.appendChild(建立訓練軌道編排器(刷新));
 
   const rightPane = document.createElement("div");
   rightPane.style.display = "flex";
