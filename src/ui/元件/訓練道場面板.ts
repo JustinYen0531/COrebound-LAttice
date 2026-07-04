@@ -156,7 +156,7 @@ function 建立正式圖騰預覽(): HTMLElement {
   view.className = "訓練軌道編排器-圖騰預覽框";
   view.appendChild(
     建立玩家標記圖騰({
-      size: 352,
+      size: 248,
       隊長: captain,
       隊長等級: 4,
       小隊: totemSquad,
@@ -167,102 +167,9 @@ function 建立正式圖騰預覽(): HTMLElement {
   return root;
 }
 
-function 建立訓練軌道編排器(captain: (typeof 隊長清單)[number], 刷新: () => void): HTMLElement {
+function 建立訓練槽位格(刷新: () => void): HTMLElement {
   const summary = 取得訓練道場摘要();
   const slots = 取得訓練小隊槽位();
-  const slotMap = new Map(slots.map((slot) => [slot.slotId, slot]));
-
-  const root = document.createElement("section");
-  root.className = "訓練軌道編排器";
-  root.appendChild(建立隊長核心卡(captain));
-
-  const stage = document.createElement("div");
-  stage.className = "訓練軌道編排器-舞台";
-
-  const topBar = document.createElement("div");
-  topBar.className = "訓練軌道編排器-視圖列";
-  const viewTitle = document.createElement("div");
-  viewTitle.className = "訓練軌道編排器-視圖標題";
-  viewTitle.textContent = "編排視圖";
-  const previewBtn = document.createElement("button");
-  previewBtn.type = "button";
-  previewBtn.className = "訓練軌道編排器-切換箭頭";
-  previewBtn.textContent = "→ 圖騰預覽";
-  previewBtn.onclick = () => {
-    左側模式 = "預覽";
-    刷新();
-  };
-  topBar.append(viewTitle, previewBtn);
-  stage.appendChild(topBar);
-
-  const orbit = document.createElement("div");
-  orbit.className = "訓練軌道編排器-軌道";
-  orbit.title = "滑鼠停留時會暫停旋轉，方便安排槽位。";
-  orbit.addEventListener("mouseenter", () => {
-    orbit.classList.add("已暫停");
-  });
-  orbit.addEventListener("mouseleave", () => {
-    orbit.classList.remove("已暫停");
-  });
-
-  (["外", "中", "內"] as const).forEach((layer, idx) => {
-    const ring = document.createElement("div");
-    ring.className = `訓練軌道編排器-環 訓練軌道編排器-環-${layer}`;
-    ring.style.setProperty("--ring-duration", idx === 0 ? "30s" : idx === 1 ? "22s" : "16s");
-    ring.style.setProperty("--ring-direction", idx === 1 ? "reverse" : "normal");
-    const duration = idx === 0 ? 30 : idx === 1 ? 22 : 16;
-    ring.style.animationDelay = `-${(Date.now() / 1000) % duration}s`;
-
-    軌道槽位配置
-      .filter((item) => item.layer === layer)
-      .forEach((item) => {
-        const slot = slotMap.get(item.slotId);
-        if (!slot) return;
-        const member = MEMBERS.find((entry) => entry.id === slot.memberId) ?? null;
-        const role = 槽位職責色票[item.role];
-
-        const node = document.createElement("button");
-        node.type = "button";
-        node.className = `訓練軌道編排器-槽位${summary.selectedSlotId === item.slotId ? " 作用中" : ""}`;
-        node.style.setProperty("--slot-angle", `${item.angle}deg`);
-        node.style.setProperty("--slot-radius", `${軌道半徑[item.layer]}px`);
-        node.style.setProperty("--slot-color", role.color);
-        node.title = `槽位 ${item.slotId + 1}｜${role.label}｜${member ? member.nameZh : "空槽"}`;
-        node.onclick = () => {
-          設定訓練選中槽位(item.slotId);
-          刷新();
-        };
-
-        const num = document.createElement("span");
-        num.className = "訓練軌道編排器-編號";
-        num.textContent = String(item.slotId + 1);
-
-        const initial = document.createElement("span");
-        initial.className = "訓練軌道編排器-縮寫";
-        initial.textContent = member ? member.nameZh.slice(0, 1) : "空";
-
-        node.append(num, initial);
-        ring.appendChild(node);
-      });
-
-    orbit.appendChild(ring);
-  });
-
-  const core = document.createElement("div");
-  core.className = "訓練軌道編排器-核心";
-  core.style.setProperty("--captain-color", captain.代表色);
-  core.textContent = captain.名稱.slice(0, 1);
-  orbit.appendChild(core);
-
-  stage.appendChild(orbit);
-
-  const legend = document.createElement("div");
-  legend.className = "訓練軌道編排器-圖例";
-  legend.innerHTML = (Object.values(槽位職責色票))
-    .map((item) => `<span class="訓練軌道編排器-圖例項"><i style="background:${item.color};"></i>${item.label}</span>`)
-    .join("");
-  stage.appendChild(legend);
-
   const grid = document.createElement("div");
   grid.className = "訓練軌道編排器-槽位格";
 
@@ -371,14 +278,110 @@ function 建立訓練軌道編排器(captain: (typeof 隊長清單)[number], 刷
     grid.appendChild(card);
   });
 
-  root.append(stage, grid);
+  return grid;
+}
+
+function 建立訓練軌道編排器(captain: (typeof 隊長清單)[number], 刷新: () => void): HTMLElement {
+  const summary = 取得訓練道場摘要();
+  const slots = 取得訓練小隊槽位();
+  const slotMap = new Map(slots.map((slot) => [slot.slotId, slot]));
+
+  const root = document.createElement("section");
+  root.className = "訓練軌道編排器";
+
+  const stage = document.createElement("div");
+  stage.className = "訓練軌道編排器-舞台";
+
+  const topBar = document.createElement("div");
+  topBar.className = "訓練軌道編排器-視圖列";
+  const viewTitle = document.createElement("div");
+  viewTitle.className = "訓練軌道編排器-視圖標題";
+  viewTitle.textContent = "編排視圖";
+  const previewBtn = document.createElement("button");
+  previewBtn.type = "button";
+  previewBtn.className = "訓練軌道編排器-切換箭頭";
+  previewBtn.textContent = "→ 圖騰預覽";
+  previewBtn.onclick = () => {
+    左側模式 = "預覽";
+    刷新();
+  };
+  topBar.append(viewTitle, previewBtn);
+  stage.appendChild(topBar);
+
+  const orbit = document.createElement("div");
+  orbit.className = "訓練軌道編排器-軌道";
+  orbit.title = "滑鼠停留時會暫停旋轉，方便安排槽位。";
+  orbit.addEventListener("mouseenter", () => {
+    orbit.classList.add("已暫停");
+  });
+  orbit.addEventListener("mouseleave", () => {
+    orbit.classList.remove("已暫停");
+  });
+
+  (["外", "中", "內"] as const).forEach((layer, idx) => {
+    const ring = document.createElement("div");
+    ring.className = `訓練軌道編排器-環 訓練軌道編排器-環-${layer}`;
+    ring.style.setProperty("--ring-duration", idx === 0 ? "30s" : idx === 1 ? "22s" : "16s");
+    ring.style.setProperty("--ring-direction", idx === 1 ? "reverse" : "normal");
+    const duration = idx === 0 ? 30 : idx === 1 ? 22 : 16;
+    ring.style.animationDelay = `-${(Date.now() / 1000) % duration}s`;
+
+    軌道槽位配置
+      .filter((item) => item.layer === layer)
+      .forEach((item) => {
+        const slot = slotMap.get(item.slotId);
+        if (!slot) return;
+        const member = MEMBERS.find((entry) => entry.id === slot.memberId) ?? null;
+        const role = 槽位職責色票[item.role];
+
+        const node = document.createElement("button");
+        node.type = "button";
+        node.className = `訓練軌道編排器-槽位${summary.selectedSlotId === item.slotId ? " 作用中" : ""}`;
+        node.style.setProperty("--slot-angle", `${item.angle}deg`);
+        node.style.setProperty("--slot-radius", `${軌道半徑[item.layer]}px`);
+        node.style.setProperty("--slot-color", role.color);
+        node.title = `槽位 ${item.slotId + 1}｜${role.label}｜${member ? member.nameZh : "空槽"}`;
+        node.onclick = () => {
+          設定訓練選中槽位(item.slotId);
+          刷新();
+        };
+
+        const num = document.createElement("span");
+        num.className = "訓練軌道編排器-編號";
+        num.textContent = String(item.slotId + 1);
+
+        const initial = document.createElement("span");
+        initial.className = "訓練軌道編排器-縮寫";
+        initial.textContent = member ? member.nameZh.slice(0, 1) : "空";
+
+        node.append(num, initial);
+        ring.appendChild(node);
+      });
+
+    orbit.appendChild(ring);
+  });
+
+  const core = document.createElement("div");
+  core.className = "訓練軌道編排器-核心";
+  core.style.setProperty("--captain-color", captain.代表色);
+  core.textContent = captain.名稱.slice(0, 1);
+  orbit.appendChild(core);
+
+  stage.appendChild(orbit);
+
+  const legend = document.createElement("div");
+  legend.className = "訓練軌道編排器-圖例";
+  legend.innerHTML = (Object.values(槽位職責色票))
+    .map((item) => `<span class="訓練軌道編排器-圖例項"><i style="background:${item.color};"></i>${item.label}</span>`)
+    .join("");
+  stage.appendChild(legend);
+  root.append(stage, 建立隊長核心卡(captain), 建立訓練槽位格(刷新));
   return root;
 }
 
 function 建立訓練圖騰預覽面板(captain: (typeof 隊長清單)[number], 刷新: () => void): HTMLElement {
   const root = document.createElement("section");
   root.className = "訓練軌道編排器";
-  root.appendChild(建立隊長核心卡(captain));
 
   const stage = document.createElement("div");
   stage.className = "訓練軌道編排器-舞台 訓練軌道編排器-預覽舞台";
@@ -399,7 +402,7 @@ function 建立訓練圖騰預覽面板(captain: (typeof 隊長清單)[number], 
   topBar.append(viewTitle, backBtn);
   stage.append(topBar, 建立正式圖騰預覽());
 
-  root.appendChild(stage);
+  root.append(stage, 建立隊長核心卡(captain), 建立訓練槽位格(刷新));
   return root;
 }
 

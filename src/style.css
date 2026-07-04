@@ -815,22 +815,22 @@ button.禁用:hover {
 }
 .訓練軌道編排器-圖騰預覽框 {
   margin-top: 8px;
-  min-height: 420px;
+  min-height: 300px;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: visible;
-  padding: 18px 8px;
+  overflow: hidden;
+  padding: 16px 8px;
   background:
     radial-gradient(circle at 50% 50%, rgba(77, 141, 255, 0.12), transparent 58%),
     rgba(255, 255, 255, 0.025);
 }
 .訓練軌道編排器-圖騰預覽框 .玩家標記圖騰 {
   filter: drop-shadow(0 0 18px rgba(77, 141, 255, 0.16));
-  overflow: visible;
   max-width: 100%;
-  max-height: none;
+  width: min(248px, 100%);
+  height: auto;
 }
 .訓練軌道編排器-槽位格 {
   display: grid;
