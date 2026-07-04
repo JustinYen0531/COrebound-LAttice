@@ -6,7 +6,36 @@ import { 應用程式狀態 } from "../應用程式狀態";
 import { 建立圖鑑瀏覽器 } from "../元件/圖鑑瀏覽器";
 import type { 主畫面分頁 } from "../共用型別";
 
-const 主按鈕清單: 主畫面分頁[] = ["圖鑑", "遊玩記錄", "新手入門", "設定"];
+const 主按鈕清單: 主畫面分頁[] = ["開始遊玩", "圖鑑", "遊玩記錄", "新手入門", "設定"];
+
+function 開始遊玩子頁(): HTMLElement {
+  const el = document.createElement("div");
+  el.className = "子頁內容 子頁內容-narrow";
+  el.innerHTML = `<h3>開始遊玩</h3><p class="占位說明">從這裡進入正式流程，或先保留多人連線入口的位置。</p>`;
+
+  const list = document.createElement("div");
+  list.className = "按鈕列";
+
+  const newGame = document.createElement("button");
+  newGame.className = "一級按鈕";
+  newGame.textContent = "New Game";
+  newGame.onclick = () => 應用程式狀態.進入遊戲準備流程("New Game");
+
+  const continueGame = document.createElement("button");
+  continueGame.className = "二級按鈕";
+  continueGame.textContent = "Continue Game";
+  continueGame.onclick = () => 應用程式狀態.進入遊戲準備流程("Continue Game");
+
+  const multiplayer = document.createElement("button");
+  multiplayer.className = "二級按鈕";
+  multiplayer.textContent = "多人連線（暫未開放）";
+  multiplayer.disabled = true;
+  multiplayer.title = "目前保留入口，之後再接多人流程。";
+
+  list.append(newGame, continueGame, multiplayer);
+  el.appendChild(list);
+  return el;
+}
 
 function 遊玩記錄子頁(): HTMLElement {
   const el = document.createElement("div");
@@ -129,7 +158,8 @@ export function 渲染主畫面(容器: HTMLElement) {
   子頁容器.className = "主畫面-子頁容器";
   子頁容器.classList.toggle("展開", state.子頁 !== null);
 
-  if (state.子頁 === "圖鑑") {
+  if (state.子頁 === "開始遊玩") 子頁容器.appendChild(開始遊玩子頁());
+  else if (state.子頁 === "圖鑑") {
     const box = document.createElement("div");
     box.className = "子頁內容";
     box.innerHTML = `<h3>圖鑑（主畫面版，共用元件 A）</h3>`;
