@@ -78,6 +78,24 @@ function 建立標題(文字: string, 副標?: string): HTMLElement {
   return wrap;
 }
 
+function 建立隊長核心卡(captain: (typeof 隊長清單)[number]): HTMLElement {
+  const captainCard = document.createElement("div");
+  captainCard.className = "訓練軌道編排器-隊長卡";
+  captainCard.style.setProperty("--captain-color", captain.代表色);
+  captainCard.innerHTML = `
+    <div class="訓練軌道編排器-隊長卡眉標">隊長核心</div>
+    <div class="訓練軌道編排器-隊長卡主列">
+      <span class="訓練軌道編排器-隊長徽記">${captain.名稱.slice(0, 1)}</span>
+      <div>
+        <div class="訓練軌道編排器-隊長名稱">${captain.名稱}</div>
+        <div class="訓練軌道編排器-隊長資訊">${captain.代號} ｜ ${captain.控制效果}</div>
+      </div>
+    </div>
+    <div class="訓練軌道編排器-隊長描述">${captain.主動位移技能} ｜ ${captain.週期技能}</div>
+  `;
+  return captainCard;
+}
+
 function 建立資料膠囊(label: string, value: string): string {
   return `
     <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:8px 10px;">
@@ -149,14 +167,14 @@ function 建立正式圖騰預覽(): HTMLElement {
   return root;
 }
 
-function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
+function 建立訓練軌道編排器(captain: (typeof 隊長清單)[number], 刷新: () => void): HTMLElement {
   const summary = 取得訓練道場摘要();
   const slots = 取得訓練小隊槽位();
   const slotMap = new Map(slots.map((slot) => [slot.slotId, slot]));
-  const captain = 隊長清單.find((entry) => entry.id === summary.captainId) ?? 隊長清單[0];
 
   const root = document.createElement("section");
   root.className = "訓練軌道編排器";
+  root.appendChild(建立隊長核心卡(captain));
 
   const stage = document.createElement("div");
   stage.className = "訓練軌道編排器-舞台";
@@ -357,9 +375,10 @@ function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
   return root;
 }
 
-function 建立訓練圖騰預覽面板(刷新: () => void): HTMLElement {
+function 建立訓練圖騰預覽面板(captain: (typeof 隊長清單)[number], 刷新: () => void): HTMLElement {
   const root = document.createElement("section");
   root.className = "訓練軌道編排器";
+  root.appendChild(建立隊長核心卡(captain));
 
   const stage = document.createElement("div");
   stage.className = "訓練軌道編排器-舞台 訓練軌道編排器-預覽舞台";
@@ -397,7 +416,11 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
   const selectedMember = MEMBERS.find((member) => member.id === selectedSlot.memberId) ?? null;
   const captain = 隊長清單.find((entry) => entry.id === summary.captainId) ?? 隊長清單[0];
 
-  root.appendChild(建立標題("訓練編隊台", "左邊看軌道與槽位、右邊做細節調整與成員替換。"));
+  root.appendChild(
+    左側模式 === "編排"
+      ? 建立標題("訓練編隊台", "左邊看軌道與槽位、右邊做細節調整與成員替換。")
+      : 建立標題("主畫面｜圖騰預覽", "左邊正在預覽主畫面圖騰，右邊仍可維持編隊與替換。"),
+  );
 
   const layout = document.createElement("div");
   layout.style.display = "grid";
@@ -409,22 +432,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
   leftPane.style.display = "flex";
   leftPane.style.flexDirection = "column";
   leftPane.style.gap = "14px";
-  const captainCard = document.createElement("div");
-  captainCard.className = "訓練軌道編排器-隊長卡";
-  captainCard.style.setProperty("--captain-color", captain.代表色);
-  captainCard.innerHTML = `
-    <div class="訓練軌道編排器-隊長卡眉標">隊長核心</div>
-    <div class="訓練軌道編排器-隊長卡主列">
-      <span class="訓練軌道編排器-隊長徽記">${captain.名稱.slice(0, 1)}</span>
-      <div>
-        <div class="訓練軌道編排器-隊長名稱">${captain.名稱}</div>
-        <div class="訓練軌道編排器-隊長資訊">${captain.代號} ｜ ${captain.控制效果}</div>
-      </div>
-    </div>
-    <div class="訓練軌道編排器-隊長描述">${captain.主動位移技能} ｜ ${captain.週期技能}</div>
-  `;
-  leftPane.appendChild(captainCard);
-  leftPane.appendChild(左側模式 === "編排" ? 建立訓練軌道編排器(刷新) : 建立訓練圖騰預覽面板(刷新));
+  leftPane.appendChild(左側模式 === "編排" ? 建立訓練軌道編排器(captain, 刷新) : 建立訓練圖騰預覽面板(captain, 刷新));
 
   const rightPane = document.createElement("div");
   rightPane.style.display = "flex";
