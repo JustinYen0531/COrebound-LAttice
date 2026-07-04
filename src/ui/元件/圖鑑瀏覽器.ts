@@ -154,35 +154,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
   const 目前選中 =
     情境 === "OOC" ? 應用程式狀態.額外.圖鑑選中OOC : 應用程式狀態.額外.圖鑑選中IC;
   const 選中名稱 = 分頁清單.includes(目前選中) ? 目前選中 : 分頁清單[0];
-  let 當前資料列表 = 取得資料列表(選中名稱);
-  if (選中名稱 === "成員圖鑑") {
-    當前資料列表 = 當前資料列表.map((item) => {
-      const newItem = { ...item };
-      newItem.名稱 = newItem.名稱.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]\s*/g, "");
-      if (newItem.id === "arc") {
-        newItem.名稱 = newItem.名稱.replace(/^\d+/, "16");
-        newItem.所屬 = "機械世界 | 護盾家族";
-      } else if (newItem.id === "gate") {
-        newItem.名稱 = newItem.名稱.replace(/^\d+/, "17");
-        newItem.所屬 = "機械世界 | 多發家族";
-      } else if (newItem.id === "shrapnel") {
-        newItem.名稱 = newItem.名稱.replace(/^\d+/, "18");
-        newItem.所屬 = "機械世界 | 直線家族";
-      } else if (newItem.id === "needle") {
-        newItem.名稱 = newItem.名稱.replace(/^\d+/, "19");
-        newItem.所屬 = "機械世界 | 地雷家族";
-      } else if (newItem.id === "springtrap") {
-        newItem.名稱 = newItem.名稱.replace(/^\d+/, "20");
-        newItem.所屬 = "機械世界 | 激光家族";
-      }
-      return newItem;
-    });
-    當前資料列表.sort((a, b) => {
-      const aNo = parseInt(a.名稱.match(/^\d+/)?.join("") ?? "99", 10);
-      const bNo = parseInt(b.名稱.match(/^\d+/)?.join("") ?? "99", 10);
-      return aNo - bNo;
-    });
-  }
+  const 當前資料列表 = 取得資料列表(選中名稱);
   const 選中條目ID =
     情境 === "OOC" ? 應用程式狀態.額外.圖鑑選中條目ID_OOC : 應用程式狀態.額外.圖鑑選中條目ID_IC;
 
@@ -243,23 +215,12 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
 
   if (選中名稱 === "成員圖鑑") {
     卡片格.classList.add("成員圖鑑-表格版");
-    卡片格.style.display = "block";
-    卡片格.style.overflowX = "auto";
-
-    const table = document.createElement("table");
-    table.className = "圖鑑表格";
-    table.style.width = "100%";
-    table.style.borderCollapse = "collapse";
-    table.style.margin = "10px 0";
-    table.style.background = "rgba(0,0,0,0.2)";
-    table.style.border = "1px solid rgba(255,255,255,0.08)";
-    table.style.borderRadius = "8px";
 
     const 世界配置 = [
-      { key: "幾何世界", name: "幾何世界", color: "#60a5fa" },
-      { key: "有機世界", name: "有機世界", color: "#4ade80" },
-      { key: "分形世界", name: "分形世界", color: "#c084fc" },
-      { key: "機械世界", name: "機械世界", color: "#fbbf24" },
+      { key: "幾何世界", name: "幾何世界 (Geometry)" },
+      { key: "有機世界", name: "有機世界 (Organic)" },
+      { key: "分形世界", name: "分形世界 (Fractal)" },
+      { key: "機械世界", name: "機械世界 (Mechanical)" },
     ];
 
     const 家族配置 = [
@@ -270,62 +231,55 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
       { key: "激光家族", name: "激光家族" },
     ];
 
+    const table = document.createElement("table");
+    table.className = "圖鑑瀏覽器-成員表格";
+
     const thead = document.createElement("thead");
-    thead.innerHTML = `
-      <tr style="background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.08);">
-        <th style="padding: 12px; text-align: left; font-size: 0.85rem; color: #ff8a3b;">家族 \\ 世界</th>
-        ${世界配置.map(w => `<th style="padding: 12px; text-align: left; font-size: 0.85rem; color: ${w.color};">${w.name}</th>`).join("")}
-      </tr>
-    `;
+    const headerRow = document.createElement("tr");
+    const thFamily = document.createElement("th");
+    thFamily.textContent = "家族";
+    headerRow.appendChild(thFamily);
+    for (const conf of 世界配置) {
+      const th = document.createElement("th");
+      th.textContent = conf.name;
+      headerRow.appendChild(th);
+    }
+    thead.appendChild(headerRow);
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-    for (const 家族 of 家族配置) {
-      const tr = document.createElement("tr");
-      tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+    for (const family of 家族配置) {
+      const row = document.createElement("tr");
       
       const tdFamily = document.createElement("td");
-      tdFamily.style.padding = "12px";
-      tdFamily.style.fontWeight = "bold";
-      tdFamily.style.color = "#ffd24d";
-      tdFamily.style.fontSize = "0.85rem";
-      tdFamily.style.whiteSpace = "nowrap";
-      tdFamily.textContent = 家族.name;
-      tr.appendChild(tdFamily);
+      tdFamily.className = "圖鑑表格-家族單元格";
+      tdFamily.textContent = family.name;
+      row.appendChild(tdFamily);
 
-      for (const 世界 of 世界配置) {
-        const tdMember = document.createElement("td");
-        tdMember.style.padding = "8px 12px";
-        tdMember.style.verticalAlign = "middle";
+      for (const world of 世界配置) {
+        const td = document.createElement("td");
+        td.className = "圖鑑表格-成員單元格";
 
         const 條目 = 當前資料列表.find(
-          (item) => item.所屬.includes(世界.key) && item.所屬.includes(家族.key)
+          (item) => item.所屬.includes(world.key) && item.所屬.includes(family.key)
         );
 
         if (條目) {
           const card = document.createElement("button");
           card.type = "button";
           card.className = "占位卡片 圖鑑瀏覽器-條目按鈕";
-          card.style.margin = "0";
-          card.style.width = "100%";
-          card.style.textAlign = "left";
-          card.style.padding = "8px 10px";
           if (有選中條目 && 條目.id !== 選中條目!.id) card.classList.add("收斂");
           if (有選中條目 && 條目.id === 選中條目!.id) card.classList.add("作用中");
-          
           card.innerHTML = `
-            <span class="圖鑑瀏覽器-條目標題" style="display: block; font-size: 0.82rem; font-weight: bold;">${條目.名稱}</span>
-            <span class="圖鑑瀏覽器-條目簡述" style="display: block; font-size: 0.72rem; color: #8d93ad; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${條目.簡介}</span>
+            <span class="圖鑑瀏覽器-條目標題">${條目.名稱}</span>
+            <span class="圖鑑瀏覽器-條目簡述">${條目.簡介}</span>
           `;
           card.addEventListener("click", () => 應用程式狀態.設定圖鑑選中條目(情境, 條目.id));
-          tdMember.appendChild(card);
-        } else {
-          tdMember.textContent = "-";
-          tdMember.style.color = "#444";
+          td.appendChild(card);
         }
-        tr.appendChild(tdMember);
+        row.appendChild(td);
       }
-      tbody.appendChild(tr);
+      tbody.appendChild(row);
     }
     table.appendChild(tbody);
     卡片格.appendChild(table);
@@ -338,7 +292,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
       if (有選中條目 && 條目.id !== 選中條目!.id) card.classList.add("收斂");
       if (有選中條目 && 條目.id === 選中條目!.id) card.classList.add("作用中");
       card.innerHTML = `
-        <span class="圖鑑瀏覽器-條目標題">${條目.名稱.replace(/^(0[1-9]|[1-2][0-9])\.\s*/, "")}</span>
+        <span class="圖鑑瀏覽器-條目標題">${條目.名稱}</span>
         <span class="圖鑑瀏覽器-條目簡述">${條目.簡介}</span>
       `;
       card.addEventListener("click", () => 應用程式狀態.設定圖鑑選中條目(情境, 條目.id));

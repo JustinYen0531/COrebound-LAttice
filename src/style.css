@@ -2525,14 +2525,64 @@ button.禁用:hover {
   color: #60a5fa;
 }
 .圖鑑瀏覽器-世界列:nth-child(2) .圖鑑瀏覽器-世界列標題 {
-  border-left: 3px solid #c084fc;
-  color: #c084fc;
-}
-.圖鑑瀏覽器-世界列:nth-child(3) .圖鑑瀏覽器-世界列標題 {
   border-left: 3px solid #4ade80;
   color: #4ade80;
+}
+.圖鑑瀏覽器-世界列:nth-child(3) .圖鑑瀏覽器-世界列標題 {
+  border-left: 3px solid #c084fc;
+  color: #c084fc;
 }
 .圖鑑瀏覽器-世界列:nth-child(4) .圖鑑瀏覽器-世界列標題 {
   border-left: 3px solid #fbbf24;
   color: #fbbf24;
+}
+
+/* 圖鑑瀏覽器：成員圖鑑 表格版 */
+.圖鑑瀏覽器-卡片格.成員圖鑑-表格版 {
+  display: block !important;
+  width: 100%;
+  overflow-x: auto;
+}
+.圖鑑瀏覽器-成員表格 {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.圖鑑瀏覽器-成員表格 th {
+  padding: 12px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #fff;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+.圖鑑瀏覽器-成員表格 th:nth-child(2) { color: #60a5fa; border-bottom: 3px solid #60a5fa; } /* 幾何藍 */
+.圖鑑瀏覽器-成員表格 th:nth-child(3) { color: #4ade80; border-bottom: 3px solid #4ade80; } /* 有機綠 */
+.圖鑑瀏覽器-成員表格 th:nth-child(4) { color: #c084fc; border-bottom: 3px solid #c084fc; } /* 分形紫 */
+.圖鑑瀏覽器-成員表格 th:nth-child(5) { color: #fbbf24; border-bottom: 3px solid #fbbf24; } /* 機械黃 */
+
+.圖鑑瀏覽器-成員表格 td {
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: middle;
+}
+.圖鑑表格-家族單元格 {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #f2e6c9;
+  text-align: center;
+  width: 120px;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.02);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+.圖鑑表格-成員單元格 {
+  text-align: center;
+  min-width: 180px;
+}
+.圖鑑表格-成員單元格 .圖鑑瀏覽器-條目按鈕 {
+  width: 100%;
+  max-width: 240px;
+  margin: 0 auto;
 }
