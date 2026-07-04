@@ -667,9 +667,21 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
   selectorWrap.style.display = "grid";
   selectorWrap.style.gridTemplateColumns = "1fr auto auto auto auto";
   selectorWrap.style.gap = "8px";
+  selectorWrap.style.alignItems = "stretch";
 
   const select = document.createElement("select");
-  select.className = "二級按鈕";
+  select.className = "訓練召喚面板-選單";
+  select.style.width = "100%";
+  select.style.minWidth = "0";
+  select.style.padding = "9px 10px";
+  select.style.background = "rgba(17,21,33,0.92)";
+  select.style.color = "#e9ecf8";
+  select.style.border = "1px solid rgba(111,140,255,0.28)";
+  select.style.borderRadius = "10px";
+  select.style.appearance = "auto";
+  select.style.webkitAppearance = "menulist";
+  select.style.MozAppearance = "menulist";
+  select.style.cursor = "pointer";
   const groups = new Map<string, HTMLOptGroupElement>();
   catalog.forEach((monster) => {
     const worldName = monster.world === "core" ? "核心" : WORLD_LABEL[monster.world];
