@@ -470,11 +470,13 @@ export function 建立世界地圖層(): HTMLElement {
   const slowFieldNode = document.createElement("div");
   slowFieldNode.className = "世界地圖層-減速領域";
   slowFieldNode.style.position = "absolute";
+  slowFieldNode.style.left = "0";
+  slowFieldNode.style.top = "0";
   slowFieldNode.style.borderRadius = "50%";
   slowFieldNode.style.border = "2px dashed rgba(63,111,73,0.85)";
   slowFieldNode.style.background =
     "radial-gradient(circle, rgba(63,111,73,0.18), rgba(63,111,73,0.05) 68%, transparent)";
-  slowFieldNode.style.transform = "translate(-50%, -50%)";
+  slowFieldNode.style.transform = "translate(var(--x, 0px), var(--y, 0px)) translate(-50%, -50%)";
   slowFieldNode.style.pointerEvents = "none";
   slowFieldNode.style.display = "none";
   slowFieldNode.style.zIndex = "1";
@@ -512,6 +514,7 @@ export function 建立世界地圖層(): HTMLElement {
     for (const chest of worldChests) {
       if (chestNodes.has(chest.id)) continue;
       const node = createWorldChestNode(chest);
+      setProjectedNodePosition(node, chest);
       node.addEventListener("click", () => 嘗試開啟寶箱(chest));
       objectLayer.appendChild(node);
       chestNodes.set(chest.id, node);
@@ -564,6 +567,7 @@ export function 建立世界地圖層(): HTMLElement {
     for (const drop of deathDrops) {
       if (deathDropNodes.has(drop.id)) continue;
       const node = createDeathDropNode(drop);
+      setProjectedNodePosition(node, drop);
       node.addEventListener("click", () => 嘗試拾取死亡遺落(drop));
       objectLayer.appendChild(node);
       deathDropNodes.set(drop.id, node);
@@ -795,6 +799,7 @@ export function 建立世界地圖層(): HTMLElement {
     }
     const playerSize = PLAYER_SIZE_AT_REFERENCE_ZOOM * (cameraZoom / REFERENCE_CAMERA_ZOOM);
     playerNode.style.setProperty("--player-world-size", `${playerSize.toFixed(2)}px`);
+    updateStaticWorldNodePositions();
     zoomSlider.value = cameraZoom.toFixed(2);
     zoomRatio.value = `${Math.round(cameraZoom * 100)}%`;
     render();
@@ -809,33 +814,66 @@ export function 建立世界地圖層(): HTMLElement {
   zoomSlider.addEventListener("input", () => setCameraZoom(Number(zoomSlider.value)));
   setCameraZoom(cameraZoom);
 
+  function projectedWorldPosition(point: { x: number; y: number }): { x: number; y: number } {
+    return {
+      x: point.x * cameraZoom,
+      y: point.y * GROUND_DEPTH_SCALE * cameraZoom,
+    };
+  }
+
+  function setProjectedNodePosition(node: HTMLElement, point: { x: number; y: number }): void {
+    const pos = projectedWorldPosition(point);
+    node.style.setProperty("--x", `${pos.x.toFixed(2)}px`);
+    node.style.setProperty("--y", `${pos.y.toFixed(2)}px`);
+  }
+
+  function updateWorldLayerOffsets(viewport: { w: number; h: number }): void {
+    const x = viewport.w / 2 - playerPos.x * cameraZoom;
+    const y = viewport.h / 2 - playerPos.y * GROUND_DEPTH_SCALE * cameraZoom;
+    const transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
+    envLayer.style.transform = transform;
+    objectLayer.style.transform = transform;
+    monsterLayer.style.transform = transform;
+    projectileLayer.style.transform = transform;
+  }
+
+  function updateStaticWorldNodePositions(): void {
+    for (const env of ENV_OBJECTS) {
+      const node = envNodes.get(env.id);
+      if (node) setProjectedNodePosition(node, env);
+    }
+    for (const object of MAP_OBJECTS) {
+      const node = objectNodes.get(object.id);
+      if (node) setProjectedNodePosition(node, object);
+    }
+    for (const chest of worldChests) {
+      const node = chestNodes.get(chest.id);
+      if (node) setProjectedNodePosition(node, chest);
+    }
+    for (const drop of deathDrops) {
+      const node = deathDropNodes.get(drop.id);
+      if (node) setProjectedNodePosition(node, drop);
+    }
+  }
+
   function render(): void {
     const viewport = { w: canvas.clientWidth || window.innerWidth, h: canvas.clientHeight || window.innerHeight };
     const playerScreen = { x: viewport.w / 2, y: viewport.h / 2 };
 
-    playerNode.style.left = `${playerScreen.x}px`;
-    playerNode.style.top = `${playerScreen.y}px`;
-    playerNode.style.transform = "translate(-50%, -50%)";
+    // 所有節點定位改用 CSS 變數 --x/--y + transform（GPU 合成，不觸發 layout 回流）。
+    playerNode.style.setProperty("--x", `${playerScreen.x}px`);
+    playerNode.style.setProperty("--y", `${playerScreen.y}px`);
 
     // 區域/分界線/地板的 d 已在建圖時固定，這裡只要平移鏡頭 viewBox。
     updateMapViewBox(zoneSvg, viewport);
     renderZoneLabels(zoneLabels, viewport);
-
-    for (const env of ENV_OBJECTS) {
-      const node = envNodes.get(env.id);
-      if (!node) continue;
-      const pos = worldToScreen(env, playerPos, viewport);
-      node.style.left = `${pos.x}px`;
-      node.style.top = `${pos.y}px`;
-      node.style.display = isVisible(pos, viewport) ? "block" : "none";
-    }
+    updateWorldLayerOffsets(viewport);
 
     for (const m of monsters) {
       if (m.dropped) { m.node.style.display = "none"; continue; }
-      const pos = worldToScreen(m.pos, playerPos, viewport);
-      const visible = isVisible(pos, viewport);
-      m.node.style.left = `${pos.x}px`;
-      m.node.style.top = `${pos.y}px`;
+      const screenPos = worldToScreen(m.pos, playerPos, viewport);
+      const visible = isVisible(screenPos, viewport);
+      setProjectedNodePosition(m.node, m.pos);
       m.node.style.display = visible ? "block" : "none";
       // 血條：只在可見且已受傷時顯示。
       if (visible && m.inst.hp > 0 && m.inst.hp < m.inst.maxHp) {
@@ -852,10 +890,9 @@ export function 建立世界地圖層(): HTMLElement {
     for (const p of projectilePool.all()) {
       const node = projectileNodes.get(p.id);
       if (!node) continue;
-      const pos = worldToScreen(p.position, playerPos, viewport);
-      node.style.left = `${pos.x}px`;
-      node.style.top = `${pos.y}px`;
-      node.style.display = isVisible(pos, viewport) ? "block" : "none";
+      const screenPos = worldToScreen(p.position, playerPos, viewport);
+      setProjectedNodePosition(node, p.position);
+      node.style.display = isVisible(screenPos, viewport) ? "block" : "none";
     }
 
     const near = nearbyObjects(playerPos);
@@ -864,38 +901,30 @@ export function 建立世界地圖層(): HTMLElement {
     for (const object of MAP_OBJECTS) {
       const node = objectNodes.get(object.id);
       if (!node) continue;
-      const pos = worldToScreen(object, playerPos, viewport);
-      node.style.left = `${pos.x}px`;
-      node.style.top = `${pos.y}px`;
-      node.style.display = isVisible(pos, viewport) ? "flex" : "none";
       node.classList.toggle("靠近中", nearIds.has(object.id));
     }
 
     for (const chest of worldChests) {
       const node = chestNodes.get(chest.id);
       if (!node) continue;
-      const pos = worldToScreen(chest, playerPos, viewport);
-      node.style.left = `${pos.x}px`;
-      node.style.top = `${pos.y}px`;
-      node.style.display = isVisible(pos, viewport) ? "grid" : "none";
+      const screenPos = worldToScreen(chest, playerPos, viewport);
+      node.style.display = isVisible(screenPos, viewport) ? "grid" : "none";
       node.style.filter = Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) <= 190 ? "brightness(1.35)" : "none";
     }
 
     for (const drop of deathDrops) {
       const node = deathDropNodes.get(drop.id);
       if (!node) continue;
-      const pos = worldToScreen(drop, playerPos, viewport);
-      node.style.left = `${pos.x}px`;
-      node.style.top = `${pos.y}px`;
-      node.style.display = isVisible(pos, viewport) ? "grid" : "none";
+      const screenPos = worldToScreen(drop, playerPos, viewport);
+      node.style.display = isVisible(screenPos, viewport) ? "grid" : "none";
       node.style.filter = Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) <= 190 ? "brightness(1.4)" : "none";
     }
 
     const nearest = near[0];
     if (nearest) {
       exclaim.style.display = "flex";
-      exclaim.style.left = `${playerScreen.x + 26}px`;
-      exclaim.style.top = `${playerScreen.y - 36}px`;
+      exclaim.style.setProperty("--x", `${playerScreen.x + 26}px`);
+      exclaim.style.setProperty("--y", `${playerScreen.y - 36}px`);
       exclaim.title = `點擊開啟「${nearest.label}」互動`;
     } else {
       exclaim.style.display = "none";
@@ -904,8 +933,8 @@ export function 建立世界地圖層(): HTMLElement {
     // 減速領域圈：套用與地面相同的俯視鏡頭與縱深壓縮。
     if (減速領域 && performance.now() < 減速領域.until) {
       const center = worldToScreen(減速領域, playerPos, viewport);
-      slowFieldNode.style.left = `${center.x}px`;
-      slowFieldNode.style.top = `${center.y}px`;
+      slowFieldNode.style.setProperty("--x", `${center.x}px`);
+      slowFieldNode.style.setProperty("--y", `${center.y}px`);
       slowFieldNode.style.width = `${減速領域.radius * 2 * cameraZoom}px`;
       slowFieldNode.style.height = `${減速領域.radius * 2 * cameraZoom * GROUND_DEPTH_SCALE}px`;
       slowFieldNode.style.display = "block";
@@ -1653,18 +1682,6 @@ export function 建立世界地圖層(): HTMLElement {
   window.addEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
   window.addEventListener("captain-active-cast", onCaptainCast as EventListener);
 
-  // 驗收面板：正式對局才顯示，讓經濟/養成/推圖閉環可被點擊驗收（佔位 UI）。
-  if (!訓練道場中) {
-    root.appendChild(
-      建立驗收面板({
-        取擊殺數: () => 擊殺數,
-        取擊殺統計: () => 擊殺統計,
-        召喚可用守護者: () => 召喚目前可用守護者(),
-        召喚COLA: () => 召喚COLABoss(),
-      }),
-    );
-  }
-
   處理待召喚Boss();
   syncNearbyToState();
   render();
@@ -1983,9 +2000,11 @@ function createWorldChestNode(chest: WorldChestInstance): HTMLElement {
   node.setAttribute("aria-label", `${chest.world} 禪繞寶箱`);
   Object.assign(node.style, {
     position: "absolute",
+    left: "0",
+    top: "0",
     width: "58px",
     height: "46px",
-    transform: "translate(-50%, -78%)",
+    transform: "translate(var(--x, 0px), var(--y, 0px)) translate(-50%, -78%)",
     placeItems: "center",
     border: "2px solid rgba(255,255,255,0.92)",
     borderRadius: "9px 9px 5px 5px",
@@ -2008,9 +2027,11 @@ function createDeathDropNode(drop: 死亡遺落物): HTMLElement {
   node.setAttribute("aria-label", `死亡遺落材料 ${count} 份`);
   Object.assign(node.style, {
     position: "absolute",
+    left: "0",
+    top: "0",
     width: "54px",
     height: "42px",
-    transform: "translate(-50%, -68%) rotate(-4deg)",
+    transform: "translate(var(--x, 0px), var(--y, 0px)) translate(-50%, -68%) rotate(-4deg)",
     placeItems: "center",
     border: "2px solid #eeeeea",
     borderRadius: "50% 44% 48% 42%",
