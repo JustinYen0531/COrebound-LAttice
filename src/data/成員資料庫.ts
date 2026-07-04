@@ -533,7 +533,7 @@ const m15_aurora: MemberDef = {
 /** 16. 閘門 (Gate) — 護盾家族 */
 const m16_gate: MemberDef = {
   id: "m16_gate",
-  no: 17,
+  no: 16,
   nameZh: "閘門",
   nameEn: "Gate",
   world: "mechanical",
@@ -577,7 +577,7 @@ const m16_gate: MemberDef = {
 /** 17. 彈片 (Shrapnel) — 多發家族 */
 const m17_shrapnel: MemberDef = {
   id: "m17_shrapnel",
-  no: 18,
+  no: 17,
   nameZh: "彈片",
   nameEn: "Shrapnel",
   world: "mechanical",
@@ -608,7 +608,7 @@ const m17_shrapnel: MemberDef = {
 /** 18. 鋼針 (Needle) — 直線家族 */
 const m18_needle: MemberDef = {
   id: "m18_needle",
-  no: 19,
+  no: 18,
   nameZh: "鋼針",
   nameEn: "Needle",
   world: "mechanical",
@@ -639,7 +639,7 @@ const m18_needle: MemberDef = {
 /** 19. 發條 (Springtrap) — 地雷家族 */
 const m19_springtrap: MemberDef = {
   id: "m19_springtrap",
-  no: 20,
+  no: 19,
   nameZh: "發條",
   nameEn: "Springtrap",
   world: "mechanical",
@@ -670,7 +670,7 @@ const m19_springtrap: MemberDef = {
 /** 20. 電弧 (Arc) — 激光家族 */
 const m20_arc: MemberDef = {
   id: "m20_arc",
-  no: 16,
+  no: 20,
   nameZh: "電弧",
   nameEn: "Arc",
   world: "mechanical",
@@ -732,11 +732,11 @@ export const MEMBERS: readonly MemberDef[] = [
   m13_lightning,
   m14_abyss,
   m15_aurora,
-  m20_arc,
   m16_gate,
   m17_shrapnel,
   m18_needle,
   m19_springtrap,
+  m20_arc,
 ];
 
 // ============================================================
