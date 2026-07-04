@@ -274,6 +274,20 @@ export function 設定訓練槽位星級(slotId: number, star: StarLevel): void 
   重算訓練玩家生命();
 }
 
+export function 交換訓練槽位(sourceSlotId: number, targetSlotId: number): void {
+  if (sourceSlotId === targetSlotId) return;
+  const source = 狀態.slots.find((entry) => entry.slotId === sourceSlotId);
+  const target = 狀態.slots.find((entry) => entry.slotId === targetSlotId);
+  if (!source || !target) return;
+  const nextSource = { memberId: target.memberId, star: target.star };
+  target.memberId = source.memberId;
+  target.star = source.star;
+  source.memberId = nextSource.memberId;
+  source.star = nextSource.star;
+  狀態.selectedSlotId = targetSlotId;
+  重算訓練玩家生命();
+}
+
 export function 切換訓練槽位星級(slotId: number): void {
   const slot = 狀態.slots.find((entry) => entry.slotId === slotId);
   if (!slot) return;

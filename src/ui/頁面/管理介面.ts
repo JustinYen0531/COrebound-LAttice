@@ -80,7 +80,8 @@ function 小隊分頁內容(): HTMLElement {
   詳情區.style.gap = "14px";
 
   if (訓練道場模式) {
-    詳情區.style.width = "520px";
+    左.style.display = "none";
+    詳情區.style.width = "min(1120px, calc(100vw - 140px))";
     詳情區.appendChild(
       建立訓練小隊編輯器(() => {
         應用程式狀態.進入管理介面("小隊");

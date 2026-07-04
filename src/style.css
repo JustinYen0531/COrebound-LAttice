@@ -568,6 +568,217 @@ button.禁用:hover {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
 }
 
+.訓練軌道編排器 {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.訓練軌道編排器-舞台 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 12px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+}
+.訓練軌道編排器-軌道 {
+  position: relative;
+  width: 336px;
+  height: 336px;
+}
+.訓練軌道編排器-軌道:hover .訓練軌道編排器-環 {
+  animation-play-state: paused;
+}
+.訓練軌道編排器-環 {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  animation-name: 訓練軌道旋轉;
+  animation-duration: var(--ring-duration, 24s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: var(--ring-direction, normal);
+}
+.訓練軌道編排器-環-外::before,
+.訓練軌道編排器-環-中::before,
+.訓練軌道編排器-環-內::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(77, 141, 255, 0.22);
+  box-shadow: inset 0 0 18px rgba(77, 141, 255, 0.06);
+}
+.訓練軌道編排器-環-外::before {
+  width: 292px;
+  height: 292px;
+}
+.訓練軌道編排器-環-中::before {
+  width: 204px;
+  height: 204px;
+}
+.訓練軌道編排器-環-內::before {
+  width: 128px;
+  height: 128px;
+}
+@keyframes 訓練軌道旋轉 {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.訓練軌道編排器-核心 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 76px;
+  height: 76px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.7rem;
+  font-weight: 700;
+  border: 2px solid rgba(255, 210, 77, 0.85);
+  background: radial-gradient(circle at 32% 28%, var(--captain-color, #4d8dff), #12182a 74%);
+  box-shadow: 0 0 22px rgba(255, 210, 77, 0.18), inset 0 0 24px rgba(255, 255, 255, 0.08);
+  z-index: 3;
+}
+.訓練軌道編排器-槽位 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 52px;
+  height: 52px;
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--slot-angle))
+    translate(var(--slot-radius))
+    rotate(calc(-1 * var(--slot-angle)));
+  border-radius: 50%;
+  border: 2px solid rgba(12, 15, 24, 0.92);
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.18), rgba(12, 15, 24, 0.96) 72%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--slot-color) 72%, transparent), 0 0 18px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0;
+  z-index: 2;
+}
+.訓練軌道編排器-槽位:hover,
+.訓練軌道編排器-槽位.作用中 {
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--slot-angle))
+    translate(var(--slot-radius))
+    rotate(calc(-1 * var(--slot-angle)))
+    scale(1.06);
+}
+.訓練軌道編排器-槽位.作用中 {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--slot-color) 80%, transparent), 0 0 20px color-mix(in srgb, var(--slot-color) 45%, transparent);
+}
+.訓練軌道編排器-編號 {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--slot-color);
+  line-height: 1;
+}
+.訓練軌道編排器-縮寫 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.訓練軌道編排器-圖例 {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+.訓練軌道編排器-圖例項 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.訓練軌道編排器-圖例項 i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.訓練軌道編排器-槽位格 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.訓練軌道編排器-槽位卡 {
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--slot-color);
+  border-radius: 12px;
+  background: rgba(20, 24, 38, 0.92);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.訓練軌道編排器-槽位卡:hover,
+.訓練軌道編排器-槽位卡.作用中 {
+  border-color: color-mix(in srgb, var(--slot-color) 48%, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--slot-color) 28%, transparent);
+}
+.訓練軌道編排器-槽位卡.可放置 {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--slot-color) 48%, transparent), 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+.訓練軌道編排器-槽位卡.拖曳中 {
+  opacity: 0.45;
+}
+.訓練軌道編排器-槽位卡頭 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.訓練軌道編排器-槽位編號 {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0e1322;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+.訓練軌道編排器-槽位職責 {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.訓練軌道編排器-槽位主文 {
+  font-size: 0.82rem;
+  color: #fff;
+  font-weight: 700;
+}
+.訓練軌道編排器-槽位副文 {
+  font-size: 0.72rem;
+  color: #8d93ad;
+}
+@media (max-width: 1100px) {
+  .訓練軌道編排器-槽位格 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* =========================================================
  * 資料夾式版面（共用元件 A + 背包/互動/地圖）
  * 書籤欄改用「攤開資料夾標籤」語言，而非漂浮卡片按鈕

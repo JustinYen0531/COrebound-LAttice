@@ -2,6 +2,7 @@ import { MEMBERS } from "../../data/成員資料庫";
 import { FAMILY_LABEL, WORLD_LABEL } from "../../data/成員型別";
 import { 隊長清單 } from "../資料/隊長清單";
 import {
+  交換訓練槽位,
   取得可召喚怪物圖鑑,
   取得訓練編隊預設列表,
   取得訓練召喚敵群,
@@ -25,6 +26,28 @@ import {
   召喚訓練敵人,
 } from "../訓練道場狀態";
 
+type 職責色 = "保護" | "火力" | "補給";
+
+const 槽位職責色票: Record<職責色, { label: string; color: string }> = {
+  保護: { label: "保護位", color: "#4d8dff" },
+  火力: { label: "火力位", color: "#ff5b6e" },
+  補給: { label: "補給位", color: "#ffd24d" },
+};
+
+const 軌道槽位配置: Array<{ slotId: number; layer: "外" | "中" | "內"; angle: number; role: 職責色 }> = [
+  { slotId: 0, layer: "外", angle: -4, role: "火力" },
+  { slotId: 1, layer: "外", angle: 86, role: "火力" },
+  { slotId: 2, layer: "外", angle: 176, role: "保護" },
+  { slotId: 3, layer: "外", angle: 266, role: "補給" },
+  { slotId: 4, layer: "中", angle: 12, role: "補給" },
+  { slotId: 5, layer: "中", angle: 132, role: "火力" },
+  { slotId: 6, layer: "中", angle: 252, role: "保護" },
+  { slotId: 7, layer: "內", angle: 8, role: "補給" },
+  { slotId: 8, layer: "內", angle: 188, role: "保護" },
+];
+
+const 軌道半徑: Record<"外" | "中" | "內", number> = { 外: 140, 中: 98, 內: 60 };
+
 function 建立標題(文字: string, 副標?: string): HTMLElement {
   const wrap = document.createElement("div");
   wrap.style.display = "flex";
@@ -46,6 +69,131 @@ function 建立資料膠囊(label: string, value: string): string {
   `;
 }
 
+function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
+  const summary = 取得訓練道場摘要();
+  const slots = 取得訓練小隊槽位();
+  const slotMap = new Map(slots.map((slot) => [slot.slotId, slot]));
+  const captain = 隊長清單.find((entry) => entry.id === summary.captainId) ?? 隊長清單[0];
+
+  const root = document.createElement("section");
+  root.className = "訓練軌道編排器";
+
+  const stage = document.createElement("div");
+  stage.className = "訓練軌道編排器-舞台";
+
+  const orbit = document.createElement("div");
+  orbit.className = "訓練軌道編排器-軌道";
+  orbit.title = "滑鼠停留時會暫停旋轉，方便安排槽位。";
+
+  (["外", "中", "內"] as const).forEach((layer, idx) => {
+    const ring = document.createElement("div");
+    ring.className = `訓練軌道編排器-環 訓練軌道編排器-環-${layer}`;
+    ring.style.setProperty("--ring-duration", idx === 0 ? "30s" : idx === 1 ? "22s" : "16s");
+    ring.style.setProperty("--ring-direction", idx === 1 ? "reverse" : "normal");
+
+    軌道槽位配置
+      .filter((item) => item.layer === layer)
+      .forEach((item) => {
+        const slot = slotMap.get(item.slotId);
+        if (!slot) return;
+        const member = MEMBERS.find((entry) => entry.id === slot.memberId) ?? null;
+        const role = 槽位職責色票[item.role];
+
+        const node = document.createElement("button");
+        node.type = "button";
+        node.className = `訓練軌道編排器-槽位${summary.selectedSlotId === item.slotId ? " 作用中" : ""}`;
+        node.style.setProperty("--slot-angle", `${item.angle}deg`);
+        node.style.setProperty("--slot-radius", `${軌道半徑[item.layer]}px`);
+        node.style.setProperty("--slot-color", role.color);
+        node.title = `槽位 ${item.slotId + 1}｜${role.label}｜${member ? member.nameZh : "空槽"}`;
+        node.onclick = () => {
+          設定訓練選中槽位(item.slotId);
+          刷新();
+        };
+
+        const num = document.createElement("span");
+        num.className = "訓練軌道編排器-編號";
+        num.textContent = String(item.slotId + 1);
+
+        const initial = document.createElement("span");
+        initial.className = "訓練軌道編排器-縮寫";
+        initial.textContent = member ? member.nameZh.slice(0, 1) : "空";
+
+        node.append(num, initial);
+        ring.appendChild(node);
+      });
+
+    orbit.appendChild(ring);
+  });
+
+  const core = document.createElement("div");
+  core.className = "訓練軌道編排器-核心";
+  core.style.setProperty("--captain-color", captain.代表色);
+  core.textContent = captain.名稱.slice(0, 1);
+  orbit.appendChild(core);
+
+  stage.appendChild(orbit);
+
+  const legend = document.createElement("div");
+  legend.className = "訓練軌道編排器-圖例";
+  legend.innerHTML = (Object.values(槽位職責色票))
+    .map((item) => `<span class="訓練軌道編排器-圖例項"><i style="background:${item.color};"></i>${item.label}</span>`)
+    .join("");
+  stage.appendChild(legend);
+
+  const grid = document.createElement("div");
+  grid.className = "訓練軌道編排器-槽位格";
+
+  slots.forEach((slot) => {
+    const member = MEMBERS.find((entry) => entry.id === slot.memberId) ?? null;
+    const role = 槽位職責色票[軌道槽位配置.find((item) => item.slotId === slot.slotId)?.role ?? "保護"];
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = `訓練軌道編排器-槽位卡${summary.selectedSlotId === slot.slotId ? " 作用中" : ""}`;
+    card.draggable = true;
+    card.style.setProperty("--slot-color", role.color);
+    card.innerHTML = `
+      <div class="訓練軌道編排器-槽位卡頭">
+        <span class="訓練軌道編排器-槽位編號" style="background:${role.color};">${slot.slotId + 1}</span>
+        <span class="訓練軌道編排器-槽位職責" style="color:${role.color};">${role.label}</span>
+      </div>
+      <div class="訓練軌道編排器-槽位主文">${member ? `${member.no.toString().padStart(2, "0")} ${member.nameZh}` : "（空槽）"}</div>
+      <div class="訓練軌道編排器-槽位副文">${slot.star}★${member ? ` ｜ ${WORLD_LABEL[member.world]}` : ""}</div>
+    `;
+    card.onclick = () => {
+      設定訓練選中槽位(slot.slotId);
+      刷新();
+    };
+    card.addEventListener("dragstart", (event) => {
+      event.dataTransfer?.setData("text/plain", String(slot.slotId));
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+      card.classList.add("拖曳中");
+    });
+    card.addEventListener("dragend", () => {
+      card.classList.remove("拖曳中");
+    });
+    card.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      card.classList.add("可放置");
+    });
+    card.addEventListener("dragleave", () => {
+      card.classList.remove("可放置");
+    });
+    card.addEventListener("drop", (event) => {
+      event.preventDefault();
+      card.classList.remove("可放置");
+      const sourceSlotId = Number(event.dataTransfer?.getData("text/plain"));
+      if (!Number.isFinite(sourceSlotId)) return;
+      交換訓練槽位(sourceSlotId, slot.slotId);
+      刷新();
+    });
+    grid.appendChild(card);
+  });
+
+  root.append(stage, grid);
+  return root;
+}
+
 export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
   const root = document.createElement("section");
   root.style.display = "flex";
@@ -58,7 +206,24 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
   const selectedSlot = slots.find((slot) => slot.slotId === summary.selectedSlotId) ?? slots[0];
   const selectedMember = MEMBERS.find((member) => member.id === selectedSlot.memberId) ?? null;
 
-  root.appendChild(建立標題("訓練編隊台", "可自由改隊長、九個槽位與移動速度。"));
+  root.appendChild(建立標題("訓練編隊台", "左邊看軌道與槽位、右邊做細節調整與成員替換。"));
+
+  const layout = document.createElement("div");
+  layout.style.display = "grid";
+  layout.style.gridTemplateColumns = "420px minmax(0, 1fr)";
+  layout.style.gap = "18px";
+  layout.style.alignItems = "start";
+
+  const leftPane = document.createElement("div");
+  leftPane.style.display = "flex";
+  leftPane.style.flexDirection = "column";
+  leftPane.style.gap = "14px";
+  leftPane.appendChild(建立訓練軌道編排器(刷新));
+
+  const rightPane = document.createElement("div");
+  rightPane.style.display = "flex";
+  rightPane.style.flexDirection = "column";
+  rightPane.style.gap = "14px";
 
   const presetBlock = document.createElement("div");
   presetBlock.style.display = "grid";
@@ -99,7 +264,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
     wrap.appendChild(row);
     presetBlock.appendChild(wrap);
   });
-  root.appendChild(presetBlock);
+  rightPane.appendChild(presetBlock);
 
   const captainRow = document.createElement("div");
   captainRow.style.display = "grid";
@@ -116,7 +281,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
     };
     captainRow.appendChild(btn);
   });
-  root.appendChild(captainRow);
+  rightPane.appendChild(captainRow);
 
   const speedBlock = document.createElement("div");
   speedBlock.style.display = "flex";
@@ -143,29 +308,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
   };
   speedSlider.onchange = () => 刷新();
   speedBlock.append(speedSlider, speedValue);
-  root.appendChild(speedBlock);
-
-  const slotGrid = document.createElement("div");
-  slotGrid.style.display = "grid";
-  slotGrid.style.gridTemplateColumns = "repeat(3, minmax(0, 1fr))";
-  slotGrid.style.gap = "8px";
-  slots.forEach((slot) => {
-    const member = MEMBERS.find((entry) => entry.id === slot.memberId) ?? null;
-    const btn = document.createElement("button");
-    btn.className = slot.slotId === summary.selectedSlotId ? "一級按鈕" : "二級按鈕";
-    btn.style.textAlign = "left";
-    btn.style.padding = "10px";
-    btn.innerHTML = `
-      <div style="font-size:0.7rem;color:#8d93ad;">槽位 ${slot.slotId + 1} ・ ${slot.star}★</div>
-      <div style="font-size:0.8rem;color:#fff;font-weight:700;margin-top:4px;">${member ? `${member.no.toString().padStart(2, "0")} ${member.nameZh}` : "（空槽）"}</div>
-    `;
-    btn.onclick = () => {
-      設定訓練選中槽位(slot.slotId);
-      刷新();
-    };
-    slotGrid.appendChild(btn);
-  });
-  root.appendChild(slotGrid);
+  rightPane.appendChild(speedBlock);
 
   const slotActions = document.createElement("div");
   slotActions.className = "按鈕列";
@@ -198,7 +341,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
     刷新();
   };
   slotActions.append(cycleStar, clearSlot, resetDemo, clearAll);
-  root.appendChild(slotActions);
+  rightPane.appendChild(slotActions);
 
   const summaryGrid = document.createElement("div");
   summaryGrid.style.display = "grid";
@@ -211,7 +354,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
     建立資料膠囊("總重量", `${summary.totalWeight}`),
     建立資料膠囊("平均速度", `${summary.avgSpeedContribution}`),
   ].join("");
-  root.appendChild(summaryGrid);
+  rightPane.appendChild(summaryGrid);
 
   const healRow = document.createElement("div");
   healRow.className = "按鈕列";
@@ -230,7 +373,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
     刷新();
   };
   healRow.append(healBtn, zeroBtn);
-  root.appendChild(healRow);
+  rightPane.appendChild(healRow);
 
   const selectedInfo = document.createElement("div");
   selectedInfo.style.padding = "12px";
@@ -253,11 +396,11 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
       <div style="font-size:0.72rem;color:#8d93ad;">目前編輯：槽位 ${selectedSlot.slotId + 1}</div>
       <div style="font-size:0.9rem;color:#fff;font-weight:700;margin-top:4px;">空槽</div>
       <div style="font-size:0.78rem;color:#8d93ad;line-height:1.5;margin-top:8px;">
-        從下方成員庫點一下，就會直接塞進這個位置。
+        先在左邊點槽位，再從下方成員庫指派，或直接拖曳左側九宮格交換位置。
       </div>
     `;
   }
-  root.appendChild(selectedInfo);
+  rightPane.appendChild(selectedInfo);
 
   const library = document.createElement("div");
   library.style.display = "grid";
@@ -283,8 +426,10 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
     };
     library.appendChild(btn);
   });
-  root.appendChild(library);
+  rightPane.appendChild(library);
 
+  layout.append(leftPane, rightPane);
+  root.appendChild(layout);
   return root;
 }
 
