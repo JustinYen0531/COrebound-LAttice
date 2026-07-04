@@ -1356,6 +1356,8 @@ button.禁用:hover {
   line-height: 1;
   display: block;
   filter:
+    drop-shadow(0 0 7px rgba(128, 132, 140, 0.72))
+    drop-shadow(0 4px 6px rgba(128, 132, 140, 0.44))
     drop-shadow(3px 0 0 #ffffff)
     drop-shadow(-3px 0 0 #ffffff)
     drop-shadow(0 3px 0 #ffffff)
@@ -1371,6 +1373,8 @@ button.禁用:hover {
   height: var(--world-object-size, 240px);
   object-fit: contain;
   filter:
+    drop-shadow(0 0 7px rgba(128, 132, 140, 0.72))
+    drop-shadow(0 4px 6px rgba(128, 132, 140, 0.44))
     drop-shadow(3px 0 0 #ffffff)
     drop-shadow(-3px 0 0 #ffffff)
     drop-shadow(0 3px 0 #ffffff)
@@ -1403,6 +1407,8 @@ button.禁用:hover {
 .世界地圖層-物件.靠近中 .世界地圖層-物件-glyph,
 .世界地圖層-物件.靠近中 .世界地圖層-物件-image {
   filter:
+    drop-shadow(0 0 7px rgba(128, 132, 140, 0.72))
+    drop-shadow(0 4px 6px rgba(128, 132, 140, 0.44))
     drop-shadow(3px 0 0 #ffffff)
     drop-shadow(-3px 0 0 #ffffff)
     drop-shadow(0 3px 0 #ffffff)
@@ -1439,6 +1445,8 @@ button.禁用:hover {
   height: var(--world-object-size, 240px);
   object-fit: contain;
   filter:
+    drop-shadow(0 0 7px rgba(128, 132, 140, 0.72))
+    drop-shadow(0 4px 6px rgba(128, 132, 140, 0.44))
     drop-shadow(4px 0 0 #ffffff)
     drop-shadow(-4px 0 0 #ffffff)
     drop-shadow(0 4px 0 #ffffff)
