@@ -32,6 +32,57 @@ function 穩定雜湊(value: string): number {
   return hash >>> 0;
 }
 
+type 折皺層設定 = {
+  sizeBase: number;
+  sizeRange: number;
+  offsetRange: number;
+  opacity: number;
+  scale: number;
+  rotationOffset: number;
+};
+
+const 折皺層列表: 折皺層設定[] = [
+  { sizeBase: 340, sizeRange: 120, offsetRange: 140, opacity: 0.62, scale: 1.55, rotationOffset: 0 },
+  { sizeBase: 220, sizeRange: 90, offsetRange: 90, opacity: 0.46, scale: 1.68, rotationOffset: 67 },
+  { sizeBase: 150, sizeRange: 70, offsetRange: 56, opacity: 0.34, scale: 1.84, rotationOffset: 131 },
+];
+
+function 建立折皺圖樣(
+  defs: SVGDefsElement,
+  world: World,
+  hash: number,
+  index: number,
+  layerIndex: number,
+  config: 折皺層設定,
+): string {
+  const layerHash = 穩定雜湊(`${world}-${hash}-${index}-${layerIndex}`);
+  const size = config.sizeBase + (layerHash % config.sizeRange);
+  const offsetX = ((layerHash >>> 8) % (config.offsetRange * 2)) - config.offsetRange;
+  const offsetY = ((layerHash >>> 16) % (config.offsetRange * 2)) - config.offsetRange;
+  const rotation = (layerHash + config.rotationOffset) % 360;
+  const patternId = `tile-wrinkle-${world}-${hash}-${index}-${layerIndex}`;
+
+  const pattern = document.createElementNS(SVG_NS, "pattern");
+  pattern.setAttribute("id", patternId);
+  pattern.setAttribute("patternUnits", "userSpaceOnUse");
+  pattern.setAttribute("x", String(offsetX));
+  pattern.setAttribute("y", String(offsetY));
+  pattern.setAttribute("width", String(size));
+  pattern.setAttribute("height", String(size));
+  pattern.setAttribute("patternTransform", `rotate(${rotation})`);
+
+  const image = document.createElementNS(SVG_NS, "image");
+  image.setAttribute("href", 世界折皺[world]);
+  image.setAttribute("x", String(-size * 0.24));
+  image.setAttribute("y", String(-size * 0.24));
+  image.setAttribute("width", String(size * config.scale));
+  image.setAttribute("height", String(size * config.scale));
+  image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+  pattern.appendChild(image);
+  defs.appendChild(pattern);
+  return patternId;
+}
+
 function 建立折皺覆層(tile: SVGPathElement, index: number): void {
   if (tile.dataset.wrinkleApplied === "true") return;
   const world = 取得磁磚世界(tile);
@@ -46,41 +97,20 @@ function 建立折皺覆層(tile: SVGPathElement, index: number): void {
 
   const pathData = tile.getAttribute("d") ?? `${world}-${index}`;
   const hash = 穩定雜湊(pathData);
-  const size = 460 + (hash % 180);
-  const offsetX = ((hash >>> 8) % 220) - 110;
-  const offsetY = ((hash >>> 16) % 220) - 110;
-  const rotation = hash % 360;
-  const patternId = `tile-wrinkle-${world}-${hash}-${index}`;
-
-  const pattern = document.createElementNS(SVG_NS, "pattern");
-  pattern.setAttribute("id", patternId);
-  pattern.setAttribute("patternUnits", "userSpaceOnUse");
-  pattern.setAttribute("x", String(offsetX));
-  pattern.setAttribute("y", String(offsetY));
-  pattern.setAttribute("width", String(size));
-  pattern.setAttribute("height", String(size));
-  pattern.setAttribute("patternTransform", `rotate(${rotation})`);
-
-  const image = document.createElementNS(SVG_NS, "image");
-  image.setAttribute("href", 世界折皺[world]);
-  image.setAttribute("x", String(-size * 0.22));
-  image.setAttribute("y", String(-size * 0.22));
-  image.setAttribute("width", String(size * 1.44));
-  image.setAttribute("height", String(size * 1.44));
-  image.setAttribute("preserveAspectRatio", "xMidYMid slice");
-  pattern.appendChild(image);
-  defs.appendChild(pattern);
-
-  const overlay = tile.cloneNode(false) as SVGPathElement;
-  overlay.removeAttribute("class");
-  overlay.removeAttribute("style");
-  overlay.setAttribute("class", `世界地圖層-折皺覆層 世界地圖層-折皺覆層-${world}`);
-  overlay.setAttribute("fill", `url(#${patternId})`);
-  overlay.setAttribute("fill-opacity", "0.72");
-  overlay.setAttribute("stroke", "none");
-  overlay.setAttribute("style", "mix-blend-mode:multiply;pointer-events:none");
-  overlay.dataset.wrinkleOverlay = "true";
-  tile.after(overlay);
+  const overlays = 折皺層列表.map((config, layerIndex) => {
+    const patternId = 建立折皺圖樣(defs, world, hash, index, layerIndex, config);
+    const overlay = tile.cloneNode(false) as SVGPathElement;
+    overlay.removeAttribute("class");
+    overlay.removeAttribute("style");
+    overlay.setAttribute("class", `世界地圖層-折皺覆層 世界地圖層-折皺覆層-${world}`);
+    overlay.setAttribute("fill", `url(#${patternId})`);
+    overlay.setAttribute("fill-opacity", String(config.opacity));
+    overlay.setAttribute("stroke", "none");
+    overlay.setAttribute("style", "mix-blend-mode:multiply;pointer-events:none");
+    overlay.dataset.wrinkleOverlay = "true";
+    return overlay;
+  });
+  overlays.forEach((overlay) => tile.after(overlay));
   tile.dataset.wrinkleApplied = "true";
 }
 
