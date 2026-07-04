@@ -14,12 +14,12 @@
  */
 
 import type { 圖騰筆畫, 極座標 } from "../../totem/圖騰產生器";
+import { MEMBERS } from "../../data/成員資料庫";
 import { 隊長圖騰清單, type 隊長圖騰資料 } from "../../totem/資料/隊長圖騰";
 import { 幾何世界圖騰清單 } from "../../totem/資料/幾何世界圖騰";
 import { 有機世界圖騰清單 } from "../../totem/資料/有機世界圖騰";
 import { 分形世界圖騰清單 } from "../../totem/資料/分形世界圖騰";
 import { 機械世界圖騰清單 } from "../../totem/資料/機械世界圖騰";
-import { 建立單個角色圖徽 } from "../../totem/資料/角色識別圖徽";
 import type { 圖騰角色資料 } from "../../totem/資料/幾何世界圖騰";
 
 // ============================================================
@@ -52,6 +52,8 @@ interface 插槽 {
   職責: 職責類型;
   等級: number;
 }
+
+let 頭像裁切序號 = 0;
 
 // ============================================================
 // 數學(與 weaving.ts 同一套九層座標轉換)
@@ -92,6 +94,60 @@ function 建立元素(tag: string, attrs: Record<string, string | number>): SVGE
   const el = document.createElementNS(SVG_NS, tag);
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
   return el;
+}
+
+function 取得角色頭像路徑(角色ID: string, 星級: number): string {
+  const member = MEMBERS.find((entry) => entry.id.endsWith(`_${角色ID}`)) ?? MEMBERS[0];
+  return `/assets/transparent-portraits/avatars/${member.id}_s${Math.max(1, Math.min(3, 星級))}.png`;
+}
+
+function 建立角色頭像徽章(角色ID: string, 星級: number, 半徑: number, 外框顏色: string, 角度: number): SVGElement {
+  頭像裁切序號 += 1;
+  const clipId = `player-avatar-clip-${角色ID}-${星級}-${頭像裁切序號}`;
+  const 徽章定位G = document.createElementNS(SVG_NS, "g");
+  徽章定位G.setAttribute("transform", `rotate(${角度}) translate(0, ${-半徑})`);
+
+  const defs = document.createElementNS(SVG_NS, "defs");
+  const clipPath = document.createElementNS(SVG_NS, "clipPath");
+  clipPath.setAttribute("id", clipId);
+  const clipCircle = document.createElementNS(SVG_NS, "circle");
+  clipCircle.setAttribute("cx", "0");
+  clipCircle.setAttribute("cy", "0");
+  clipCircle.setAttribute("r", "16.5");
+  clipPath.appendChild(clipCircle);
+  defs.appendChild(clipPath);
+  徽章定位G.appendChild(defs);
+
+  const 外框圓 = document.createElementNS(SVG_NS, "circle");
+  外框圓.setAttribute("cx", "0");
+  外框圓.setAttribute("cy", "0");
+  外框圓.setAttribute("r", "21");
+  外框圓.setAttribute("fill", "#05060b");
+  外框圓.setAttribute("stroke", 外框顏色);
+  外框圓.setAttribute("stroke-width", "3");
+  外框圓.setAttribute("opacity", "0.98");
+  徽章定位G.appendChild(外框圓);
+
+  const 內圈 = document.createElementNS(SVG_NS, "circle");
+  內圈.setAttribute("cx", "0");
+  內圈.setAttribute("cy", "0");
+  內圈.setAttribute("r", "17.4");
+  內圈.setAttribute("fill", "#0b0d16");
+  內圈.setAttribute("stroke", "rgba(255,255,255,0.88)");
+  內圈.setAttribute("stroke-width", "1");
+  徽章定位G.appendChild(內圈);
+
+  const 頭像圖 = document.createElementNS(SVG_NS, "image");
+  頭像圖.setAttribute("href", 取得角色頭像路徑(角色ID, 星級));
+  頭像圖.setAttribute("x", "-16.5");
+  頭像圖.setAttribute("y", "-16.5");
+  頭像圖.setAttribute("width", "33");
+  頭像圖.setAttribute("height", "33");
+  頭像圖.setAttribute("preserveAspectRatio", "xMidYMid slice");
+  頭像圖.setAttribute("clip-path", `url(#${clipId})`);
+  徽章定位G.appendChild(頭像圖);
+
+  return 徽章定位G;
 }
 
 // ============================================================
@@ -344,7 +400,7 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
       const 角度 = idx * 120;
       const 顏色 = 職責顏色[slot.職責];
       const 容器G = 建立元素("g", { transform: `translate(${中心}, ${中心})` });
-      容器G.appendChild(建立單個角色圖徽(slot.角色.id, slot.等級, 圖徽半徑, 顏色, 角度));
+      容器G.appendChild(建立角色頭像徽章(slot.角色.id, slot.等級, 圖徽半徑, 顏色, 角度));
       emblemsG.appendChild(容器G);
     });
     svg.appendChild(emblemsG);
