@@ -14,6 +14,7 @@ import {
   取得訓練道場摘要,
   回滿訓練玩家生命,
   清空訓練敵人,
+  重置訓練碰撞統計,
   設定訓練移動倍率,
   設定訓練預選怪物,
   召喚訓練敵人,
@@ -34,11 +35,13 @@ function 建立訓練道場快捷面板(): HTMLElement {
   panel.style.border = "1px solid rgba(255,255,255,0.14)";
   panel.style.boxShadow = "0 10px 30px rgba(0,0,0,0.34)";
   panel.style.backdropFilter = "blur(10px)";
+  let refreshTimer = 0;
 
   const render = () => {
     const summary = 取得訓練道場摘要();
     const playerPos = 讀取玩家位置();
     const catalog = 取得可召喚怪物圖鑑();
+    const monitor = summary.collisionMonitor;
     panel.innerHTML = "";
 
     const title = document.createElement("div");
@@ -173,7 +176,14 @@ function 建立訓練道場快捷面板(): HTMLElement {
       清空訓練敵人();
       render();
     };
-    supportRow.append(healBtn, clearBtn);
+    const resetStatsBtn = document.createElement("button");
+    resetStatsBtn.className = "二級按鈕";
+    resetStatsBtn.textContent = "重置統計";
+    resetStatsBtn.onclick = () => {
+      重置訓練碰撞統計();
+      render();
+    };
+    supportRow.append(healBtn, clearBtn, resetStatsBtn);
     panel.appendChild(supportRow);
 
     const collision = document.createElement("div");
@@ -182,22 +192,37 @@ function 建立訓練道場快捷面板(): HTMLElement {
     collision.style.border = "1px solid rgba(255,255,255,0.06)";
     collision.style.fontSize = "0.76rem";
     collision.style.lineHeight = "1.6";
+    const activeNames = monitor.activeEnemyNames.length > 0 ? monitor.activeEnemyNames.join("、") : "無";
+    const lastResolvedAgo =
+      monitor.lastResolvedAtMs === null ? "尚未結算" : `${Math.max(0, Math.floor((Date.now() - monitor.lastResolvedAtMs) / 1000))} 秒前`;
     if (summary.lastCollision) {
       collision.innerHTML = `
         <div style="color:#f2e6c9;font-weight:700;">最近碰撞</div>
+        <div style="color:#ffcf7f;">接觸中：${activeNames}</div>
         <div style="color:#e9ecf8;">對象：${summary.lastCollision.enemyNames.join("、")}</div>
         <div style="color:#8d93ad;">我方輸出 ${summary.lastCollision.squadDamage} ｜ 承傷 ${summary.lastCollision.enemyDamage}</div>
+        <div style="color:#8d93ad;">累計 ${monitor.collisionCount} 次 ｜ 累積輸出 ${monitor.totalSquadDamage} ｜ 累積承傷 ${monitor.totalEnemyDamage}</div>
+        <div style="color:#8d93ad;">最近一次結算：${lastResolvedAgo}</div>
       `;
     } else {
       collision.innerHTML = `
         <div style="color:#f2e6c9;font-weight:700;">最近碰撞</div>
+        <div style="color:#ffcf7f;">接觸中：${activeNames}</div>
         <div style="color:#8d93ad;">目前還沒有接觸紀錄，先就地召一批怪試試看。</div>
+        <div style="color:#8d93ad;">累計 ${monitor.collisionCount} 次 ｜ 累積輸出 ${monitor.totalSquadDamage} ｜ 累積承傷 ${monitor.totalEnemyDamage}</div>
       `;
     }
     panel.appendChild(collision);
   };
 
   render();
+  refreshTimer = window.setInterval(() => {
+    if (!panel.isConnected) {
+      window.clearInterval(refreshTimer);
+      return;
+    }
+    render();
+  }, 250);
   return panel;
 }
 

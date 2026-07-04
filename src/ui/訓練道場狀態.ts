@@ -53,6 +53,15 @@ export interface 訓練碰撞紀錄 {
   enemyDamage: number;
 }
 
+export interface 訓練碰撞監測 {
+  activeEnemyIds: string[];
+  activeEnemyNames: string[];
+  lastResolvedAtMs: number | null;
+  collisionCount: number;
+  totalSquadDamage: number;
+  totalEnemyDamage: number;
+}
+
 interface 訓練道場內部狀態 {
   captainId: CaptainId;
   captainStar: 4;
@@ -64,6 +73,7 @@ interface 訓練道場內部狀態 {
   playerHp: number;
   playerMaxHp: number;
   lastCollision: 訓練碰撞紀錄 | null;
+  collisionMonitor: 訓練碰撞監測;
 }
 
 const 訓練世界清單: World[] = ["geometry", "organic", "fractal", "mechanical"];
@@ -90,6 +100,14 @@ const 狀態: 訓練道場內部狀態 = {
   playerHp: 0,
   playerMaxHp: 0,
   lastCollision: null,
+  collisionMonitor: {
+    activeEnemyIds: [],
+    activeEnemyNames: [],
+    lastResolvedAtMs: null,
+    collisionCount: 0,
+    totalSquadDamage: 0,
+    totalEnemyDamage: 0,
+  },
 };
 
 function byId(memberId: string | null): MemberDef | null {
@@ -154,6 +172,11 @@ export function 取得訓練道場摘要() {
     selectedSlotId: 狀態.selectedSlotId,
     selectedEnemyMonsterId: 狀態.selectedEnemyMonsterId,
     lastCollision: 狀態.lastCollision,
+    collisionMonitor: {
+      ...狀態.collisionMonitor,
+      activeEnemyIds: [...狀態.collisionMonitor.activeEnemyIds],
+      activeEnemyNames: [...狀態.collisionMonitor.activeEnemyNames],
+    },
   };
 }
 
@@ -269,6 +292,8 @@ export function 召喚訓練敵人(monsterId: string, count: number, around: { x
 export function 清空訓練敵人(): void {
   狀態.activeEnemies = [];
   狀態.lastCollision = null;
+  狀態.collisionMonitor.activeEnemyIds = [];
+  狀態.collisionMonitor.activeEnemyNames = [];
 }
 
 export function 移除訓練敵人(enemyId: string): void {
@@ -287,6 +312,28 @@ export function 覆蓋訓練敵群(enemies: 訓練召喚敵人[]): void {
 
 export function 記錄訓練碰撞(result: 訓練碰撞紀錄 | null): void {
   狀態.lastCollision = result ? { ...result, enemyIds: [...result.enemyIds], enemyNames: [...result.enemyNames] } : null;
+  if (!result) return;
+  狀態.collisionMonitor.lastResolvedAtMs = result.atMs;
+  狀態.collisionMonitor.collisionCount += 1;
+  狀態.collisionMonitor.totalSquadDamage += result.squadDamage;
+  狀態.collisionMonitor.totalEnemyDamage += result.enemyDamage;
+}
+
+export function 設定訓練碰撞接觸中(enemyIds: string[], enemyNames: string[]): void {
+  狀態.collisionMonitor.activeEnemyIds = [...enemyIds];
+  狀態.collisionMonitor.activeEnemyNames = [...enemyNames];
+}
+
+export function 重置訓練碰撞統計(): void {
+  狀態.lastCollision = null;
+  狀態.collisionMonitor = {
+    activeEnemyIds: [],
+    activeEnemyNames: [],
+    lastResolvedAtMs: null,
+    collisionCount: 0,
+    totalSquadDamage: 0,
+    totalEnemyDamage: 0,
+  };
 }
 
 export function 初始化訓練道場(): void {

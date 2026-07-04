@@ -15,6 +15,7 @@ import {
   手動設定訓練玩家生命,
   覆蓋訓練敵群,
   記錄訓練碰撞,
+  設定訓練碰撞接觸中,
   type 訓練召喚敵人,
 } from "../訓練道場狀態";
 import {
@@ -546,9 +547,15 @@ export function 建立世界地圖層(): HTMLElement {
       );
 
       if (contacts.length === 0) {
+        設定訓練碰撞接觸中([], []);
         collisionTickCarry = 0;
         return;
       }
+
+      設定訓練碰撞接觸中(
+        contacts.map((monster) => monster.inst.id),
+        contacts.map((monster) => monster.inst.nameZh),
+      );
 
       collisionTickCarry += dt;
       while (collisionTickCarry >= TICK_SECONDS) {
