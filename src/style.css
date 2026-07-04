@@ -2121,6 +2121,9 @@ button.禁用:hover {
   pointer-events: none;
   opacity: 0.34;
 }
+.世界地圖層-輕量磁磚線 {
+  opacity: 0.58;
+}
 .世界地圖層-分界線 {
   fill: none;
   stroke: rgba(255, 255, 255, 0.9);

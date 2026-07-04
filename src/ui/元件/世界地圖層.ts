@@ -2209,6 +2209,9 @@ function createLightweightWrinkleFloors(host: SVGSVGElement): void {
     clipPath.appendChild(clipShape);
     defs.appendChild(clipPath);
 
+    const tilePattern = createLightweightTilePattern(svgNamespace, world);
+    defs.appendChild(tilePattern);
+
     const image = document.createElementNS(svgNamespace, "image");
     image.setAttribute("class", `世界地圖層-輕量折皺地板圖 世界地圖層-輕量折皺地板圖-${world}`);
     image.setAttribute("href", LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE[world]);
@@ -2219,9 +2222,71 @@ function createLightweightWrinkleFloors(host: SVGSVGElement): void {
     image.setAttribute("preserveAspectRatio", "xMidYMid slice");
     image.setAttribute("clip-path", `url(#${clipId})`);
     group.appendChild(image);
+
+    const tileLines = document.createElementNS(svgNamespace, "rect");
+    tileLines.setAttribute("class", `世界地圖層-輕量磁磚線 世界地圖層-輕量磁磚線-${world}`);
+    tileLines.setAttribute("x", String(MAP_BOUNDS.minX));
+    tileLines.setAttribute("y", String(MAP_BOUNDS.minY));
+    tileLines.setAttribute("width", String(worldWidth));
+    tileLines.setAttribute("height", String(worldHeight));
+    tileLines.setAttribute("fill", `url(#lightweight-tile-pattern-${world})`);
+    tileLines.setAttribute("clip-path", `url(#${clipId})`);
+    group.appendChild(tileLines);
   });
 
   host.append(defs, group);
+}
+
+function createLightweightTilePattern(svgNamespace: string, world: World): SVGPatternElement {
+  const pattern = document.createElementNS(svgNamespace, "pattern");
+  pattern.setAttribute("id", `lightweight-tile-pattern-${world}`);
+  pattern.setAttribute("patternUnits", "userSpaceOnUse");
+  pattern.setAttribute("width", "220");
+  pattern.setAttribute("height", "220");
+  pattern.setAttribute("patternTransform", tilePatternTransform(world));
+
+  const lineColor: Record<World, string> = {
+    geometry: "rgba(255, 238, 200, 0.54)",
+    organic: "rgba(255, 213, 213, 0.46)",
+    fractal: "rgba(251, 197, 255, 0.50)",
+    mechanical: "rgba(192, 240, 255, 0.48)",
+  };
+  const stroke = lineColor[world];
+
+  const addPath = (d: string, opacity = "1", width = "4") => {
+    const path = document.createElementNS(svgNamespace, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", stroke);
+    path.setAttribute("stroke-width", width);
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    path.setAttribute("opacity", opacity);
+    pattern.appendChild(path);
+  };
+
+  if (world === "mechanical") {
+    addPath("M55 0 L165 0 L220 95 L165 190 L55 190 L0 95 Z", "0.9", "5");
+    addPath("M0 95 H220 M55 0 L55 190 M165 0 L165 190", "0.35", "2.5");
+  } else if (world === "fractal") {
+    addPath("M110 0 L220 110 L110 220 L0 110 Z", "0.82", "5");
+    addPath("M0 0 L220 220 M220 0 L0 220 M110 0 V220 M0 110 H220", "0.32", "2.5");
+  } else if (world === "organic") {
+    addPath("M0 110 C55 55 165 55 220 110 M0 110 C55 165 165 165 220 110", "0.76", "5");
+    addPath("M110 0 C70 55 70 165 110 220 M110 0 C150 55 150 165 110 220", "0.28", "2.5");
+  } else {
+    addPath("M0 0 H220 V220 H0 Z M0 110 H220 M110 0 V220", "0.72", "4");
+    addPath("M0 0 L220 220 M220 0 L0 220", "0.26", "2.5");
+  }
+
+  return pattern;
+}
+
+function tilePatternTransform(world: World): string {
+  if (world === "geometry") return "rotate(12)";
+  if (world === "organic") return "rotate(-8)";
+  if (world === "fractal") return "rotate(45)";
+  return "rotate(0)";
 }
 
 function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
