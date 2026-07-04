@@ -11,10 +11,12 @@ import { 戰鬥HUD接線 } from "../戰鬥HUD接線";
 import { 建立世界地圖層, 讀取玩家位置 } from "../元件/世界地圖層";
 import {
   取得可召喚怪物圖鑑,
+  取得訓練編隊預設列表,
   取得訓練道場摘要,
   回滿訓練玩家生命,
   清空訓練敵人,
   重置訓練碰撞統計,
+  套用訓練編隊預設,
   設定訓練移動倍率,
   設定訓練預選怪物,
   召喚訓練敵人,
@@ -95,6 +97,30 @@ function 建立訓練道場快捷面板(): HTMLElement {
     });
     speedBlock.appendChild(speedBtns);
     panel.appendChild(speedBlock);
+
+    const presetBlock = document.createElement("div");
+    presetBlock.style.display = "flex";
+    presetBlock.style.flexDirection = "column";
+    presetBlock.style.gap = "8px";
+    presetBlock.style.padding = "12px";
+    presetBlock.style.background = "rgba(255,255,255,0.03)";
+    presetBlock.style.border = "1px solid rgba(255,255,255,0.06)";
+    presetBlock.innerHTML = `<div style="font-size:0.78rem;color:#f2e6c9;font-weight:700;">編隊預設</div>`;
+    const presetBtns = document.createElement("div");
+    presetBtns.className = "按鈕列";
+    presetBtns.style.marginTop = "0";
+    取得訓練編隊預設列表().forEach((preset) => {
+      const btn = document.createElement("button");
+      btn.className = preset.id === summary.activePresetId ? "一級按鈕" : "二級按鈕";
+      btn.textContent = preset.label;
+      btn.onclick = () => {
+        套用訓練編隊預設(preset.id);
+        render();
+      };
+      presetBtns.appendChild(btn);
+    });
+    presetBlock.appendChild(presetBtns);
+    panel.appendChild(presetBlock);
 
     const summonBlock = document.createElement("div");
     summonBlock.style.display = "flex";

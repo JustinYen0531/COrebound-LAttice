@@ -3,12 +3,15 @@ import { FAMILY_LABEL, WORLD_LABEL } from "../../data/成員型別";
 import { 隊長清單 } from "../資料/隊長清單";
 import {
   取得可召喚怪物圖鑑,
+  取得訓練編隊預設列表,
   取得訓練召喚敵群,
   取得訓練小隊槽位,
   取得訓練道場摘要,
+  保存目前為訓練編隊預設,
   切換訓練槽位星級,
   回滿訓練玩家生命,
   套用訓練預設小隊,
+  套用訓練編隊預設,
   手動設定訓練玩家生命,
   更新訓練敵人,
   清空訓練小隊,
@@ -51,10 +54,52 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
 
   const summary = 取得訓練道場摘要();
   const slots = 取得訓練小隊槽位();
+  const presets = 取得訓練編隊預設列表();
   const selectedSlot = slots.find((slot) => slot.slotId === summary.selectedSlotId) ?? slots[0];
   const selectedMember = MEMBERS.find((member) => member.id === selectedSlot.memberId) ?? null;
 
   root.appendChild(建立標題("訓練編隊台", "可自由改隊長、九個槽位與移動速度。"));
+
+  const presetBlock = document.createElement("div");
+  presetBlock.style.display = "grid";
+  presetBlock.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+  presetBlock.style.gap = "8px";
+  presets.forEach((preset) => {
+    const filledCount = preset.slots.filter((slot) => slot.memberId).length;
+    const wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.flexDirection = "column";
+    wrap.style.gap = "6px";
+    wrap.style.padding = "10px";
+    wrap.style.background = "rgba(255,255,255,0.03)";
+    wrap.style.border = preset.id === summary.activePresetId ? "1px solid rgba(216,180,106,0.5)" : "1px solid rgba(255,255,255,0.06)";
+    wrap.style.borderRadius = "10px";
+    wrap.innerHTML = `
+      <div style="font-size:0.82rem;color:#fff;font-weight:700;">${preset.label}</div>
+      <div style="font-size:0.72rem;color:#8d93ad;">隊長 ${preset.captainId} ｜ 隊員 ${filledCount}/9</div>
+    `;
+    const row = document.createElement("div");
+    row.className = "按鈕列";
+    row.style.marginTop = "0";
+    const loadBtn = document.createElement("button");
+    loadBtn.className = preset.id === summary.activePresetId ? "一級按鈕" : "二級按鈕";
+    loadBtn.textContent = "套用";
+    loadBtn.onclick = () => {
+      套用訓練編隊預設(preset.id);
+      刷新();
+    };
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "二級按鈕";
+    saveBtn.textContent = "存檔";
+    saveBtn.onclick = () => {
+      保存目前為訓練編隊預設(preset.id);
+      刷新();
+    };
+    row.append(loadBtn, saveBtn);
+    wrap.appendChild(row);
+    presetBlock.appendChild(wrap);
+  });
+  root.appendChild(presetBlock);
 
   const captainRow = document.createElement("div");
   captainRow.style.display = "grid";

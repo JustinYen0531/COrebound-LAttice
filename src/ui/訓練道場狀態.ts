@@ -62,6 +62,13 @@ export interface 訓練碰撞監測 {
   totalEnemyDamage: number;
 }
 
+export interface 訓練編隊預設 {
+  id: string;
+  label: string;
+  captainId: CaptainId;
+  slots: 訓練小隊槽位[];
+}
+
 interface 訓練道場內部狀態 {
   captainId: CaptainId;
   captainStar: 4;
@@ -74,6 +81,8 @@ interface 訓練道場內部狀態 {
   playerMaxHp: number;
   lastCollision: 訓練碰撞紀錄 | null;
   collisionMonitor: 訓練碰撞監測;
+  presetLoadouts: 訓練編隊預設[];
+  activePresetId: string | null;
 }
 
 const 訓練世界清單: World[] = ["geometry", "organic", "fractal", "mechanical"];
@@ -86,6 +95,50 @@ const 初始槽位: 訓練小隊槽位[] = Array.from({ length: 9 }, (_, slotId)
   memberId: MEMBERS[slotId]?.id ?? null,
   star: 3,
 }));
+
+function 複製槽位(slots: 訓練小隊槽位[]): 訓練小隊槽位[] {
+  return slots.map((slot) => ({ ...slot }));
+}
+
+function 建立預設編隊(id: string, label: string, captainId: CaptainId, memberIds: Array<string | null>): 訓練編隊預設 {
+  return {
+    id,
+    label,
+    captainId,
+    slots: Array.from({ length: 9 }, (_, slotId) => ({
+      slotId,
+      memberId: memberIds[slotId] ?? null,
+      star: 3,
+    })),
+  };
+}
+
+const 預設編隊列表: 訓練編隊預設[] = [
+  建立預設編隊("preset_balance", "均衡試作", "architect", 初始槽位.map((slot) => slot.memberId)),
+  建立預設編隊("preset_guard", "幾何防線", "conductor", [
+    "m01_prism",
+    "m03_vector",
+    "m04_node",
+    "m06_thorn",
+    "m07_spore",
+    "m05_lightcone",
+    "m16_gate",
+    "m11_snowglass",
+    "m02_matrix",
+  ]),
+  建立預設編隊("preset_burst", "爆發火力", "launcher", [
+    "m03_vector",
+    "m17_shrapnel",
+    "m12_bifurcation",
+    "m05_lightcone",
+    "m07_spore",
+    "m13_lightning",
+    "m09_fungus",
+    "m18_needle",
+    "m14_abyss",
+  ]),
+  建立預設編隊("preset_blank", "空白實驗", "operator", Array.from({ length: 9 }, () => null)),
+];
 
 let 召喚流水號 = 1;
 
@@ -108,6 +161,11 @@ const 狀態: 訓練道場內部狀態 = {
     totalSquadDamage: 0,
     totalEnemyDamage: 0,
   },
+  presetLoadouts: 預設編隊列表.map((preset) => ({
+    ...preset,
+    slots: 複製槽位(preset.slots),
+  })),
+  activePresetId: "preset_balance",
 };
 
 function byId(memberId: string | null): MemberDef | null {
@@ -177,6 +235,11 @@ export function 取得訓練道場摘要() {
       activeEnemyIds: [...狀態.collisionMonitor.activeEnemyIds],
       activeEnemyNames: [...狀態.collisionMonitor.activeEnemyNames],
     },
+    presetLoadouts: 狀態.presetLoadouts.map((preset) => ({
+      ...preset,
+      slots: 複製槽位(preset.slots),
+    })),
+    activePresetId: 狀態.activePresetId,
   };
 }
 
@@ -231,7 +294,32 @@ export function 套用訓練預設小隊(): void {
     狀態.slots[index].memberId = seed.memberId;
     狀態.slots[index].star = seed.star;
   });
+  狀態.activePresetId = "preset_balance";
   重算訓練玩家生命(false);
+}
+
+export function 取得訓練編隊預設列表(): 訓練編隊預設[] {
+  return 狀態.presetLoadouts.map((preset) => ({
+    ...preset,
+    slots: 複製槽位(preset.slots),
+  }));
+}
+
+export function 套用訓練編隊預設(presetId: string): void {
+  const preset = 狀態.presetLoadouts.find((entry) => entry.id === presetId);
+  if (!preset) return;
+  狀態.captainId = preset.captainId;
+  狀態.slots = 複製槽位(preset.slots);
+  狀態.activePresetId = preset.id;
+  重算訓練玩家生命(false);
+}
+
+export function 保存目前為訓練編隊預設(presetId: string): void {
+  const preset = 狀態.presetLoadouts.find((entry) => entry.id === presetId);
+  if (!preset) return;
+  preset.captainId = 狀態.captainId;
+  preset.slots = 複製槽位(狀態.slots);
+  狀態.activePresetId = preset.id;
 }
 
 export function 取得可召喚怪物圖鑑(): MonsterDef[] {
