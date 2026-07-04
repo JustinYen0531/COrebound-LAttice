@@ -665,64 +665,175 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
 
   const selectorWrap = document.createElement("div");
   selectorWrap.style.display = "grid";
-  selectorWrap.style.gridTemplateColumns = "1fr auto auto auto auto";
+  selectorWrap.style.gridTemplateColumns = "minmax(220px, 1.3fr) auto auto auto auto";
   selectorWrap.style.gap = "8px";
   selectorWrap.style.alignItems = "stretch";
+  selectorWrap.style.overflow = "visible";
 
-  const select = document.createElement("select");
-  select.className = "訓練召喚面板-選單";
-  select.style.width = "100%";
-  select.style.minWidth = "0";
-  select.style.padding = "9px 10px";
-  select.style.background = "rgba(17,21,33,0.92)";
-  select.style.color = "#e9ecf8";
-  select.style.border = "1px solid rgba(111,140,255,0.28)";
-  select.style.borderRadius = "10px";
-  select.style.appearance = "auto";
-  select.style.webkitAppearance = "menulist";
-  select.style.MozAppearance = "menulist";
-  select.style.cursor = "pointer";
-  const groups = new Map<string, HTMLOptGroupElement>();
+  const 目前怪物 = catalog.find((monster) => monster.id === summary.selectedEnemyMonsterId) ?? catalog[0];
+  const 目前怪物Id = () => 取得訓練道場摘要().selectedEnemyMonsterId || 目前怪物?.id || "";
+
+  const pickerWrap = document.createElement("div");
+  pickerWrap.style.position = "relative";
+  pickerWrap.style.minWidth = "0";
+  pickerWrap.style.overflow = "visible";
+
+  const pickerBtn = document.createElement("button");
+  pickerBtn.type = "button";
+  pickerBtn.className = "訓練召喚面板-選單";
+  pickerBtn.style.width = "100%";
+  pickerBtn.style.minWidth = "0";
+  pickerBtn.style.padding = "9px 12px";
+  pickerBtn.style.background = "rgba(17,21,33,0.92)";
+  pickerBtn.style.color = "#e9ecf8";
+  pickerBtn.style.border = "1px solid rgba(111,140,255,0.28)";
+  pickerBtn.style.borderRadius = "10px";
+  pickerBtn.style.cursor = "pointer";
+  pickerBtn.style.display = "flex";
+  pickerBtn.style.alignItems = "center";
+  pickerBtn.style.justifyContent = "space-between";
+  pickerBtn.style.gap = "10px";
+  pickerBtn.style.textAlign = "left";
+  pickerBtn.style.fontSize = "0.85rem";
+
+  const pickerLabel = document.createElement("span");
+  pickerLabel.style.flex = "1";
+  pickerLabel.style.minWidth = "0";
+  pickerLabel.style.whiteSpace = "nowrap";
+  pickerLabel.style.overflow = "hidden";
+  pickerLabel.style.textOverflow = "ellipsis";
+
+  const pickerArrow = document.createElement("span");
+  pickerArrow.textContent = "▾";
+  pickerArrow.style.color = "#9db3ff";
+  pickerArrow.style.fontSize = "0.8rem";
+  pickerArrow.style.flex = "0 0 auto";
+
+  pickerBtn.append(pickerLabel, pickerArrow);
+
+  const menu = document.createElement("div");
+  menu.style.position = "absolute";
+  menu.style.left = "0";
+  menu.style.right = "0";
+  menu.style.top = "calc(100% + 8px)";
+  menu.style.display = "none";
+  menu.style.flexDirection = "column";
+  menu.style.gap = "8px";
+  menu.style.maxHeight = "340px";
+  menu.style.overflowY = "auto";
+  menu.style.padding = "10px";
+  menu.style.background = "rgba(10,13,22,0.98)";
+  menu.style.border = "1px solid rgba(111,140,255,0.32)";
+  menu.style.boxShadow = "0 20px 40px rgba(0,0,0,0.45)";
+  menu.style.zIndex = "30";
+
+  let menuOpen = false;
+  const 更新按鈕文字 = () => {
+    const current = catalog.find((monster) => monster.id === 目前怪物Id()) ?? 目前怪物;
+    if (!current) {
+      pickerLabel.textContent = "請先選擇怪物";
+      return;
+    }
+    const worldName = current.world === "core" ? "核心" : WORLD_LABEL[current.world];
+    pickerLabel.textContent = `${worldName}世界｜T${current.tier}｜${current.no.toString().padStart(2, "0")} ${current.nameZh}`;
+  };
+  const 設定選單開關 = (open: boolean) => {
+    menuOpen = open;
+    menu.style.display = open ? "flex" : "none";
+    pickerArrow.textContent = open ? "▴" : "▾";
+    pickerBtn.style.borderColor = open ? "rgba(255,210,120,0.65)" : "rgba(111,140,255,0.28)";
+    pickerBtn.style.boxShadow = open ? "0 0 0 1px rgba(255,210,120,0.18)" : "none";
+  };
+  更新按鈕文字();
+
+  pickerBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    設定選單開關(!menuOpen);
+  };
+  pickerWrap.addEventListener("mousedown", (event) => event.stopPropagation());
+  pickerWrap.addEventListener("click", (event) => event.stopPropagation());
+
+  const groups = new Map<string, HTMLDivElement>();
   catalog.forEach((monster) => {
     const worldName = monster.world === "core" ? "核心" : WORLD_LABEL[monster.world];
     const key = `${worldName}世界`;
     let group = groups.get(key);
     if (!group) {
-      group = document.createElement("optgroup");
-      group.label = key;
+      const groupWrap = document.createElement("div");
+      groupWrap.style.display = "flex";
+      groupWrap.style.flexDirection = "column";
+      groupWrap.style.gap = "6px";
+
+      const title = document.createElement("div");
+      title.textContent = key;
+      title.style.fontSize = "0.72rem";
+      title.style.letterSpacing = "0.06em";
+      title.style.color = "#9aa6d1";
+      title.style.padding = "0 2px";
+
+      group = document.createElement("div");
+      group.style.display = "flex";
+      group.style.flexDirection = "column";
+      group.style.gap = "4px";
+
+      groupWrap.append(title, group);
+      menu.appendChild(groupWrap);
       groups.set(key, group);
-      select.appendChild(group);
     }
-    const option = document.createElement("option");
-    option.value = monster.id;
-    option.textContent = `T${monster.tier}｜${monster.no.toString().padStart(2, "0")} ${monster.nameZh}`;
-    option.selected = monster.id === summary.selectedEnemyMonsterId;
-    group.appendChild(option);
+
+    const optionBtn = document.createElement("button");
+    optionBtn.type = "button";
+    optionBtn.style.display = "flex";
+    optionBtn.style.alignItems = "center";
+    optionBtn.style.justifyContent = "space-between";
+    optionBtn.style.gap = "10px";
+    optionBtn.style.width = "100%";
+    optionBtn.style.padding = "8px 10px";
+    optionBtn.style.border = "1px solid rgba(255,255,255,0.08)";
+    optionBtn.style.background =
+      monster.id === 目前怪物Id() ? "rgba(255,210,120,0.16)" : "rgba(255,255,255,0.03)";
+    optionBtn.style.color = "#eef1ff";
+    optionBtn.style.cursor = "pointer";
+    optionBtn.style.fontSize = "0.8rem";
+    optionBtn.style.textAlign = "left";
+    optionBtn.innerHTML = `
+      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">T${monster.tier}｜${monster.no
+        .toString()
+        .padStart(2, "0")} ${monster.nameZh}</span>
+      <span style="color:${monster.id === 目前怪物Id() ? "#ffd278" : "#7f8ab0"};font-size:0.72rem;">${monster.id === 目前怪物Id() ? "已選中" : "點擊選取"}</span>
+    `;
+    optionBtn.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      設定訓練預選怪物(monster.id);
+      設定選單開關(false);
+      刷新();
+    };
+    group.appendChild(optionBtn);
   });
-  select.onchange = () => {
-    設定訓練預選怪物(select.value);
-    刷新();
-  };
+
+  pickerWrap.append(pickerBtn, menu);
 
   const summon1 = document.createElement("button");
   summon1.className = "一級按鈕";
   summon1.textContent = "召喚 1";
   summon1.onclick = () => {
-    召喚訓練敵人(select.value, 1, 生成座標);
+    召喚訓練敵人(目前怪物Id(), 1, 生成座標);
     刷新();
   };
   const summon3 = document.createElement("button");
   summon3.className = "二級按鈕";
   summon3.textContent = "召喚 3";
   summon3.onclick = () => {
-    召喚訓練敵人(select.value, 3, 生成座標);
+    召喚訓練敵人(目前怪物Id(), 3, 生成座標);
     刷新();
   };
   const summon6 = document.createElement("button");
   summon6.className = "二級按鈕";
   summon6.textContent = "召喚 6";
   summon6.onclick = () => {
-    召喚訓練敵人(select.value, 6, 生成座標);
+    召喚訓練敵人(目前怪物Id(), 6, 生成座標);
     刷新();
   };
   const clear = document.createElement("button");
@@ -732,7 +843,7 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
     清空訓練敵人();
     刷新();
   };
-  selectorWrap.append(select, summon1, summon3, summon6, clear);
+  selectorWrap.append(pickerWrap, summon1, summon3, summon6, clear);
   root.appendChild(selectorWrap);
 
   const status = document.createElement("div");
