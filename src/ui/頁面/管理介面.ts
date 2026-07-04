@@ -629,12 +629,12 @@ function 互動分頁內容(): HTMLElement {
       <div>${雙語("目前靠近", "Currently Near")}：<b style="color: #ffd24d;">${應用程式狀態.額外.靠近的互動設施 ?? 雙語("（無）", "(None)")}</b></div>
       <div>${雙語("選中設施", "Selected Facility")}：<b style="color: #fff;">${選中設施}</b></div>
       <div style="margin-top: 4px;">${雙語("狀態", "Status")}：${啟用中 
-        ? `<span style='color: #4d8dff; font-weight: bold;'>✅ ${雙語("已連接啟用（現場操作）", "Connected (Live Operation)")}</span>` 
-        : `<span style='color: #d8b46a; font-weight: bold;'>⚠️ ${雙語("離線模擬（沙盒操作）", "Offline Simulation (Sandbox)")}</span>`
+        ? `<span style='color: #4d8dff; font-weight: bold;'>${雙語("已連接啟用（現場操作）", "Connected (Live Operation)")}</span>` 
+        : `<span style='color: #d8b46a; font-weight: bold;'>${雙語("遠端預覽（現場操作會鎖定）", "Remote Preview (Live actions stay locked)")}</span>`
       }</div>
     </div>
     
-    <p class="占位說明" style="margin-top: 12px; font-size: 0.76rem;">${雙語("提示：回到操作頁面利用 WASD 移動靠近對應設施，即可進入完全在線的操作模式。", "Tip: move with WASD on the operation page to stand near the matching facility and enter full live mode.")}</p>
+    <p class="占位說明" style="margin-top: 12px; font-size: 0.76rem;">${雙語("提示：回到操作頁面利用 WASD 移動靠近對應設施，即可進入現場操作模式。", "Tip: move with WASD on the operation page to stand near the matching facility and enter live operation mode.")}</p>
   `;
 
   wrap.append(書籤欄, 內容區, 補充區);
