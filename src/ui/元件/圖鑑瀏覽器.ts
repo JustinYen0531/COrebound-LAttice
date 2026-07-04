@@ -13,6 +13,7 @@ import {
   材料圖鑑資料,
   機制圖鑑資料,
   Boss圖鑑資料,
+  隊長圖鑑資料,
   世界故事資料,
   圖鑑條目,
 } from "../資料/圖鑑資料庫";
@@ -87,6 +88,7 @@ function 取得資料列表(名稱: string): 圖鑑條目[] {
   if (名稱 === "材料圖鑑") return 材料圖鑑資料;
   if (名稱 === "機制圖鑑") return 機制圖鑑資料;
   if (名稱 === "Boss圖鑑") return Boss圖鑑資料;
+  if (名稱 === "隊長圖鑑") return 隊長圖鑑資料;
   if (名稱 === "世界故事") return 世界故事資料;
   return [];
 }
@@ -153,11 +155,45 @@ function 建立怪物立繪HTML(條目ID: string): string {
   );
 }
 
+// 隊長條目 id 格式 "captain_{captainId}"。每位隊長有 4 種形態立繪。
+function 建立隊長立繪HTML(條目ID: string): string {
+  if (!條目ID.startsWith("captain_")) return "";
+  const captainId = 條目ID.replace("captain_", "");
+
+  const 選中形態 = 應用程式狀態.額外.圖鑑選中隊長形態 ?? 1;
+  const 立繪路徑 = `/assets/transparent-portraits/captains/${captainId}_form${選中形態}.png`;
+
+  // 形態切換按鈕：每個按鈕顯示對應形態的頭像。
+  const 形態列HTML = [1, 2, 3, 4]
+    .map(
+      (form) => `
+        <button class="圖鑑隊長形態按鈕 ${選中形態 === form ? "作用中" : ""}" data-form="${form}" type="button">
+          <span class="圖鑑星級頭像框 圖鑑隊長形態頭像框">
+            <img class="圖鑑隊長形態頭像圖" src="/assets/transparent-portraits/captains/${captainId}_form${form}_head.png" alt="" draggable="false" />
+          </span>
+          <span class="圖鑑星級文字">${雙語(`形態 ${form}`, `Form ${form}`)}</span>
+        </button>
+      `
+    )
+    .join("");
+
+  return 建立圖鑑舞台立繪HTML(
+    立繪路徑,
+    `${captainId} 形態${選中形態} 立繪`,
+    `
+      <div class="圖鑑詳情-星級列 圖鑑詳情-隊長形態列">
+        ${形態列HTML}
+      </div>
+    `
+  );
+}
+
 function 建立詳情HTML(選中條目: 圖鑑條目): string {
   const 成員立繪HTML = 建立成員立繪HTML(選中條目.id);
   const 怪物立繪HTML = 建立怪物立繪HTML(選中條目.id);
+  const 隊長立繪HTML = 建立隊長立繪HTML(選中條目.id);
   const 立繪HTML =
-    成員立繪HTML || 怪物立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>${雙語("這筆資料沒有立繪", "No portrait for this entry")}</span></div>`;
+    成員立繪HTML || 怪物立繪HTML || 隊長立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>${雙語("這筆資料沒有立繪", "No portrait for this entry")}</span></div>`;
   const 表格HTML =
     選中條目.表格數值 && 選中條目.表格數值.length > 0
       ? `
@@ -240,6 +276,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
       名稱 === "材料圖鑑" ? 雙語("材料圖鑑", "Material Codex") :
       名稱 === "機制圖鑑" ? 雙語("機制圖鑑", "Mechanics Codex") :
       名稱 === "Boss圖鑑" ? "Boss圖鑑 / Boss Codex" :
+      名稱 === "隊長圖鑑" ? 雙語("隊長圖鑑", "Captain Codex") :
       雙語("世界故事", "World Stories");
     btn.classList.toggle("作用中", 名稱 === 選中名稱);
     if (名稱 === "世界故事") btn.classList.add("圖鑑瀏覽器-世界故事按鈕");
@@ -259,6 +296,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
     選中名稱 === "材料圖鑑" ? 雙語("材料圖鑑", "Material Codex") :
     選中名稱 === "機制圖鑑" ? 雙語("機制圖鑑", "Mechanics Codex") :
     選中名稱 === "Boss圖鑑" ? "Boss圖鑑 / Boss Codex" :
+    選中名稱 === "隊長圖鑑" ? 雙語("隊長圖鑑", "Captain Codex") :
     雙語("世界故事", "World Stories");
   標題列.innerHTML = `
     <div>
@@ -289,7 +327,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
   const 有選中條目 = Boolean(選中條目);
 
   if (選中名稱 === "成員圖鑑") {
-    卡片格.classList.add("成員圖鑑-表格版");
+    卡片格.classList.add("成員圖鑑-五乘四版");
 
     const 世界配置 = [
       { key: "幾何世界", name: "幾何世界 (Geometry)" },
@@ -298,66 +336,35 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
       { key: "機械世界", name: "機械世界 (Mechanical)" },
     ];
 
-    const 家族配置 = [
-      { key: "護盾家族", name: 雙語("護盾家族", "Shield Family") },
-      { key: "多發家族", name: 雙語("多發家族", "Multishot Family") },
-      { key: "直線家族", name: 雙語("直線家族", "Straight Family") },
-      { key: "地雷家族", name: 雙語("地雷家族", "Mine Family") },
-      { key: "激光家族", name: 雙語("激光家族", "Laser Family") },
-    ];
+    for (const world of 世界配置) {
+      const row = document.createElement("section");
+      row.className = "圖鑑瀏覽器-成員世界列";
+      const heading = document.createElement("h4");
+      heading.className = "圖鑑瀏覽器-成員世界標題";
+      heading.textContent = world.name;
+      row.appendChild(heading);
 
-    const table = document.createElement("table");
-    table.className = "圖鑑瀏覽器-成員表格";
-
-    const thead = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-    const thFamily = document.createElement("th");
-    thFamily.textContent = 雙語("家族", "Family");
-    headerRow.appendChild(thFamily);
-    for (const conf of 世界配置) {
-      const th = document.createElement("th");
-      th.textContent = conf.name;
-      headerRow.appendChild(th);
-    }
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-    for (const family of 家族配置) {
-      const row = document.createElement("tr");
-      
-      const tdFamily = document.createElement("td");
-      tdFamily.className = "圖鑑表格-家族單元格";
-      tdFamily.textContent = family.name;
-      row.appendChild(tdFamily);
-
-      for (const world of 世界配置) {
-        const td = document.createElement("td");
-        td.className = "圖鑑表格-成員單元格";
-
-        const 條目 = 當前資料列表.find(
-          (item) => item.所屬.includes(world.key) && item.所屬.includes(family.key)
-        );
-
-        if (條目) {
+      const 世界成員 = 當前資料列表.filter((item) => item.所屬.includes(world.key));
+      for (const 條目 of 世界成員) {
+        const 編號 = 條目.名稱.match(/^(\d{2})\./)?.[1] ?? "--";
+        const 乾淨名稱 = 條目.名稱
+          .replace(/^\d{2}\.\s*/, "")
+          .replace(/^[^\p{L}\p{N}]+/u, "");
           const card = document.createElement("button");
           card.type = "button";
           card.className = "占位卡片 圖鑑瀏覽器-條目按鈕";
           if (有選中條目 && 條目.id !== 選中條目!.id) card.classList.add("收斂");
           if (有選中條目 && 條目.id === 選中條目!.id) card.classList.add("作用中");
           card.innerHTML = `
-            <span class="圖鑑瀏覽器-條目標題">${條目.名稱}</span>
+            <span class="圖鑑瀏覽器-成員編號">${編號}</span>
+            <span class="圖鑑瀏覽器-條目標題">${乾淨名稱}</span>
             <span class="圖鑑瀏覽器-條目簡述">${條目.簡介}</span>
           `;
           card.addEventListener("click", () => 應用程式狀態.設定圖鑑選中條目(情境, 條目.id));
-          td.appendChild(card);
-        }
-        row.appendChild(td);
+          row.appendChild(card);
       }
-      tbody.appendChild(row);
+      卡片格.appendChild(row);
     }
-    table.appendChild(tbody);
-    卡片格.appendChild(table);
   } else {
     // 其他類別圖鑑（如怪物、材料等）維持原本的平鋪網格
     for (const 條目 of 當前資料列表) {
@@ -389,6 +396,15 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
       event.stopPropagation();
       const lv = Number((event.currentTarget as HTMLButtonElement).dataset.star);
       應用程式狀態.設定圖鑑選中星級(lv);
+      if (選中條目) 應用程式狀態.設定圖鑑選中條目(情境, 選中條目.id);
+    });
+  });
+
+  wrap.querySelectorAll<HTMLButtonElement>(".圖鑑隊長形態按鈕").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const form = Number((event.currentTarget as HTMLButtonElement).dataset.form);
+      應用程式狀態.設定圖鑑選中隊長形態(form);
       if (選中條目) 應用程式狀態.設定圖鑑選中條目(情境, 選中條目.id);
     });
   });
