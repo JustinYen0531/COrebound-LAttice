@@ -105,6 +105,8 @@ import {
 import {
   加入正式戰場怪物,
   取得正式戰場怪物,
+  取得正式玩家位置,
+  設定正式玩家位置,
   type 正式戰場怪物,
 } from "../正式戰場狀態";
 
@@ -263,6 +265,7 @@ export function 建立世界地圖層(): HTMLElement {
     應用程式狀態.畫面.層 === "操作頁面" && 應用程式狀態.畫面.訓練道場;
   const root = document.createElement("div");
   root.className = "世界地圖層";
+  if (!訓練道場中) playerPos = 取得正式玩家位置();
 
   const canvas = document.createElement("div");
   canvas.className = "世界地圖層-畫布";
@@ -1323,6 +1326,7 @@ export function 建立世界地圖層(): HTMLElement {
           x: playerPos.x + playerVelocity.x * dt,
           y: playerPos.y + playerVelocity.y * dt,
         }, playerPos);
+        if (!訓練道場中) 設定正式玩家位置(playerPos);
         syncNearbyToState();
 
       }
@@ -1391,6 +1395,7 @@ export function 建立世界地圖層(): HTMLElement {
       x: object.x - dir.dx * approachDistance,
       y: object.y - dir.dy * approachDistance,
     }, playerPos);
+    if (!訓練道場中) 設定正式玩家位置(playerPos);
     syncNearbyToState();
     render();
   }
@@ -1481,6 +1486,7 @@ export function 建立世界地圖層(): HTMLElement {
 
     if (effect.playerTeleportTo) {
       playerPos = clampTraversablePlayerPosition(effect.playerTeleportTo, playerPos);
+      if (!訓練道場中) 設定正式玩家位置(playerPos);
       playerVelocity = { x: 0, y: 0 };
       syncNearbyToState();
     }
