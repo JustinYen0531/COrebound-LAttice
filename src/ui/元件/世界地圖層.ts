@@ -263,6 +263,7 @@ function isVisible(point: { x: number; y: number }, viewport: { w: number; h: nu
 export function 建立世界地圖層(): HTMLElement {
   const 訓練道場中 =
     應用程式狀態.畫面.層 === "操作頁面" && 應用程式狀態.畫面.訓練道場;
+  const 進度模式 = 訓練道場中 ? "dojo" : "formal";
   const root = document.createElement("div");
   root.className = "世界地圖層";
   if (!訓練道場中) playerPos = 取得正式玩家位置();
@@ -589,7 +590,7 @@ export function 建立世界地圖層(): HTMLElement {
 
       // Boss 特殊結算：守護者 → 印記+狂暴；COLA → 勝利。
       if (m.bossKind === "guardian" && m.bossWorld) {
-        const sigil = 擊敗守護者(m.bossWorld);
+        const sigil = 擊敗守護者(m.bossWorld, 進度模式);
         if (sigil) {
           if (!訓練道場中) 記錄守護者擊敗();
           設定驗收事件(`${REGION_LABEL[m.bossWorld]}守護者已倒下，取得 ${sigil}。`);
@@ -618,8 +619,9 @@ export function 建立世界地圖層(): HTMLElement {
       if (!def) continue;
       擊殺統計[`${def.world}_T${def.tier}`] = (擊殺統計[`${def.world}_T${def.tier}`] ?? 0) + 1;
       記錄驗收擊殺(`${def.world}_T${def.tier}`, `${def.nameZh} 已被擊殺。`);
+      if (訓練道場中) continue;
       if (def.world !== "core") {
-        記錄世界擊殺(def.world, def.tier, def.id); // 累計守護者召喚進度
+        記錄世界擊殺(def.world, def.tier, def.id, 進度模式); // 累計守護者召喚進度
       }
       const enraged = def.world !== "core" && 世界已狂暴查詢(def.world);
       const drop = rollMonsterDrop(def, enraged);
@@ -633,7 +635,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   /** 查某世界是否狂暴（給掉落用；封裝以免直接依賴狀態物件）。 */
   function 世界已狂暴查詢(world: World): boolean {
-    return 對局進度摘要().守護者.find((g) => g.world === world)?.enraged ?? false;
+    return 對局進度摘要(進度模式).守護者.find((g) => g.world === world)?.enraged ?? false;
   }
 
   /**
@@ -1442,21 +1444,21 @@ export function 建立世界地圖層(): HTMLElement {
 
   function 召喚目前可用守護者(): void {
     let anySummoned = false;
-    for (const g of 對局進度摘要().守護者) {
-      if (!可召喚守護者(g.world)) continue;
+    for (const g of 對局進度摘要(進度模式).守護者) {
+      if (!可召喚守護者(g.world, 進度模式)) continue;
       const def = worldGuardian(g.world);
       if (!def) continue;
       生成Boss到場(def, "guardian", g.world);
-      標記守護者已召喚(g.world);
+      標記守護者已召喚(g.world, 進度模式);
       anySummoned = true;
     }
     if (anySummoned) 設定驗收事件("守護者已被召至場上。");
   }
 
   function 召喚COLABoss(): void {
-    if (!可召喚COLA()) return;
+    if (!可召喚COLA(進度模式)) return;
     生成Boss到場(finalBoss(), "cola");
-    標記COLA已召喚();
+    標記COLA已召喚(進度模式);
     設定驗收事件("COLA 已被召喚至場上。");
   }
 

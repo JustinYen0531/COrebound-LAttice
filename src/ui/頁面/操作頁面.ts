@@ -72,7 +72,7 @@ function 建立訓練道場快捷面板(): HTMLElement {
     const bag = 背包.背包快照();
     const squad = 小隊屬性摘要();
     const roster = 取得上陣養成();
-    const prog = 對局進度摘要();
+    const prog = 對局進度摘要("dojo");
     const acceptance = 取得驗收場快照();
     panel.innerHTML = "";
 
@@ -381,9 +381,9 @@ function 建立訓練道場快捷面板(): HTMLElement {
     addProgressButton("達成守護者條件", () => {
       for (const world of ["geometry", "organic", "fractal", "mechanical"] as const) {
         for (let kind = 0; kind < 3; kind += 1) {
-          for (let count = 0; count < 5; count += 1) 記錄世界擊殺(world, 1, `dojo_t${kind}`);
+          for (let count = 0; count < 5; count += 1) 記錄世界擊殺(world, 1, `dojo_t${kind}`, "dojo");
         }
-        for (let elite = 0; elite < 3; elite += 1) 記錄世界擊殺(world, 2);
+        for (let elite = 0; elite < 3; elite += 1) 記錄世界擊殺(world, 2, undefined, "dojo");
       }
     }, true);
     addProgressButton("召喚守護者", () => 發送訓練場事件("summon_guardians"));
@@ -421,7 +421,7 @@ function 建立訓練道場快捷面板(): HTMLElement {
     resetRunBtn.onclick = () => {
       背包.重置背包();
       重置養成();
-      重置對局進度();
+      重置對局進度("dojo");
       重置驗收場狀態();
       刷新正式最大生命();
       回滿訓練玩家生命();
