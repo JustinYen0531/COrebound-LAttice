@@ -156,11 +156,11 @@ function 建立正式圖騰預覽(): HTMLElement {
   view.className = "訓練軌道編排器-圖騰預覽框";
   view.appendChild(
     建立玩家標記圖騰({
-      size: 258,
+      size: 352,
       隊長: captain,
       隊長等級: 4,
       小隊: totemSquad,
-      旋轉: false,
+      旋轉: true,
     }),
   );
   root.appendChild(view);
