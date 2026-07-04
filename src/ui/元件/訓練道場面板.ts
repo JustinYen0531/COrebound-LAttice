@@ -48,6 +48,10 @@ const 軌道槽位配置: Array<{ slotId: number; layer: "外" | "中" | "內"; 
 
 const 軌道半徑: Record<"外" | "中" | "內", number> = { 外: 140, 中: 98, 內: 60 };
 
+function 取得層級標籤(layer: "外" | "中" | "內"): string {
+  return `${layer}層`;
+}
+
 function 建立標題(文字: string, 副標?: string): HTMLElement {
   const wrap = document.createElement("div");
   wrap.style.display = "flex";
@@ -146,7 +150,8 @@ function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
 
   slots.forEach((slot) => {
     const member = MEMBERS.find((entry) => entry.id === slot.memberId) ?? null;
-    const role = 槽位職責色票[軌道槽位配置.find((item) => item.slotId === slot.slotId)?.role ?? "保護"];
+    const layout = 軌道槽位配置.find((item) => item.slotId === slot.slotId);
+    const role = 槽位職責色票[layout?.role ?? "保護"];
     const card = document.createElement("button");
     card.type = "button";
     card.className = `訓練軌道編排器-槽位卡${summary.selectedSlotId === slot.slotId ? " 作用中" : ""}`;
@@ -157,6 +162,7 @@ function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
         <span class="訓練軌道編排器-槽位編號" style="background:${role.color};">${slot.slotId + 1}</span>
         <span class="訓練軌道編排器-槽位職責" style="color:${role.color};">${role.label}</span>
       </div>
+      <div class="訓練軌道編排器-槽位層級">${取得層級標籤(layout?.layer ?? "外")} ｜ 第 ${slot.slotId + 1} 槽</div>
       <div class="訓練軌道編排器-槽位主文">${member ? `${member.no.toString().padStart(2, "0")} ${member.nameZh}` : "（空槽）"}</div>
       <div class="訓練軌道編排器-槽位副文">${slot.star}★${member ? ` ｜ ${WORLD_LABEL[member.world]}` : ""}</div>
     `;
@@ -205,6 +211,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
   const presets = 取得訓練編隊預設列表();
   const selectedSlot = slots.find((slot) => slot.slotId === summary.selectedSlotId) ?? slots[0];
   const selectedMember = MEMBERS.find((member) => member.id === selectedSlot.memberId) ?? null;
+  const captain = 隊長清單.find((entry) => entry.id === summary.captainId) ?? 隊長清單[0];
 
   root.appendChild(建立標題("訓練編隊台", "左邊看軌道與槽位、右邊做細節調整與成員替換。"));
 
@@ -218,6 +225,21 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
   leftPane.style.display = "flex";
   leftPane.style.flexDirection = "column";
   leftPane.style.gap = "14px";
+  const captainCard = document.createElement("div");
+  captainCard.className = "訓練軌道編排器-隊長卡";
+  captainCard.style.setProperty("--captain-color", captain.代表色);
+  captainCard.innerHTML = `
+    <div class="訓練軌道編排器-隊長卡眉標">隊長核心</div>
+    <div class="訓練軌道編排器-隊長卡主列">
+      <span class="訓練軌道編排器-隊長徽記">${captain.名稱.slice(0, 1)}</span>
+      <div>
+        <div class="訓練軌道編排器-隊長名稱">${captain.名稱}</div>
+        <div class="訓練軌道編排器-隊長資訊">${captain.代號} ｜ ${captain.控制效果}</div>
+      </div>
+    </div>
+    <div class="訓練軌道編排器-隊長描述">${captain.主動位移技能} ｜ ${captain.週期技能}</div>
+  `;
+  leftPane.appendChild(captainCard);
   leftPane.appendChild(建立訓練軌道編排器(刷新));
 
   const rightPane = document.createElement("div");

@@ -573,6 +573,54 @@ button.禁用:hover {
   flex-direction: column;
   gap: 14px;
 }
+.訓練軌道編排器-隊長卡 {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--captain-color) 16%, rgba(18, 24, 42, 0.96)), rgba(12, 16, 27, 0.96));
+  border: 1px solid color-mix(in srgb, var(--captain-color) 44%, rgba(255, 255, 255, 0.08));
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 126px;
+}
+.訓練軌道編排器-隊長卡眉標 {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--captain-color) 72%, white);
+  font-weight: 700;
+}
+.訓練軌道編排器-隊長卡主列 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.訓練軌道編排器-隊長徽記 {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+  background: radial-gradient(circle at 32% 28%, var(--captain-color), #101627 76%);
+  border: 2px solid rgba(255, 210, 77, 0.7);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--captain-color) 30%, transparent);
+}
+.訓練軌道編排器-隊長名稱 {
+  font-size: 1rem;
+  color: #fff;
+  font-weight: 800;
+}
+.訓練軌道編排器-隊長資訊,
+.訓練軌道編排器-隊長描述 {
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: #9ba4c5;
+}
 .訓練軌道編排器-舞台 {
   display: flex;
   flex-direction: column;
@@ -768,6 +816,11 @@ button.禁用:hover {
   font-size: 0.82rem;
   color: #fff;
   font-weight: 700;
+}
+.訓練軌道編排器-槽位層級 {
+  font-size: 0.68rem;
+  color: #9ba4c5;
+  font-weight: 600;
 }
 .訓練軌道編排器-槽位副文 {
   font-size: 0.72rem;
