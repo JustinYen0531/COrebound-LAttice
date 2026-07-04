@@ -7,6 +7,7 @@
  */
 
 import type { Family } from "../data/成員型別";
+import type { PotionId } from "./流浪商店";
 
 interface 背包內部 {
   /** materialNo → 持有數 */
@@ -15,12 +16,15 @@ interface 背包內部 {
   碎片: Record<Family, number>;
   /** 原石 */
   原石: number;
+  /** 藥水與戰鬥消耗品 */
+  藥水: Map<PotionId, number>;
 }
 
 const 狀態: 背包內部 = {
   材料: new Map(),
   碎片: { shield: 0, multishot: 0, straight: 0, mine: 0, laser: 0 },
   原石: 0,
+  藥水: new Map(),
 };
 
 // ---- 加入 ----
@@ -34,6 +38,10 @@ export function 加入原石(count: number): void {
 export function 加入碎片(family: Family, count: number): void {
   if (count > 0) 狀態.碎片[family] += count;
 }
+export function 加入藥水(id: PotionId, count: number): void {
+  if (count <= 0) return;
+  狀態.藥水.set(id, (狀態.藥水.get(id) ?? 0) + count);
+}
 
 // ---- 查詢 ----
 export function 取材料(materialNo: number): number {
@@ -44,6 +52,9 @@ export function 取碎片(family: Family): number {
 }
 export function 取原石(): number {
   return 狀態.原石;
+}
+export function 取藥水(id: PotionId): number {
+  return 狀態.藥水.get(id) ?? 0;
 }
 export function 材料總數(): number {
   let n = 0;
@@ -108,6 +119,12 @@ export function 花費材料(materialNo: number, count: number): boolean {
   狀態.材料.set(materialNo, have - count);
   return true;
 }
+export function 花費藥水(id: PotionId, count: number): boolean {
+  const have = 取藥水(id);
+  if (have < count) return false;
+  狀態.藥水.set(id, have - count);
+  return true;
+}
 
 /** 顯示用快照。 */
 export function 背包快照() {
@@ -116,6 +133,7 @@ export function 背包快照() {
     材料總數: 材料總數(),
     碎片: { ...狀態.碎片 },
     材料明細: Array.from(狀態.材料.entries()).map(([no, count]) => ({ no, count })),
+    藥水明細: Array.from(狀態.藥水.entries()).map(([id, count]) => ({ id, count })),
   };
 }
 
@@ -124,4 +142,5 @@ export function 重置背包(初始原石 = 0): void {
   狀態.材料.clear();
   狀態.碎片 = { shield: 0, multishot: 0, straight: 0, mine: 0, laser: 0 };
   狀態.原石 = 初始原石;
+  狀態.藥水.clear();
 }

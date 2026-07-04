@@ -8,8 +8,7 @@
  *              - 商店: 藥水購買 + 材料販售面板
  *              - 召喚: 守護者召喚 (進度檢查) / COLA 裝配 (印記檢查)
  *
- *              為了保證最佳的體驗，本版實現了「沙盒模擬互動」：
- *              即使未靠近設施，玩家依然可以通過頂部的離線模式 Banner 完整看清、點擊並操作所有介面骨架！
+ *              交易與升星直接寫入正式背包/養成狀態，讓世界戰鬥掉落能接回管理介面。
  */
 
 import { 應用程式狀態 } from "../應用程式狀態";
@@ -30,33 +29,18 @@ import { 排入Boss召喚 } from "../Boss召喚佇列";
 import { MAP_OBJECTS } from "../../data/地圖物件資料";
 import { smelt } from "../../economy/熔爐熔煉";
 import * as 背包 from "../../economy/背包狀態";
+import { buyPotion, POTIONS, type PotionId } from "../../economy/流浪商店";
+import { 取得上陣養成, 升星上陣隊員 } from "../../progression/養成狀態";
 
 // ============================================================
 // 共享沙盒玩家背包狀態 (全局持久，操作會即時扣減顯示)
 // ============================================================
 interface 沙盒背包 {
-  gems: number;
-  materials: Record<string, number>;
-  shards: Record<Family, number>;
   unlockedMembers: Set<number>;
   skills: Record<string, number>; // 紀錄技能等級
 }
 
 const sandboxInv: 沙盒背包 = {
-  gems: 850,
-  materials: {
-    g01_orbit: 8,
-    g02_vertex: 4,
-    g03_path: 6,
-    g04_penrose: 2,
-    o07_germ: 10,
-    o08_sap: 5,
-    f13_origin: 6,
-    f14_dust: 4,
-    k19_ball: 9,
-    k20_cog: 5,
-  },
-  shards: { shield: 35, multishot: 12, straight: 18, mine: 8, laser: 15 },
   unlockedMembers: new Set([1, 2, 3, 6, 11, 16]), // 預設解鎖幾位
   skills: { shield: 1, multishot: 1, straight: 1, mine: 1, laser: 1 },
 };
@@ -105,6 +89,8 @@ function 合成面板(): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "互動面板 互動面板-合成";
   wrap.appendChild(建立狀態警示條("合成"));
+  const inventory = 背包.背包快照();
+  const squad = 取得上陣養成();
 
   const container = document.createElement("div");
   container.className = "面板內部區塊";
@@ -151,7 +137,7 @@ function 合成面板(): HTMLElement {
         <h4 style="margin: 0 0 8px; color: #ff8a3b;">🔮 技能武器升級 (不需怪物材料)</h4>
         <p style="font-size: 0.75rem; color: #8d93ad; margin-bottom: 10px;">直接消耗對應的家族碎片與原石提升局內威力。</p>
         <div style="display: flex; flex-direction: column; gap: 6px;">
-          ${(Object.keys(sandboxInv.shards) as Family[]).map((f) => {
+          ${(Object.keys(inventory.碎片) as Family[]).map((f) => {
             const currentLvl = sandboxInv.skills[f] ?? 1;
             const isMax = currentLvl >= 3;
             const nextCost = currentLvl === 1 ? 10 : currentLvl === 2 ? 30 : 90;
@@ -171,19 +157,31 @@ function 合成面板(): HTMLElement {
 
       <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 14px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;">
         <div>
-          <h4 style="margin: 0 0 8px; color: #ff8a3b;">📦 資源庫儲備 (模擬實時變化)</h4>
+        <h4 style="margin: 0 0 8px; color: #ff8a3b;">📦 資源庫儲備</h4>
           <div style="font-size: 0.82rem; line-height: 1.6;">
-            <div>持有原石：<span style="color: #ffd24d; font-weight: bold;">${sandboxInv.gems}</span> 顆</div>
+            <div>持有原石：<span style="color: #ffd24d; font-weight: bold;">${inventory.原石}</span> 顆</div>
             <div style="margin-top: 4px; color: #8d93ad;">家族碎片存量：</div>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; font-size: 0.75rem; margin-top: 4px;">
-              ${(Object.keys(sandboxInv.shards) as Family[]).map((f) => {
-                return `<div>${FAMILY_LABEL[f]}碎片: <b style="color:#fff;">${sandboxInv.shards[f]}</b></div>`;
+              ${(Object.keys(inventory.碎片) as Family[]).map((f) => {
+                return `<div>${FAMILY_LABEL[f]}碎片: <b style="color:#fff;">${inventory.碎片[f]}</b></div>`;
+              }).join("")}
+            </div>
+            <div style="margin-top: 8px; color: #8d93ad;">上陣隊員：</div>
+            <div style="display: flex; flex-direction: column; gap: 4px; max-height: 122px; overflow-y: auto; padding-right: 4px;">
+              ${squad.map((m, index) => {
+                const canUpgrade = m.star < 3;
+                return `
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(0,0,0,0.16); padding: 4px 6px; border-radius: 4px;">
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.nameZh} <b style="color:#ffd24d;">${m.star}★</b></span>
+                    <button class="三級按鈕 上陣升星-btn" data-squad-index="${index}" style="font-size: 0.68rem; padding: 1px 6px;" ${canUpgrade ? "" : "disabled"}>${canUpgrade ? "升星" : "MAX"}</button>
+                  </div>
+                `;
               }).join("")}
             </div>
           </div>
         </div>
         <div style="display: flex; gap: 8px; margin-top: 12px;">
-          <button class="一級按鈕 模擬合成-btn" style="flex: 1; font-size: 0.8rem; padding: 8px 0;">模擬小隊升星 (隨機成員)</button>
+          <button class="一級按鈕 刷新合成-btn" style="flex: 1; font-size: 0.8rem; padding: 8px 0;">刷新資源狀態</button>
           <button class="三級按鈕 返回戰場-btn" style="padding: 0 12px; font-size: 0.8rem;">離開</button>
         </div>
       </div>
@@ -198,35 +196,35 @@ function 合成面板(): HTMLElement {
       const cost = currentLvl === 1 ? 10 : currentLvl === 2 ? 30 : 90;
       const gemsCost = currentLvl === 1 ? 100 : currentLvl === 2 ? 400 : 1200;
 
-      if (sandboxInv.shards[f] < cost || sandboxInv.gems < gemsCost) {
-        alert(`升級失敗！材料不足。\n需要 ${cost} ${FAMILY_LABEL[f]}碎片 及 ${gemsCost} 原石。\n當前僅有：${sandboxInv.shards[f]} 碎片 / ${sandboxInv.gems} 原石。`);
+      if (背包.取碎片(f) < cost || 背包.取原石() < gemsCost) {
+        alert(`升級失敗！材料不足。\n需要 ${cost} ${FAMILY_LABEL[f]}碎片 及 ${gemsCost} 原石。\n當前僅有：${背包.取碎片(f)} 碎片 / ${背包.取原石()} 原石。`);
         return;
       }
 
-      sandboxInv.shards[f] -= cost;
-      sandboxInv.gems -= gemsCost;
+      背包.花費碎片(f, cost);
+      背包.花費原石(gemsCost);
       sandboxInv.skills[f] = currentLvl + 1;
       alert(`🎉 升級成功！${FAMILY_LABEL[f]}技能已提升至 Lv.${currentLvl + 1}。`);
       應用程式狀態.進入管理介面("互動");
     });
   });
 
-  container.querySelector(".模擬合成-btn")!.addEventListener("click", () => {
-    // 隨機選一個已解鎖成員模擬升星
-    const unlockedList = Array.from(sandboxInv.unlockedMembers);
-    if (unlockedList.length === 0) return;
-    const randNo = unlockedList[Math.floor(Math.random() * unlockedList.length)];
-    const m = MEMBERS.find((x) => x.no === randNo);
-    if (m) {
-      if (sandboxInv.shards[m.family] < 15 || sandboxInv.gems < 50) {
-        alert(`模擬升星失敗！原石或 ${FAMILY_LABEL[m.family]} 碎片存量不足。`);
+  container.querySelectorAll(".上陣升星-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const index = Number((e.currentTarget as HTMLElement).dataset.squadIndex);
+      const result = 升星上陣隊員(index);
+      if (!result.ok) {
+        alert(`升星失敗：${result.reason ?? "資源不足"}`);
         return;
       }
-      sandboxInv.shards[m.family] -= 15;
-      sandboxInv.gems -= 50;
-      alert(`🌟 升星成功！隊員 [${m.nameZh}] 成功提升 1 星！\n已扣除 15 家族碎片與 50 原石。`);
+      const member = 取得上陣養成()[index];
+      alert(`升星成功：${member.nameZh} 已提升到 ${result.newStar}★。`);
       應用程式狀態.進入管理介面("互動");
-    }
+    });
+  });
+
+  container.querySelector(".刷新合成-btn")!.addEventListener("click", () => {
+    應用程式狀態.進入管理介面("互動");
   });
 
   container.querySelector(".返回戰場-btn")!.addEventListener("click", () => {
@@ -426,13 +424,12 @@ function 雕像面板(): HTMLElement {
     if (!isUnlocked) {
       row.querySelector(".雕像-解鎖鈕")!.addEventListener("click", () => {
         // 檢查碎片是否滿 10 個
-        if (sandboxInv.shards[m.family] < 10) {
-          alert(`解鎖失敗！需要 10 個 ${FAMILY_LABEL[m.family]}碎片。當前僅有：${sandboxInv.shards[m.family]} 個。`);
+        if (背包.取碎片(m.family) < 10) {
+          alert(`解鎖失敗！需要 10 個 ${FAMILY_LABEL[m.family]}碎片。當前僅有：${背包.取碎片(m.family)} 個。`);
           return;
         }
 
-        // 模擬解鎖扣減
-        sandboxInv.shards[m.family] -= 10;
+        背包.花費碎片(m.family, 10);
         sandboxInv.unlockedMembers.add(m.no);
         alert(`🗿 儀式完成！[${m.nameZh}] 雕像破繭而化為純白光芒！\n小隊已成功解鎖該角色 (0 ➔ 1★)！`);
         應用程式狀態.進入管理介面("互動");
@@ -453,6 +450,7 @@ function 商店面板(): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "互動面板 互動面板-商店";
   wrap.appendChild(建立狀態警示條("商店"));
+  const inventory = 背包.背包快照();
 
   const container = document.createElement("div");
   container.className = "面板內部區塊";
@@ -491,26 +489,26 @@ function 商店面板(): HTMLElement {
             <tr>
               <td style="padding: 6px 0; font-weight: bold;">生命藥水 (小)</td>
               <td>HP +20%</td>
-              <td style="color:#ffd24d;">30</td>
-              <td><button class="三級按鈕 商店-買" data-cost="30" data-name="生命藥水 (小)">買</button></td>
+              <td style="color:#ffd24d;">${POTIONS.hp_small.price}</td>
+              <td><button class="三級按鈕 商店-買" data-potion-id="hp_small" data-name="生命藥水 (小)">買</button></td>
             </tr>
             <tr>
               <td style="padding: 6px 0; font-weight: bold;">生命藥水 (大)</td>
               <td>HP +50%</td>
-              <td style="color:#ffd24d;">80</td>
-              <td><button class="三級按鈕 商店-買" data-cost="80" data-name="生命藥水 (大)">買</button></td>
+              <td style="color:#ffd24d;">${POTIONS.hp_big.price}</td>
+              <td><button class="三級按鈕 商店-買" data-potion-id="hp_big" data-name="生命藥水 (大)">買</button></td>
             </tr>
             <tr>
               <td style="padding: 6px 0; font-weight: bold;">能量藥水 (小)</td>
               <td>能量 +30%</td>
-              <td style="color:#ffd24d;">35</td>
-              <td><button class="三級按鈕 商店-買" data-cost="35" data-name="能量藥水 (小)">買</button></td>
+              <td style="color:#ffd24d;">${POTIONS.energy_small.price}</td>
+              <td><button class="三級按鈕 商店-買" data-potion-id="energy_small" data-name="能量藥水 (小)">買</button></td>
             </tr>
             <tr>
               <td style="padding: 6px 0; font-weight: bold;">能量藥水 (大)</td>
               <td>能量 +75%</td>
-              <td style="color:#ffd24d;">95</td>
-              <td><button class="三級按鈕 商店-買" data-cost="95" data-name="能量藥水 (大)">買</button></td>
+              <td style="color:#ffd24d;">${POTIONS.energy_big.price}</td>
+              <td><button class="三級按鈕 商店-買" data-potion-id="energy_big" data-name="能量藥水 (大)">買</button></td>
             </tr>
           </tbody>
         </table>
@@ -526,7 +524,7 @@ function 商店面板(): HTMLElement {
         </div>
         
         <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
-          <span style="font-size: 0.82rem;">當前原石餘額: <b style="color: #ffd24d;">${sandboxInv.gems}</b> 顆</span>
+          <span style="font-size: 0.82rem;">當前原石餘額: <b style="color: #ffd24d;">${inventory.原石}</b> 顆</span>
           <button class="三級按鈕 商店-返回" style="font-size: 0.75rem; padding: 4px 12px;">離開</button>
         </div>
       </div>
@@ -536,29 +534,31 @@ function 商店面板(): HTMLElement {
   // 購買藥水綁定
   container.querySelectorAll(".商店-買").forEach((btn) => {
     btn.addEventListener("click", (e) => {
-      const cost = Number((e.currentTarget as HTMLElement).dataset.cost);
+      const potionId = (e.currentTarget as HTMLElement).dataset.potionId as PotionId;
       const name = (e.currentTarget as HTMLElement).dataset.name;
+      const result = buyPotion(potionId, 背包.取原石());
 
-      if (sandboxInv.gems < cost) {
-        alert(`購買失敗！原石餘額不足。\n需要 ${cost} 原石，當前僅有 ${sandboxInv.gems} 原石。`);
+      if (!result.ok) {
+        alert(`購買失敗！${result.reason ?? "原石不足"}。\n當前僅有 ${背包.取原石()} 原石。`);
         return;
       }
 
-      sandboxInv.gems -= cost;
-      alert(`🛒 購買成功！\n花費 ${cost} 原石，獲得 1 個 [${name}]。`);
+      背包.花費原石(result.gemsSpent);
+      背包.加入藥水(potionId, 1);
+      alert(`🛒 購買成功！\n花費 ${result.gemsSpent} 原石，獲得 1 個 [${name}]。`);
       應用程式狀態.進入管理介面("互動");
     });
   });
 
   // 渲染材料出售
   const sellScroll = container.querySelector(".商店材料滾動") as HTMLElement;
-  const ownedMaterials = MATERIALS.filter((m) => (sandboxInv.materials[m.id] ?? 0) > 0 && m.world !== "core");
+  const ownedMaterials = MATERIALS.filter((m) => 背包.取材料(m.no) > 0 && m.world !== "core");
 
   if (ownedMaterials.length === 0) {
     sellScroll.innerHTML = `<p class="占位說明" style="padding: 20px 0; text-align: center;">無可出售材料。</p>`;
   } else {
     for (const m of ownedMaterials) {
-      const count = sandboxInv.materials[m.id];
+      const count = 背包.取材料(m.no);
       const isLocal = m.world === localWorld;
       const price = sellPriceOfMaterial(m, isLocal);
 
@@ -580,9 +580,8 @@ function 商店面板(): HTMLElement {
       `;
 
       row.querySelector(".出售鈕")!.addEventListener("click", () => {
-        if (sandboxInv.materials[m.id] <= 0) return;
-        sandboxInv.materials[m.id]--;
-        sandboxInv.gems += price;
+        if (!背包.花費材料(m.no, 1)) return;
+        背包.加入原石(price);
         alert(`💰 出售成功！\n將 1 個 [${m.nameZh}] 出售，換得 ${price} 原石。`);
         應用程式狀態.進入管理介面("互動");
       });
