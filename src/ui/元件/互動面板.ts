@@ -27,6 +27,9 @@ import {
   標記守護者已召喚,
 } from "../對局進度狀態";
 import { 排入Boss召喚 } from "../Boss召喚佇列";
+import { MAP_OBJECTS } from "../../data/地圖物件資料";
+import { smelt } from "../../economy/熔爐熔煉";
+import * as 背包 from "../../economy/背包狀態";
 
 // ============================================================
 // 共享沙盒玩家背包狀態 (全局持久，操作會即時扣減顯示)
@@ -62,7 +65,8 @@ const sandboxInv: 沙盒背包 = {
 // 推斷玩家目前所在世界(供地緣 +20% 加成提示用)
 // 正式版應由地圖層寫入狀態;沙盒模式預設 geometry,讓玩家可完整操作。
 function regionNearby(): import("../../data/成員型別").World {
-  return "geometry";
+  const object = MAP_OBJECTS.find((entry) => entry.id === 應用程式狀態.額外.靠近的地圖物件ID);
+  return object && object.region !== "plaza" ? object.region : "geometry";
 }
 
 // 離線模擬警示 Banner
@@ -247,7 +251,11 @@ function 熔爐面板(): HTMLElement {
   container.style.flexDirection = "column";
   container.style.gap = "14px";
 
+  const nearbyFurnace = MAP_OBJECTS.find(
+    (entry) => entry.id === 應用程式狀態.額外.靠近的地圖物件ID && entry.kind === "熔爐" && entry.family,
+  );
   const localWorld = regionNearby();
+  const realInventory = 背包.背包快照();
   const worldLabel = {
     geometry: "幾何世界",
     organic: "有機世界",
@@ -277,11 +285,11 @@ function 熔爐面板(): HTMLElement {
         <div>
           <h4 style="margin: 0 0 8px; color: #ff8a3b; font-size: 0.85rem;">🛡️ 持有碎片庫</h4>
           <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem;">
-            ${(Object.keys(sandboxInv.shards) as Family[]).map((f) => {
+            ${(Object.keys(realInventory.碎片) as Family[]).map((f) => {
               return `
                 <div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;">
                   <span>${FAMILY_LABEL[f]}</span>
-                  <span style="color: #4d8dff; font-weight: bold;">${sandboxInv.shards[f]} 個</span>
+                  <span style="color: #4d8dff; font-weight: bold;">${realInventory.碎片[f]} 個</span>
                 </div>
               `;
             }).join("")}
@@ -294,13 +302,13 @@ function 熔爐面板(): HTMLElement {
 
   // 渲染可熔煉材料
   const scrollArea = container.querySelector(".材料列表-滾動區") as HTMLElement;
-  const ownedMaterials = MATERIALS.filter((m) => (sandboxInv.materials[m.id] ?? 0) > 0 && m.world !== "core");
+  const ownedMaterials = MATERIALS.filter((m) => 背包.取材料(m.no) > 0 && m.world !== "core");
 
   if (ownedMaterials.length === 0) {
     scrollArea.innerHTML = `<p class="占位說明" style="text-align: center; padding: 40px 0;">背包中已無生物材料。</p>`;
   } else {
     for (const m of ownedMaterials) {
-      const count = sandboxInv.materials[m.id];
+      const count = 背包.取材料(m.no);
       const isLocal = m.world === localWorld;
       const yield_ = shardFromMaterial(m, isLocal);
       const baseYield = shardFromMaterial(m, false);
@@ -324,23 +332,19 @@ function 熔爐面板(): HTMLElement {
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="color: #ffd24d; font-weight: bold;">×${count}</span>
-          <button class="三級按鈕 熔化-單個" style="padding: 2px 8px; font-size: 0.72rem;">熔化 1 個</button>
+          <button class="三級按鈕 熔化-單個" style="padding: 2px 8px; font-size: 0.72rem;" ${nearbyFurnace ? "" : "disabled"}>熔化 1 個</button>
         </div>
       `;
 
       row.querySelector(".熔化-單個")!.addEventListener("click", () => {
-        if (sandboxInv.materials[m.id] <= 0) return;
-        sandboxInv.materials[m.id]--;
-        
-        // 依照素材地緣屬性或世界觀，熔化產出對應家族的碎片
-        // 幾何世界 ➔ 護盾(shield)/雷射(laser), 機械世界 ➔ 直射(straight)/雷射(laser), 分形世界 ➔ 雷射(laser)/地雷(mine)
-        let targetFamily: Family = "shield";
-        if (m.world === "mechanical") targetFamily = "straight";
-        else if (m.world === "organic") targetFamily = "multishot";
-        else if (m.world === "fractal") targetFamily = "mine";
-
-        sandboxInv.shards[targetFamily] += yield_;
-        alert(`🔥 熔煉成功！\n將 1 個 [${m.nameZh}] 熔煉成 ${yield_} 個 ${FAMILY_LABEL[targetFamily]}碎片。`);
+        if (!nearbyFurnace?.family || nearbyFurnace.region === "plaza" || 背包.取材料(m.no) <= 0) return;
+        if (!背包.花費材料(m.no, 1)) return;
+        const result = smelt({
+          furnace: { family: nearbyFurnace.family, world: nearbyFurnace.region },
+          inputs: [{ materialNo: m.no, count: 1 }],
+        });
+        背包.加入碎片(result.family, result.shards);
+        alert(`熔煉成功：${m.nameZh} → ${result.shards} 個 ${FAMILY_LABEL[result.family]}碎片。`);
         應用程式狀態.進入管理介面("互動");
       });
 

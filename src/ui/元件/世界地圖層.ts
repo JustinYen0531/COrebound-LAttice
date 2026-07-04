@@ -242,9 +242,12 @@ function clampTraversablePlayerPosition(next: { x: number; y: number }, current:
 
 function syncNearbyToState(): void {
   const near = nearbyObjects(playerPos);
-  const nearest = near[0]?.kind ?? null;
-  if (應用程式狀態.額外.靠近的互動設施 !== nearest) {
-    應用程式狀態.模擬靠近設施(nearest);
+  const nearest = near[0] ?? null;
+  if (
+    應用程式狀態.額外.靠近的互動設施 !== (nearest?.kind ?? null) ||
+    應用程式狀態.額外.靠近的地圖物件ID !== (nearest?.id ?? null)
+  ) {
+    應用程式狀態.模擬靠近設施(nearest?.kind ?? null, nearest?.id ?? null);
   }
 }
 
