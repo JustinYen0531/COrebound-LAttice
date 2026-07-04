@@ -5,16 +5,19 @@ import sharp from "sharp";
 const repoRoot = process.cwd();
 const assetDir = path.join(repoRoot, "assets");
 const outDir = path.join(assetDir, "transparent-portraits");
-const targets = [
-  "Architect立繪與頭像.png",
-  "Conductor立繪與頭像.png",
-  "Launcher立繪與頭像.png",
-  "Operator立繪與頭像.png",
-  "幾何世界所有成員立繪與頭像.png",
-  "有機世界所有成員立繪與頭像.png",
-  "分形世界所有成員立繪與頭像.png",
-  "機械世界所有成員立繪與頭像.png",
-];
+// 素材總圖已從 assets/ 根目錄歸位到 characters/ 子目錄；這裡保留舊檔名作為輸出檔名，
+// 但輸入路徑改讀歸位後的位置。
+const inputPathByFileName = {
+  "Architect立繪與頭像.png": "images/characters/captains/Architect立繪與頭像.png",
+  "Conductor立繪與頭像.png": "images/characters/captains/Conductor立繪與頭像.png",
+  "Launcher立繪與頭像.png": "images/characters/captains/Launcher立繪與頭像.png",
+  "Operator立繪與頭像.png": "images/characters/captains/Operator立繪與頭像.png",
+  "幾何世界所有成員立繪與頭像.png": "images/characters/members/atlases/geometry_portraits.png",
+  "有機世界所有成員立繪與頭像.png": "images/characters/members/atlases/organic_portraits.png",
+  "分形世界所有成員立繪與頭像.png": "images/characters/members/atlases/fractal_portraits.png",
+  "機械世界所有成員立繪與頭像.png": "images/characters/members/atlases/mechanical_portraits.png",
+};
+const targets = Object.keys(inputPathByFileName);
 
 const memberSheets = [
   {
@@ -162,7 +165,7 @@ function padBounds(bounds, maxWidth, maxHeight, padding) {
 }
 
 for (const fileName of targets) {
-  const inputPath = path.join(assetDir, fileName);
+  const inputPath = path.join(assetDir, inputPathByFileName[fileName]);
   const outputPath = path.join(outDir, fileName);
   const { data, info } = await sharp(inputPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 

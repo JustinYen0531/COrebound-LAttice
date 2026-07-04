@@ -1077,7 +1077,7 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
       pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
       const image = document.createElementNS(svgNamespace, "image");
-      image.setAttribute("href", "/幾何世界地板花紋.png");
+      image.setAttribute("href", "/images/maps/floors/geometry.png");
       image.setAttribute("width", "1774");
       image.setAttribute("height", "887");
       image.setAttribute("x", "0");
@@ -1248,7 +1248,7 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
 
         // 中間半透明 image 用以淡化強黑線
         const image = document.createElementNS(svgNamespace, "image");
-        image.setAttribute("href", "/分形世界地板.png");
+        image.setAttribute("href", "/images/maps/floors/fractal.png");
         image.setAttribute("width", "1774");
         image.setAttribute("height", "887");
         image.setAttribute("x", "0");
@@ -1419,7 +1419,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
 
         // 中間半透明 image 用以淡化強黑線
         const image = document.createElementNS(svgNamespace, "image");
-        image.setAttribute("href", "/有機世界地板.png");
+        image.setAttribute("href", "/images/maps/floors/organic.png");
         image.setAttribute("width", "1774");
         image.setAttribute("height", "887");
         image.setAttribute("x", "0");
@@ -1567,7 +1567,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
 
       // 中間半透明 image 用以淡化強黑線
       const image = document.createElementNS(svgNamespace, "image");
-      image.setAttribute("href", "/機械世界地板.png");
+      image.setAttribute("href", "/images/maps/floors/mechanical.png");
       image.setAttribute("width", "1774");
       image.setAttribute("height", "887");
       image.setAttribute("x", "0");
