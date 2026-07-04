@@ -35,6 +35,7 @@ import {
 import { 刷新正式最大生命 } from "../正式對局小隊狀態";
 import { 對局進度摘要, 記錄世界擊殺, 重置對局進度 } from "../對局進度狀態";
 import { 重置驗收場狀態, 取得驗收場快照 } from "../驗收場狀態";
+import { 隊長清單 } from "../資料/隊長清單";
 import { 選文 } from "../語系";
 
 function 雙語(中文: string, 英文: string): string {
@@ -56,10 +57,9 @@ function 建立訓練道場快捷面板(): HTMLElement {
   panel.style.flexDirection = "column";
   panel.style.gap = "12px";
   panel.style.padding = "16px";
-  panel.style.background = "rgba(8, 12, 20, 0.82)";
+  panel.style.background = "rgba(8, 12, 20, 0.94)";
   panel.style.border = "1px solid rgba(255,255,255,0.14)";
   panel.style.boxShadow = "0 10px 30px rgba(0,0,0,0.34)";
-  panel.style.backdropFilter = "blur(10px)";
   panel.style.maxHeight = "calc(100vh - 120px)";
   panel.style.overflowY = "auto";
   let refreshTimer = 0;
@@ -89,7 +89,7 @@ function 建立訓練道場快捷面板(): HTMLElement {
         </div>
         <div style="font-size:0.72rem;color:${resultColor};font-weight:700;white-space:nowrap;">${resultLabel}</div>
       </div>
-      <div style="font-size:0.76rem;color:#8d93ad;line-height:1.5;margin-top:6px;">
+      <div id="道場面板-即時資訊" style="font-size:0.76rem;color:#8d93ad;line-height:1.5;margin-top:6px;">
         位置 X ${Math.round(playerPos.x)} / Y ${Math.round(playerPos.y)} ｜ 生命 ${summary.playerHp}/${summary.playerMaxHp} ｜ 敵群 ${summary.aliveEnemies}
       </div>
       <div style="font-size:0.74rem;color:#c8d0ec;line-height:1.5;margin-top:6px;">${acceptance.lastEvent}</div>
@@ -113,6 +113,42 @@ function 建立訓練道場快捷面板(): HTMLElement {
     backBtn.onclick = () => 應用程式狀態.退出訓練道場();
     primaryRow.append(squadBtn, summonPageBtn, backBtn);
     panel.appendChild(primaryRow);
+
+    // —— 隊長主動技能：讀數 + 施放（可驗收）——
+    const skillBlock = document.createElement("div");
+    skillBlock.style.display = "flex";
+    skillBlock.style.flexDirection = "column";
+    skillBlock.style.gap = "8px";
+    skillBlock.style.padding = "12px";
+    skillBlock.style.background = "rgba(255,255,255,0.03)";
+    skillBlock.style.border = "1px solid rgba(255,255,255,0.06)";
+    const skill = 戰鬥HUD接線.主動技能讀數();
+    const captainName = 隊長清單.find((c) => c.id === skill.captainId)?.名稱 ?? skill.captainId;
+    const cdText =
+      skill.cooldownRemaining > 0.05
+        ? 雙語(`冷卻 ${skill.cooldownRemaining.toFixed(1)}s`, `CD ${skill.cooldownRemaining.toFixed(1)}s`)
+        : skill.energyEnough
+          ? 雙語("就緒", "Ready")
+          : 雙語("能量不足", "Low Energy");
+    skillBlock.innerHTML = `
+      <div style="font-size:0.78rem;color:#f2e6c9;font-weight:700;">${雙語("隊長主動技能", "Captain Active Skill")}</div>
+      <div style="font-size:0.78rem;color:#e9ecf8;">${captainName}｜<b>${skill.label}</b></div>
+      <div style="font-size:0.74rem;color:#8d93ad;">${雙語("能量", "Energy")} ${Math.round(skill.energyCurrent)}/${skill.energyMax}（${雙語("消耗", "cost")} ${skill.energyCost}）｜ ${cdText}</div>
+    `;
+    const castRow = document.createElement("div");
+    castRow.className = "按鈕列";
+    castRow.style.marginTop = "0";
+    const castBtn = document.createElement("button");
+    castBtn.className = skill.castable ? "一級按鈕" : "二級按鈕";
+    if (!skill.castable) castBtn.classList.add("鎖定");
+    castBtn.textContent = 雙語("施放主動技能（Space）", "Cast Active Skill (Space)");
+    castBtn.onclick = () => {
+      window.dispatchEvent(new CustomEvent("request-cast-active"));
+      render();
+    };
+    castRow.appendChild(castBtn);
+    skillBlock.appendChild(castRow);
+    panel.appendChild(skillBlock);
 
     const acceptanceBlock = document.createElement("div");
     acceptanceBlock.style.display = "flex";
@@ -427,13 +463,31 @@ function 建立訓練道場快捷面板(): HTMLElement {
   };
 
   render();
+  // 整個面板的重建降到 1 秒一次（技能 CD、背包、進度等不需要每秒更新 4 次）。
+  // 玩家座標 / 生命 / 敵群這種高頻變動的欄位，由獨立的 RAF 迴圈只更新該元素，避免整個面板閃爍。
   refreshTimer = window.setInterval(() => {
     if (!panel.isConnected) {
       window.clearInterval(refreshTimer);
       return;
     }
     render();
-  }, 250);
+  }, 1000);
+
+  let liveRaf = 0;
+  const updateLive = () => {
+    if (!panel.isConnected) {
+      if (liveRaf) cancelAnimationFrame(liveRaf);
+      return;
+    }
+    const liveEl = panel.querySelector<HTMLElement>("#道場面板-即時資訊");
+    if (liveEl) {
+      const p = 讀取玩家位置();
+      const s = 取得訓練道場摘要();
+      liveEl.textContent = `位置 X ${Math.round(p.x)} / Y ${Math.round(p.y)} ｜ 生命 ${s.playerHp}/${s.playerMaxHp} ｜ 敵群 ${s.aliveEnemies}`;
+    }
+    liveRaf = requestAnimationFrame(updateLive);
+  };
+  liveRaf = requestAnimationFrame(updateLive);
   return panel;
 }
 

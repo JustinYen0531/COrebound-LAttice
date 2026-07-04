@@ -22,6 +22,20 @@ class 戰鬥HUD接線器 {
       this.source.tick(frame.dt);
       this.hud.update(this.source.snapshot(this.currentMode()));
     });
+    // 施放請求（Space 鍵 / 驗收控制台按鈕）走事件進來，避免與世界地圖層互相 import 造成環依賴。
+    window.addEventListener("request-cast-active", this.onRequestCast);
+  }
+
+  private onRequestCast = (): void => {
+    if (應用程式狀態.畫面.層 !== "操作頁面") return;
+    this.source.castActive();
+    this.source.syncFromGame(this.currentMode());
+    this.hud.update(this.source.snapshot(this.currentMode()));
+  };
+
+  /** 供驗收控制台讀取目前隊長主動技能的能量/冷卻狀態。 */
+  主動技能讀數() {
+    return this.source.活動技能讀數();
   }
 
   掛載(host: HTMLElement): void {
