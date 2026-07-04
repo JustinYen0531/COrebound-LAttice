@@ -21,7 +21,7 @@ import {
 import {
   取得正式小隊摘要,
   手動設定正式玩家生命,
-  初始化正式玩家生命,
+  回滿正式玩家生命,
   正式玩家已陣亡,
 } from "../正式對局小隊狀態";
 import { 取得訓練小隊成員 } from "../訓練道場狀態";
@@ -94,6 +94,7 @@ import {
   記錄對局傷害,
   記錄對局掉落,
   記錄對局擊殺,
+  記錄對局死亡,
 } from "../對局戰報狀態";
 import type { ChestOpenResult } from "../../economy/寶箱系統";
 import {
@@ -109,6 +110,12 @@ import {
   設定正式玩家位置,
   type 正式戰場怪物,
 } from "../正式戰場狀態";
+import {
+  取得死亡遺落物,
+  拾取死亡遺落物,
+  新增死亡遺落物,
+  type 死亡遺落物,
+} from "../死亡遺落狀態";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -314,6 +321,8 @@ export function 建立世界地圖層(): HTMLElement {
   const chestNodes = new Map<string, HTMLElement>();
   let worldChests: WorldChestInstance[] = [];
   let lastChestSyncSecond = -1;
+  const deathDropNodes = new Map<string, HTMLElement>();
+  let deathDrops: 死亡遺落物[] = [];
 
   const envNodes = new Map<string, HTMLElement>();
   for (const env of ENV_OBJECTS) {
@@ -544,7 +553,39 @@ export function 建立世界地圖層(): HTMLElement {
     顯示技能提示(`禪繞寶箱｜原石 ${drop.gems}｜材料 ${drop.materials.reduce((total, entry) => total + entry.count, 0)}`);
   }
 
+  function syncDeathDrops(): void {
+    if (訓練道場中) return;
+    deathDrops = 取得死亡遺落物();
+    const liveIds = new Set(deathDrops.map((drop) => drop.id));
+    for (const drop of deathDrops) {
+      if (deathDropNodes.has(drop.id)) continue;
+      const node = createDeathDropNode(drop);
+      node.addEventListener("click", () => 嘗試拾取死亡遺落(drop));
+      objectLayer.appendChild(node);
+      deathDropNodes.set(drop.id, node);
+    }
+    for (const [id, node] of deathDropNodes) {
+      if (liveIds.has(id)) continue;
+      node.remove();
+      deathDropNodes.delete(id);
+    }
+  }
+
+  function 嘗試拾取死亡遺落(drop: 死亡遺落物): void {
+    if (Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) > 190) {
+      顯示技能提示("靠近遺落材料後按 E 取回");
+      return;
+    }
+    const picked = 拾取死亡遺落物(drop.id);
+    if (!picked) return;
+    背包.取回遺落材料(picked.materials);
+    const count = picked.materials.reduce((sum, item) => sum + item.count, 0);
+    syncDeathDrops();
+    顯示技能提示(`已取回遺落材料 ×${count}`);
+  }
+
   syncWorldChests(true);
+  syncDeathDrops();
 
   const projectilePool = new ProjectilePool();
   const projectileNodes = new Map<number, HTMLElement>();
@@ -560,6 +601,7 @@ export function 建立世界地圖層(): HTMLElement {
   // 乘上此比例把彈速換算到世界座標，讓子彈能在存活時間內真正飛到目標。
   const PROJECTILE_SPEED_SCALE = 40;
   let 已觸發陣亡 = false;
+  let 復活保護到 = 0;
 
   /** 把剛生成的子彈速度（與地雷衰減率）換算到世界座標尺度。 */
   function 套用世界彈速(shots: Projectile[]): Projectile[] {
@@ -835,6 +877,16 @@ export function 建立世界地圖層(): HTMLElement {
       node.style.filter = Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) <= 190 ? "brightness(1.35)" : "none";
     }
 
+    for (const drop of deathDrops) {
+      const node = deathDropNodes.get(drop.id);
+      if (!node) continue;
+      const pos = worldToScreen(drop, playerPos, viewport);
+      node.style.left = `${pos.x}px`;
+      node.style.top = `${pos.y}px`;
+      node.style.display = isVisible(pos, viewport) ? "grid" : "none";
+      node.style.filter = Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) <= 190 ? "brightness(1.4)" : "none";
+    }
+
     const nearest = near[0];
     if (nearest) {
       exclaim.style.display = "flex";
@@ -1070,6 +1122,10 @@ export function 建立世界地圖層(): HTMLElement {
     const enemyShots = projectilePool.byFaction("enemy");
     let 玩家承傷 = 0;
     for (const hit of detectHits(enemyShots, [playerBody])) {
+      if (!訓練道場中 && performance.now() < 復活保護到) {
+        projectilePool.remove(hit.projectile.id);
+        continue;
+      }
       玩家承傷 += hit.projectile.damage;
       projectilePool.remove(hit.projectile.id);
     }
@@ -1099,20 +1155,34 @@ export function 建立世界地圖層(): HTMLElement {
       }
     }
 
-    // 正式對局：玩家陣亡 → 進結算頁（失敗），只觸發一次。
     if (訓練道場中) {
       if (!已觸發陣亡 && 取得訓練道場摘要().playerHp <= 0) {
         已觸發陣亡 = true;
         標記驗收結果("defeat", "隊長已倒下，本輪驗收以失敗收場。");
       }
-      return;
     }
-    if (!已觸發陣亡 && 正式玩家已陣亡()) {
-      已觸發陣亡 = true;
-      結束對局("defeat", "隊長生命歸零");
-      標記驗收結果("defeat", "正式對局中玩家陣亡，已進入結算。");
-      應用程式狀態.觸發終局事件();
-    }
+  }
+
+  function 處理正式陣亡(): void {
+    if (訓練道場中 || !正式玩家已陣亡()) return;
+    const deathPosition = { ...playerPos };
+    const penalty = 背包.套用死亡懲罰();
+    新增死亡遺落物(deathPosition.x, deathPosition.y, penalty.遺落材料);
+    記錄對局死亡();
+    回滿正式玩家生命();
+    playerPos = { x: 0, y: 0 };
+    設定正式玩家位置(playerPos);
+    playerVelocity = { x: 0, y: 0 };
+    playerMoving = false;
+    collisionTickCarry = 0;
+    復活保護到 = performance.now() + 2200;
+    projectilePool.clear();
+    projectileHitTargets.clear();
+    for (const node of projectileNodes.values()) node.remove();
+    projectileNodes.clear();
+    syncDeathDrops();
+    syncNearbyToState();
+    顯示技能提示(`中央廣場復活｜損失原石 ${penalty.原石損失}｜遺落材料 ${penalty.遺落材料.reduce((sum, item) => sum + item.count, 0)}`);
   }
 
   function 訓練玩家碰撞半徑(weight: number): number {
@@ -1216,6 +1286,7 @@ export function 建立世界地圖層(): HTMLElement {
     }
 
     // —— 正式遊玩碰撞結算 ——
+    if (performance.now() < 復活保護到) return;
     const summary = 取得正式小隊摘要();
     const playerRadius = 訓練玩家碰撞半徑(summary.totalWeight);
     const contacts = monsters.filter(
@@ -1263,8 +1334,9 @@ export function 建立世界地圖層(): HTMLElement {
         if (result.dead) runtime.node.style.display = "none";
       }
 
-      手動設定正式玩家生命(summary.playerHp - squadDamageTaken);
-      記錄對局傷害(0, squadDamageTaken);
+      const appliedSquadDamage = Math.min(summary.playerHp, squadDamageTaken);
+      手動設定正式玩家生命(summary.playerHp - appliedSquadDamage);
+      記錄對局傷害(0, appliedSquadDamage);
       collisionTickCarry -= TICK_SECONDS;
     }
   }
@@ -1339,6 +1411,7 @@ export function 建立世界地圖層(): HTMLElement {
       updateCollisions(dt);
       結算死亡掉落();
       updateErosion(dt);
+      處理正式陣亡();
       syncWorldChests();
     }
 
@@ -1370,11 +1443,19 @@ export function 建立世界地圖層(): HTMLElement {
     if (event.code === "KeyE") {
       event.preventDefault();
       if (!event.repeat && !訓練道場中) {
-        const nearest = worldChests
+        const nearestChest = worldChests
           .map((chest) => ({ chest, distance: Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) }))
           .filter((entry) => entry.distance <= 190)
           .sort((a, b) => a.distance - b.distance)[0];
-        if (nearest) 嘗試開啟寶箱(nearest.chest);
+        const nearestDrop = deathDrops
+          .map((drop) => ({ drop, distance: Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) }))
+          .filter((entry) => entry.distance <= 190)
+          .sort((a, b) => a.distance - b.distance)[0];
+        if (nearestDrop && (!nearestChest || nearestDrop.distance <= nearestChest.distance)) {
+          嘗試拾取死亡遺落(nearestDrop.drop);
+        } else if (nearestChest) {
+          嘗試開啟寶箱(nearestChest.chest);
+        }
       }
       return;
     }
@@ -1896,6 +1977,31 @@ function createWorldChestNode(chest: WorldChestInstance): HTMLElement {
     zIndex: "4",
   });
   node.textContent = "◇";
+  return node;
+}
+
+function createDeathDropNode(drop: 死亡遺落物): HTMLElement {
+  const node = document.createElement("button");
+  node.type = "button";
+  const count = drop.materials.reduce((sum, item) => sum + item.count, 0);
+  node.title = `死亡遺落材料 ×${count}｜靠近後按 E 取回`;
+  node.setAttribute("aria-label", `死亡遺落材料 ${count} 份`);
+  Object.assign(node.style, {
+    position: "absolute",
+    width: "54px",
+    height: "42px",
+    transform: "translate(-50%, -68%) rotate(-4deg)",
+    placeItems: "center",
+    border: "2px solid #eeeeea",
+    borderRadius: "50% 44% 48% 42%",
+    background: "radial-gradient(circle at 38% 32%, #b8bdc3, #565d66 62%, #252a30)",
+    boxShadow: "0 8px 12px rgba(0,0,0,0.42), 0 0 16px rgba(190,198,205,0.55)",
+    color: "#fff",
+    font: "700 14px Georgia, serif",
+    cursor: "pointer",
+    zIndex: "4",
+  });
+  node.textContent = `×${count}`;
   return node;
 }
 

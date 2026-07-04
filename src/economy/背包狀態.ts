@@ -51,6 +51,46 @@ export function 材料總數(): number {
   return n;
 }
 
+export interface 死亡懲罰結果 {
+  原石損失: number;
+  遺落材料: Array<{ no: number; count: number }>;
+}
+
+/** 死亡時永久扣除 30% 原石，並從未熔煉材料中隨機抽出 20% 供跑屍取回。 */
+export function 套用死亡懲罰(rng: () => number = Math.random): 死亡懲罰結果 {
+  const 原石損失 = Math.floor(狀態.原石 * 0.3);
+  狀態.原石 -= 原石損失;
+
+  const total = 材料總數();
+  let remainingToDrop = Math.floor(total * 0.2);
+  const dropped = new Map<number, number>();
+  while (remainingToDrop > 0) {
+    const available = [...狀態.材料.entries()].filter(([, count]) => count > 0);
+    const availableTotal = available.reduce((sum, [, count]) => sum + count, 0);
+    if (availableTotal <= 0) break;
+    let pick = Math.min(0.999999, Math.max(0, rng())) * availableTotal;
+    let selected = available[available.length - 1][0];
+    for (const [no, count] of available) {
+      pick -= count;
+      if (pick < 0) {
+        selected = no;
+        break;
+      }
+    }
+    狀態.材料.set(selected, (狀態.材料.get(selected) ?? 0) - 1);
+    dropped.set(selected, (dropped.get(selected) ?? 0) + 1);
+    remainingToDrop -= 1;
+  }
+  return {
+    原石損失,
+    遺落材料: [...dropped.entries()].map(([no, count]) => ({ no, count })),
+  };
+}
+
+export function 取回遺落材料(materials: Array<{ no: number; count: number }>): void {
+  for (const material of materials) 加入材料(material.no, material.count);
+}
+
 // ---- 花費（回傳是否成功）----
 export function 花費原石(count: number): boolean {
   if (狀態.原石 < count) return false;

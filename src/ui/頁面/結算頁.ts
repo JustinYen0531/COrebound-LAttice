@@ -31,6 +31,7 @@ export function 渲染結算頁(容器: HTMLElement) {
         `${雙語("擊殺", "Kills")}<strong>${report.kills}</strong>`,
         `${雙語("造成傷害", "Damage Dealt")}<strong>${report.damageDealt}</strong>`,
         `${雙語("承受傷害", "Damage Taken")}<strong>${report.damageTaken}</strong>`,
+        `${雙語("復活次數", "Revives")}<strong>${report.deaths}</strong>`,
         `${雙語("取得原石", "Gems Earned")}<strong>${report.gemsEarned}</strong>`,
         `${雙語("取得材料", "Materials Earned")}<strong>${report.materialsEarned}</strong>`,
         `${雙語("擊敗守護者", "Guardians Defeated")}<strong>${report.guardiansDefeated} / 4</strong>`,

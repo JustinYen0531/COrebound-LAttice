@@ -13,6 +13,7 @@ interface 對局戰報內部 {
   materialsEarned: number;
   guardiansDefeated: number;
   coreKeyEarned: boolean;
+  deaths: number;
 }
 
 const 建立初始狀態 = (): 對局戰報內部 => ({
@@ -27,6 +28,7 @@ const 建立初始狀態 = (): 對局戰報內部 => ({
   materialsEarned: 0,
   guardiansDefeated: 0,
   coreKeyEarned: false,
+  deaths: 0,
 });
 
 let 狀態 = 建立初始狀態();
@@ -52,6 +54,10 @@ export function 記錄對局掉落(原石: number, 材料: number, 核心鑰匙 
 
 export function 記錄守護者擊敗(): void {
   狀態.guardiansDefeated = Math.min(4, 狀態.guardiansDefeated + 1);
+}
+
+export function 記錄對局死亡(): void {
+  狀態.deaths += 1;
 }
 
 export function 結束對局(result: Exclude<對局結果, "running">, reason: string): void {
