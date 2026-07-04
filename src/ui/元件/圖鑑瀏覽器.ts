@@ -83,10 +83,7 @@ function 建立成員立繪HTML(條目ID: string): string {
   return `
     <div class="圖鑑詳情-角色構圖">
       <div class="圖鑑詳情-舞台框">
-        <div class="圖鑑詳情-角色視口">
-          <img class="圖鑑詳情-角色立繪圖" src="${imageUrl}" alt="${m.nameZh}" />
-        </div>
-        <div class="圖鑑詳情-小舞台"></div>
+        <img class="圖鑑詳情-角色立繪圖" src="${imageUrl}" alt="${m.nameZh}" />
       </div>
       <div class="圖鑑詳情-星級列">
         ${星級列HTML}
