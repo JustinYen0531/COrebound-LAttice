@@ -148,7 +148,7 @@ const 狀態: 訓練道場內部狀態 = {
   slots: 初始槽位.map((slot) => ({ ...slot })),
   selectedSlotId: 0,
   selectedEnemyMonsterId: 全部可召喚怪物[0]?.id ?? "",
-  moveSpeedScale: 1,
+  moveSpeedScale: 2,
   activeEnemies: [],
   playerHp: 0,
   playerMaxHp: 0,
@@ -345,7 +345,7 @@ export function 設定訓練預選怪物(monsterId: string): void {
 }
 
 export function 設定訓練移動倍率(scale: number): void {
-  狀態.moveSpeedScale = Math.max(0.25, Math.min(3, Number.isFinite(scale) ? scale : 1));
+  狀態.moveSpeedScale = Math.max(0.25, Math.min(3, Number.isFinite(scale) ? scale : 2));
 }
 
 export function 取得訓練召喚敵群(): 訓練召喚敵人[] {
