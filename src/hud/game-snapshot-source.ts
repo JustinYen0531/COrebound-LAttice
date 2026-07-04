@@ -11,6 +11,8 @@ import {
 } from "../ui/正式對局小隊狀態";
 import { MEMBERS } from "../data/成員資料庫";
 import type { CaptainId, WeaponFamily } from "../data/戰鬥原語";
+import { POTIONS, type PotionId } from "../economy/流浪商店";
+import * as 背包 from "../economy/背包狀態";
 import type {
   HudSnapshot,
   Layer,
@@ -28,11 +30,19 @@ const LAYER_ORDER: Layer[] = ["inner", "middle", "outer"];
 const ROLE_ORDER: Role[] = ["protect", "firepower", "supply"];
 const FAMILY_ORDER: WeaponFamily[] = ["shield", "multishot", "straight", "mine", "laser"];
 const STATIC_POTIONS: PotionItem[] = [
-  { id: "hp_s", label: "小生命藥水", size: "small", effect: "hp", count: 3 },
-  { id: "hp_b", label: "大生命藥水", size: "big", effect: "hp", count: 1 },
-  { id: "en_s", label: "小能量藥水", size: "small", effect: "energy", count: 2 },
-  { id: "hy_b", label: "大混合藥水", size: "big", effect: "hybrid", count: 1 },
+  { id: "hp_small", label: "小生命藥水", size: "small", effect: "hp", count: 3 },
+  { id: "hp_big", label: "大生命藥水", size: "big", effect: "hp", count: 1 },
+  { id: "energy_small", label: "小能量藥水", size: "small", effect: "energy", count: 2 },
+  { id: "hybrid_big", label: "大混合藥水", size: "big", effect: "hybrid", count: 1 },
 ];
+const POTION_LABELS: Record<PotionId, string> = {
+  hp_small: "小生命藥水",
+  hp_big: "大生命藥水",
+  energy_small: "小能量藥水",
+  energy_big: "大能量藥水",
+  hybrid_small: "小混合藥水",
+  hybrid_big: "大混合藥水",
+};
 
 interface RosterRuntime {
   playerHp: number;
@@ -139,20 +149,27 @@ export class GameSnapshotSource {
   }
 
   usePotion(mode: SnapshotMode, potionId: string): void {
-    const potion = this.potions.find((entry) => entry.id === potionId);
-    if (!potion || potion.count <= 0) return;
-    potion.count -= 1;
+    const id = potionId as PotionId;
+    const def = POTIONS[id];
+    if (!def) return;
 
-    const isBig = potion.size === "big";
-    if (potion.effect === "energy" || potion.effect === "hybrid") {
-      this.energySystem.restore(isBig ? 50 : 25);
+    if (mode === "dojo") {
+      const potion = this.potions.find((entry) => entry.id === potionId);
+      if (!potion || potion.count <= 0) return;
+      potion.count -= 1;
+    } else if (!背包.花費藥水(id, 1)) {
+      return;
+    }
+
+    if (def.energyRatio > 0) {
+      this.energySystem.restore(this.energySystem.snapshot().max * def.energyRatio);
     }
 
     const current = mode === "dojo" ? 取得訓練道場摘要() : 取得正式小隊摘要();
     const currentHp = current.playerHp;
     const currentMax = current.playerMaxHp;
-    if (potion.effect === "hp" || potion.effect === "hybrid") {
-      const recovered = Math.round(currentMax * (isBig ? 0.45 : 0.2));
+    if (def.hpRatio > 0) {
+      const recovered = Math.round(currentMax * def.hpRatio);
       const nextHp = Math.min(currentMax, currentHp + recovered);
       if (mode === "dojo") 手動設定訓練玩家生命(nextHp);
       else 手動設定正式玩家生命(nextHp);
@@ -214,7 +231,9 @@ export class GameSnapshotSource {
       formation: this.buildFormation(runtime.roster, hpRatio),
       lastHitAt: this.lastHitAt,
       moving: this.moving,
-      potions: this.potions.filter((potion) => potion.count > 0).map((potion) => ({ ...potion })),
+      potions: mode === "formal"
+        ? this.buildFormalPotions()
+        : this.potions.filter((potion) => potion.count > 0).map((potion) => ({ ...potion })),
       roster: runtime.roster.map((member) => ({ ...member, ailments: [...member.ailments] })),
     };
   }
@@ -293,6 +312,25 @@ export class GameSnapshotSource {
         weapon.active = false;
       }
     }
+  }
+
+  private buildFormalPotions(): PotionItem[] {
+    return (Object.keys(POTIONS) as PotionId[])
+      .map((id) => {
+        const count = 背包.取藥水(id);
+        if (count <= 0) return null;
+        const def = POTIONS[id];
+        const effect: PotionItem["effect"] =
+          def.hpRatio > 0 && def.energyRatio > 0 ? "hybrid" : def.hpRatio > 0 ? "hp" : "energy";
+        return {
+          id,
+          label: POTION_LABELS[id],
+          size: def.big ? "big" : "small",
+          effect,
+          count,
+        } satisfies PotionItem;
+      })
+      .filter((potion): potion is PotionItem => potion !== null);
   }
 
   private buildFormation(roster: RosterMember[], hpRatio: number): HudSnapshot["formation"] {
