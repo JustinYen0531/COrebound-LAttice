@@ -5,10 +5,13 @@
  */
 import type { 畫面狀態, 互動設施, 管理介面分頁, 主畫面分頁 } from "./共用型別";
 import { 初始化正式玩家生命 } from "./正式對局小隊狀態";
+import type { 語言代碼 } from "./語系";
 
 type 滑動面板 = "無" | "左" | "右";
+const LANGUAGE_STORAGE_KEY = "cola-ui-language";
 
 interface 額外狀態 {
+  語言: 語言代碼;
   滑動面板: 滑動面板; // R1：左右滑互斥
   圓盤展開階段: 0 | 1 | 2 | 3; // 0=收起, 1=內圈, 2=中圈, 3=外圈
   選中隊長: string | null;
@@ -30,6 +33,15 @@ interface 額外狀態 {
   圖鑑列表展開_IC: boolean;
 }
 
+function 讀取初始語言(): 語言代碼 {
+  try {
+    const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return saved === "zh" ? "zh" : "en";
+  } catch {
+    return "en";
+  }
+}
+
 export const 背包分類清單 = ["材料", "消耗品", "任務物", "追蹤中"] as const;
 export const 地圖分類清單 = ["縮影", "互動點", "危險區", "事件區"] as const;
 export const 圖鑑資料查詢類分頁 = [
@@ -44,6 +56,7 @@ export const 圖鑑資料查詢類分頁 = [
 class 應用程式狀態機 {
   畫面: 畫面狀態 = { 層: "主畫面", 子頁: null };
   額外: 額外狀態 = {
+    語言: 讀取初始語言(),
     滑動面板: "無",
     圓盤展開階段: 0,
     選中隊長: null,
@@ -75,6 +88,16 @@ class 應用程式狀態機 {
 
   private 更新畫面(下一狀態: 畫面狀態) {
     this.畫面 = 下一狀態;
+    this.通知();
+  }
+
+  設定語言(語言: 語言代碼) {
+    this.額外.語言 = 語言;
+    try {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, 語言);
+    } catch {
+      // ignore storage failures in preview/sandbox contexts
+    }
     this.通知();
   }
 

@@ -17,9 +17,10 @@ import {
   圖鑑條目,
 } from "../資料/圖鑑資料庫";
 import { 生成角色迷你頭像HTML } from "./css角色頭像";
+import { 選文 } from "../語系";
 
 function 雙語(中文: string, 英文: string): string {
-  return `${中文} / ${英文}`;
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
 }
 
 const 怪物圖鑑編號對照: Record<string, number> = {

@@ -6,6 +6,11 @@
 import { 應用程式狀態 } from "../應用程式狀態";
 import { 建立小隊圓盤 } from "../元件/小隊圓盤";
 import { 隊長清單 } from "../資料/隊長清單";
+import { 選文 } from "../語系";
+
+function 雙語(中文: string, 英文: string): string {
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
+}
 
 export function 渲染遊戲準備流程(容器: HTMLElement) {
   容器.innerHTML = "";
@@ -15,14 +20,15 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   const root = document.createElement("div");
   root.className = "準備流程-root";
 
-  root.innerHTML = `<h2>賽前準備（來源：${state.來源}）</h2>`;
+  const 來源標籤 = state.來源 === "再來一場" ? 雙語("再來一場", "Rematch") : state.來源;
+  root.innerHTML = `<h2>${雙語("賽前準備", "Pre-Match Setup")} (${雙語("來源", "Source")}: ${來源標籤})</h2>`;
 
   const 版面 = document.createElement("div");
   版面.className = "準備流程-版面";
 
   const 隊長區 = document.createElement("div");
   隊長區.className = "準備流程-隊長區";
-  隊長區.innerHTML = `<h4>選擇隊長</h4>`;
+  隊長區.innerHTML = `<h4>${雙語("選擇隊長", "Choose a Captain")}</h4>`;
   const 隊長列表 = document.createElement("div");
   隊長列表.className = "隊長卡片列";
 
@@ -42,9 +48,9 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
       <h4>${隊長.名稱}　<span class="淡字">${隊長.代號}</span></h4>
       <p>${隊長.一句話設計}</p>
       <ul>
-        <li>控制效果：${隊長.控制效果}</li>
-        <li>主動位移技能：${隊長.主動位移技能}</li>
-        <li>週期技能：${隊長.週期技能}</li>
+        <li>${雙語("控制效果", "Control Effect")}: ${隊長.控制效果}</li>
+        <li>${雙語("主動位移技能", "Active Mobility Skill")}: ${隊長.主動位移技能}</li>
+        <li>${雙語("週期技能", "Periodic Skill")}: ${隊長.週期技能}</li>
       </ul>
     `;
     圓盤容器.appendChild(說明);
@@ -71,7 +77,7 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
 
   const 預覽區 = document.createElement("div");
   預覽區.className = "準備流程-預覽區";
-  預覽區.innerHTML = `<h4>小隊圓盤預覽（共用元件 B）</h4>`;
+  預覽區.innerHTML = `<h4>${雙語("小隊圓盤預覽（共用元件 B）", "Squad Disc Preview (Shared Component B)")}</h4>`;
   預覽區.appendChild(圓盤容器);
   重繪圓盤();
   版面.appendChild(預覽區);
@@ -82,12 +88,12 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   底部按鈕列.className = "按鈕列";
   const 取消 = document.createElement("button");
   取消.className = "二級按鈕";
-  取消.textContent = "取消，返回主畫面";
+  取消.textContent = 雙語("取消，返回主畫面", "Cancel: Back to Main Screen");
   取消.onclick = () => 應用程式狀態.返回主畫面();
 
   const 確認 = document.createElement("button");
   確認.className = "一級按鈕";
-  確認.textContent = "確認進場 → 正式遊玩";
+  確認.textContent = 雙語("確認並進入對局", "Confirm & Enter Play");
   確認.onclick = () => 應用程式狀態.確認進場(false);
 
   底部按鈕列.append(取消, 確認);

@@ -35,6 +35,11 @@ import {
 import { 刷新正式最大生命 } from "../正式對局小隊狀態";
 import { 對局進度摘要, 記錄世界擊殺, 重置對局進度 } from "../對局進度狀態";
 import { 重置驗收場狀態, 取得驗收場快照 } from "../驗收場狀態";
+import { 選文 } from "../語系";
+
+function 雙語(中文: string, 英文: string): string {
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
+}
 
 function 發送訓練場事件(type: string): void {
   window.dispatchEvent(new CustomEvent("dojo-acceptance-action", { detail: { type } }));
@@ -443,7 +448,7 @@ export function 渲染操作頁面(容器: HTMLElement) {
 
   const 頂部 = document.createElement("div");
   頂部.className = "操作頁面-頂部";
-  頂部.innerHTML = `<span class="世界時鐘 ${額外.縮圈警戒 ? "警戒" : ""}">世界時間：${額外.世界時鐘秒數}s${
+  頂部.innerHTML = `<span class="世界時鐘 ${額外.縮圈警戒 ? "警戒" : ""}">${雙語("世界時間", "World Time")}: ${額外.世界時鐘秒數}s${
     額外.縮圈警戒 ? " ⚠" : ""
   }</span>`;
   root.appendChild(頂部);

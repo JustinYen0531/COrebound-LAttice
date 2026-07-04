@@ -5,11 +5,12 @@
 import { 應用程式狀態 } from "../應用程式狀態";
 import { 建立圖鑑瀏覽器 } from "../元件/圖鑑瀏覽器";
 import type { 主畫面分頁 } from "../共用型別";
+import { 選文 } from "../語系";
 
 const 主按鈕清單: 主畫面分頁[] = ["開始遊玩", "圖鑑", "遊玩記錄", "新手入門", "設定"];
 
 function 雙語(中文: string, 英文: string): string {
-  return `${中文} / ${英文}`;
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
 }
 
 /** 主按鈕內部 id（中文）→ 中英雙語顯示標籤。id 仍作為狀態鍵。 */
@@ -97,6 +98,7 @@ function 新手入門子頁(): HTMLElement {
 function 設定子頁(): HTMLElement {
   const el = document.createElement("div");
   el.className = "子頁內容";
+  const 語言 = 應用程式狀態.額外.語言;
   el.innerHTML = `
     <h3>${雙語("設定", "Settings")}</h3>
     <div class="占位卡片格">
@@ -108,6 +110,23 @@ function 設定子頁(): HTMLElement {
       ].map((n) => `<div class="占位卡片">${n}</div>`).join("")}
     </div>
   `;
+
+  const 語言區 = document.createElement("div");
+  語言區.className = "按鈕列";
+  語言區.style.marginTop = "16px";
+
+  const 中文按鈕 = document.createElement("button");
+  中文按鈕.className = 語言 === "zh" ? "一級按鈕" : "二級按鈕";
+  中文按鈕.textContent = "中文";
+  中文按鈕.onclick = () => 應用程式狀態.設定語言("zh");
+
+  const 英文按鈕 = document.createElement("button");
+  英文按鈕.className = 語言 === "en" ? "一級按鈕" : "二級按鈕";
+  英文按鈕.textContent = "English";
+  英文按鈕.onclick = () => 應用程式狀態.設定語言("en");
+
+  語言區.append(中文按鈕, 英文按鈕);
+  el.appendChild(語言區);
   return el;
 }
 

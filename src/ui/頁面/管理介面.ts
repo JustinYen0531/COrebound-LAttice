@@ -16,9 +16,10 @@ import { MEMBERS } from "../../data/成員資料庫";
 import { MATERIALS } from "../../data/素材資料庫";
 import { FAMILY_LABEL } from "../../data/成員型別";
 import { MATERIAL_RARITY_LABEL } from "../../data/戰鬥原語";
+import { 選文 } from "../語系";
 
 function 雙語(中文: string, 英文: string): string {
-  return `${中文} / ${英文}`;
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
 }
 
 const 分頁清單: 管理介面分頁[] = ["小隊", "背包", "互動", "圖鑑", "地圖"];
