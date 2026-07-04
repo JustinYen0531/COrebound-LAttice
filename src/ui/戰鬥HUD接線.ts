@@ -108,8 +108,6 @@ class 戰鬥HUD接線器 {
     switch (event.type) {
       case "cast_active":
         if (應用程式狀態.畫面.層 === "操作頁面") {
-          應用程式狀態.進入管理介面("小隊");
-        } else {
           this.source.castActive();
         }
         break;
