@@ -1,0 +1,298 @@
+/**
+ * @file 訓練道場狀態.ts
+ * @description 訓練道場 / 沙盒專用的全域狀態。
+ *              負責：
+ *              - 隊長與 9 個小隊槽位的自由編排
+ *              - 任意怪物的手動召喚 / 清場
+ *              - 碰撞實驗用的生命值、接觸紀錄與即時摘要
+ *
+ *              刻意與正式對局狀態分離，避免把暫時性的測試資料污染主流程。
+ */
+
+import { MEMBERS } from "../data/成員資料庫";
+import type { MemberDef, StarLevel, World } from "../data/成員型別";
+import { statsAtStar } from "../data/成員型別";
+import { monstersByWorld, type MonsterDef } from "../data/怪物資料庫";
+import { captainStatsAtStar } from "../data/控制引擎";
+import type { CaptainId } from "../data/戰鬥原語";
+
+export interface 訓練小隊槽位 {
+  slotId: number;
+  memberId: string | null;
+  star: StarLevel;
+}
+
+export interface 訓練召喚敵人 {
+  id: string;
+  monsterNo: number;
+  monsterId: string;
+  nameZh: string;
+  world: World;
+  tier: 0 | 1 | 2;
+  spritePath: string;
+  x: number;
+  y: number;
+  hp: number;
+  maxHp: number;
+  atk: number;
+  weight: number;
+  speed: number;
+  ranged: boolean;
+  attackRange: number;
+  nonHostileInitially: boolean;
+  spawnedAtMs: number;
+}
+
+export interface 訓練碰撞紀錄 {
+  atMs: number;
+  enemyIds: string[];
+  enemyNames: string[];
+  squadWeight: number;
+  enemyWeight: number;
+  squadDamage: number;
+  enemyDamage: number;
+}
+
+interface 訓練道場內部狀態 {
+  captainId: CaptainId;
+  captainStar: 4;
+  slots: 訓練小隊槽位[];
+  selectedSlotId: number;
+  selectedEnemyMonsterId: string;
+  moveSpeedScale: number;
+  activeEnemies: 訓練召喚敵人[];
+  playerHp: number;
+  playerMaxHp: number;
+  lastCollision: 訓練碰撞紀錄 | null;
+}
+
+const 訓練世界清單: World[] = ["geometry", "organic", "fractal", "mechanical"];
+const 全部可召喚怪物: MonsterDef[] = 訓練世界清單.flatMap((world) =>
+  monstersByWorld(world).filter((monster) => monster.tier <= 2),
+);
+
+const 初始槽位: 訓練小隊槽位[] = Array.from({ length: 9 }, (_, slotId) => ({
+  slotId,
+  memberId: MEMBERS[slotId]?.id ?? null,
+  star: 3,
+}));
+
+let 召喚流水號 = 1;
+
+const 狀態: 訓練道場內部狀態 = {
+  captainId: "architect",
+  captainStar: 4,
+  slots: 初始槽位.map((slot) => ({ ...slot })),
+  selectedSlotId: 0,
+  selectedEnemyMonsterId: 全部可召喚怪物[0]?.id ?? "",
+  moveSpeedScale: 1,
+  activeEnemies: [],
+  playerHp: 0,
+  playerMaxHp: 0,
+  lastCollision: null,
+};
+
+function byId(memberId: string | null): MemberDef | null {
+  if (!memberId) return null;
+  return MEMBERS.find((member) => member.id === memberId) ?? null;
+}
+
+function spritePathForMonster(monster: MonsterDef): string {
+  return `/images/enemies/${monster.world}/${monster.id}.png`;
+}
+
+function attackRangeForTier(tier: 0 | 1 | 2): number {
+  switch (tier) {
+    case 0:
+      return 0;
+    case 1:
+      return 320;
+    case 2:
+      return 460;
+  }
+}
+
+function isRanged(monster: MonsterDef): boolean {
+  return monster.armament.weapons.length > 0;
+}
+
+export function 取得訓練小隊槽位(): 訓練小隊槽位[] {
+  return 狀態.slots.map((slot) => ({ ...slot }));
+}
+
+export function 取得訓練小隊成員(): Array<{ slot: 訓練小隊槽位; member: MemberDef; stats: ReturnType<typeof statsAtStar> }> {
+  return 狀態.slots
+    .map((slot) => {
+      const member = byId(slot.memberId);
+      if (!member) return null;
+      return { slot: { ...slot }, member, stats: statsAtStar(member.base, slot.star) };
+    })
+    .filter((entry): entry is { slot: 訓練小隊槽位; member: MemberDef; stats: ReturnType<typeof statsAtStar> } => entry !== null);
+}
+
+export function 取得訓練道場摘要() {
+  const captain = captainStatsAtStar(狀態.captainId, 狀態.captainStar);
+  const members = 取得訓練小隊成員();
+  const totalHp = captain.hp + members.reduce((sum, entry) => sum + entry.stats.hp, 0);
+  const totalAtk = captain.atk + members.reduce((sum, entry) => sum + entry.stats.atk, 0);
+  const totalWeight = 12 + members.reduce((sum, entry) => sum + entry.stats.weight, 0);
+  const avgSpeedContribution = members.length > 0 ? Math.round(members.reduce((sum, entry) => sum + entry.stats.speed, captain.speed) / (members.length + 1)) : captain.speed;
+  const aliveEnemies = 狀態.activeEnemies.filter((enemy) => enemy.hp > 0).length;
+  return {
+    captainId: 狀態.captainId,
+    captainStar: 狀態.captainStar,
+    members,
+    memberCount: members.length,
+    totalHp,
+    totalAtk,
+    totalWeight,
+    avgSpeedContribution,
+    moveSpeedScale: 狀態.moveSpeedScale,
+    playerHp: 狀態.playerHp,
+    playerMaxHp: 狀態.playerMaxHp,
+    aliveEnemies,
+    selectedSlotId: 狀態.selectedSlotId,
+    selectedEnemyMonsterId: 狀態.selectedEnemyMonsterId,
+    lastCollision: 狀態.lastCollision,
+  };
+}
+
+export function 重算訓練玩家生命(保留目前百分比 = true): void {
+  const summary = 取得訓練道場摘要();
+  const oldMax = 狀態.playerMaxHp || summary.totalHp;
+  const ratio = oldMax > 0 ? 狀態.playerHp / oldMax : 1;
+  狀態.playerMaxHp = summary.totalHp;
+  狀態.playerHp = 保留目前百分比 ? Math.max(1, Math.round(summary.totalHp * Math.max(0, Math.min(1, ratio)))) : summary.totalHp;
+}
+
+export function 設定訓練隊長(captainId: CaptainId): void {
+  狀態.captainId = captainId;
+  重算訓練玩家生命();
+}
+
+export function 設定訓練選中槽位(slotId: number): void {
+  狀態.selectedSlotId = Math.max(0, Math.min(8, slotId));
+}
+
+export function 設定訓練槽位成員(slotId: number, memberId: string | null): void {
+  const slot = 狀態.slots.find((entry) => entry.slotId === slotId);
+  if (!slot) return;
+  slot.memberId = memberId;
+  重算訓練玩家生命();
+}
+
+export function 設定訓練槽位星級(slotId: number, star: StarLevel): void {
+  const slot = 狀態.slots.find((entry) => entry.slotId === slotId);
+  if (!slot) return;
+  slot.star = star;
+  重算訓練玩家生命();
+}
+
+export function 切換訓練槽位星級(slotId: number): void {
+  const slot = 狀態.slots.find((entry) => entry.slotId === slotId);
+  if (!slot) return;
+  slot.star = slot.star === 3 ? 1 : ((slot.star + 1) as StarLevel);
+  重算訓練玩家生命();
+}
+
+export function 清空訓練小隊(): void {
+  狀態.slots.forEach((slot) => {
+    slot.memberId = null;
+    slot.star = 3;
+  });
+  重算訓練玩家生命(false);
+}
+
+export function 套用訓練預設小隊(): void {
+  初始槽位.forEach((seed, index) => {
+    狀態.slots[index].memberId = seed.memberId;
+    狀態.slots[index].star = seed.star;
+  });
+  重算訓練玩家生命(false);
+}
+
+export function 取得可召喚怪物圖鑑(): MonsterDef[] {
+  return 全部可召喚怪物;
+}
+
+export function 設定訓練預選怪物(monsterId: string): void {
+  狀態.selectedEnemyMonsterId = monsterId;
+}
+
+export function 設定訓練移動倍率(scale: number): void {
+  狀態.moveSpeedScale = Math.max(0.25, Math.min(3, Number.isFinite(scale) ? scale : 1));
+}
+
+export function 取得訓練召喚敵群(): 訓練召喚敵人[] {
+  return 狀態.activeEnemies.map((enemy) => ({ ...enemy }));
+}
+
+export function 手動設定訓練玩家生命(hp: number): void {
+  狀態.playerHp = Math.max(0, Math.min(狀態.playerMaxHp, Math.round(hp)));
+}
+
+export function 回滿訓練玩家生命(): void {
+  狀態.playerHp = 狀態.playerMaxHp;
+}
+
+export function 召喚訓練敵人(monsterId: string, count: number, around: { x: number; y: number }): void {
+  const monster = 全部可召喚怪物.find((entry) => entry.id === monsterId);
+  if (!monster) return;
+
+  const amount = Math.max(1, Math.min(12, Math.floor(count)));
+  for (let index = 0; index < amount; index += 1) {
+    const angle = (Math.PI * 2 * index) / amount;
+    const distance = 220 + (index % 3) * 92;
+    狀態.activeEnemies.push({
+      id: `dojo_${monster.id}_${召喚流水號++}`,
+      monsterNo: monster.no,
+      monsterId: monster.id,
+      nameZh: monster.nameZh,
+      world: monster.world as World,
+      tier: monster.tier as 0 | 1 | 2,
+      spritePath: spritePathForMonster(monster),
+      x: around.x + Math.cos(angle) * distance,
+      y: around.y + Math.sin(angle) * distance,
+      hp: monster.stats.hp,
+      maxHp: monster.stats.hp,
+      atk: monster.stats.atk,
+      weight: monster.stats.weight,
+      speed: monster.stats.speed,
+      ranged: isRanged(monster),
+      attackRange: attackRangeForTier(monster.tier as 0 | 1 | 2),
+      nonHostileInitially: monster.nonHostileInitially ?? monster.tier === 2,
+      spawnedAtMs: Date.now(),
+    });
+  }
+}
+
+export function 清空訓練敵人(): void {
+  狀態.activeEnemies = [];
+  狀態.lastCollision = null;
+}
+
+export function 移除訓練敵人(enemyId: string): void {
+  狀態.activeEnemies = 狀態.activeEnemies.filter((enemy) => enemy.id !== enemyId);
+}
+
+export function 更新訓練敵人(enemyId: string, patch: Partial<訓練召喚敵人>): void {
+  const enemy = 狀態.activeEnemies.find((entry) => entry.id === enemyId);
+  if (!enemy) return;
+  Object.assign(enemy, patch);
+}
+
+export function 覆蓋訓練敵群(enemies: 訓練召喚敵人[]): void {
+  狀態.activeEnemies = enemies.map((enemy) => ({ ...enemy }));
+}
+
+export function 記錄訓練碰撞(result: 訓練碰撞紀錄 | null): void {
+  狀態.lastCollision = result ? { ...result, enemyIds: [...result.enemyIds], enemyNames: [...result.enemyNames] } : null;
+}
+
+export function 初始化訓練道場(): void {
+  if (狀態.playerMaxHp <= 0) {
+    重算訓練玩家生命(false);
+  }
+}
+
+初始化訓練道場();
