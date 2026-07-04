@@ -533,11 +533,11 @@ const m15_aurora: MemberDef = {
 /** 16. 閘門 (Gate) — 護盾家族 */
 const m16_gate: MemberDef = {
   id: "m16_gate",
-  no: 16,
+  no: 17,
   nameZh: "閘門",
   nameEn: "Gate",
   world: "mechanical",
-  family: "shield",
+  family: "multishot",
   visual: "帶有厚重焊接鉚釘、散熱鰭片與重型液壓杆的鋼鐵護擋。",
   role: "以極大碰撞重量承受衝擊,可抵擋最猛烈的子彈碾壓。",
   enchant: "wind_zone",
@@ -577,11 +577,11 @@ const m16_gate: MemberDef = {
 /** 17. 彈片 (Shrapnel) — 多發家族 */
 const m17_shrapnel: MemberDef = {
   id: "m17_shrapnel",
-  no: 17,
+  no: 18,
   nameZh: "彈片",
   nameEn: "Shrapnel",
   world: "mechanical",
-  family: "multishot",
+  family: "straight",
   visual: "飛散的破損齒輪片、滾針與鉚釘碎片。",
   role: "近身發射大量破片,被碰撞到的敵人會受到短暫流血性(持續微量傷害)影響。",
   enchant: "recoil",
@@ -608,11 +608,11 @@ const m17_shrapnel: MemberDef = {
 /** 18. 鋼針 (Needle) — 直線家族 */
 const m18_needle: MemberDef = {
   id: "m18_needle",
-  no: 18,
+  no: 19,
   nameZh: "鋼針",
   nameEn: "Needle",
   world: "mechanical",
-  family: "straight",
+  family: "mine",
   visual: "一根散發著冷光、帶有螺紋的工業鋼釘與活塞推進軌跡。",
   role: "單發極高速度的重彈,可輕易碾壓並破壞重量較小的敵方子彈。",
   enchant: "explosion",
@@ -639,11 +639,11 @@ const m18_needle: MemberDef = {
 /** 19. 發條 (Springtrap) — 地雷家族 */
 const m19_springtrap: MemberDef = {
   id: "m19_springtrap",
-  no: 19,
+  no: 20,
   nameZh: "發條",
   nameEn: "Springtrap",
   world: "mechanical",
-  family: "mine",
+  family: "laser",
   visual: "外露的嚙合齒輪、軸承與緊繃發條的鋸齒捕獸夾。",
   role: "部署在通道上,觸發時給予目標重度擊退與短暫抓取。",
   enchant: "charge",
@@ -670,11 +670,11 @@ const m19_springtrap: MemberDef = {
 /** 20. 電弧 (Arc) — 激光家族 */
 const m20_arc: MemberDef = {
   id: "m20_arc",
-  no: 20,
+  no: 16,
   nameZh: "電弧",
   nameEn: "Arc",
   world: "mechanical",
-  family: "laser",
+  family: "shield",
   visual: "淡藍色、劈啪作響的高壓工業電弧焊接光束。",
   role: "高溫聚焦熔融光束,射擊時間越長,對單一目標的破防與傷害效果越強。",
   enchant: null,
@@ -732,11 +732,11 @@ export const MEMBERS: readonly MemberDef[] = [
   m13_lightning,
   m14_abyss,
   m15_aurora,
+  m20_arc,
   m16_gate,
   m17_shrapnel,
   m18_needle,
   m19_springtrap,
-  m20_arc,
 ];
 
 // ============================================================
