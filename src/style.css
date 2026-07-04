@@ -1335,7 +1335,12 @@ button.禁用:hover {
   bottom: calc(var(--world-object-size, 720px) * 0.04);
   width: var(--world-object-size, 720px);
   height: var(--world-object-size, 720px);
-  transform: translateX(-20%) translateY(-7%) skewX(-38deg) scaleX(1.15) scaleY(0.34);
+  transform:
+    translateX(calc(-20% + var(--world-object-size, 720px) * 0.018))
+    translateY(calc(-7% + var(--world-object-size, 720px) * 0.014))
+    skewX(-38deg)
+    scaleX(1.15)
+    scaleY(0.34);
   transform-origin: center bottom;
   opacity: 1;
   filter: none;
@@ -1349,7 +1354,9 @@ button.禁用:hover {
   align-items: flex-end;
   justify-content: center;
   width: 100%;
-  transform: translateY(calc(var(--world-object-size, 720px) * -0.012));
+  transform:
+    translateX(calc(var(--world-object-size, 720px) * 0.018))
+    translateY(calc(var(--world-object-size, 720px) * 0.004));
 }
 .世界地圖層-物件-glyph {
   font-size: calc(var(--world-object-size, 240px) * 0.52);
