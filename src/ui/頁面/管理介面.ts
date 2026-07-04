@@ -190,13 +190,14 @@ function 小隊分頁內容(): HTMLElement {
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: auto;">
-        <button class="一級按鈕 升星模擬" style="flex: 1; padding: 8px 0; font-size: 0.8rem;">${雙語("模擬提升星級（離線）", "Simulate Star Upgrade (Offline)")}</button>
+        <button class="一級按鈕 前往升星" style="flex: 1; padding: 8px 0; font-size: 0.8rem;">${雙語("前往工作台升星", "Open Workbench Upgrade")}</button>
       </div>
     </div>
   `;
 
-    詳情區.querySelector(".升星模擬")!.addEventListener("click", () => {
-      alert(`[${雙語("小隊沙盒", "Squad Sandbox")}] ${雙語(`模擬嘗試將 [${m.nameZh}] 升級。正式對局需在「裝備工作台」靠近時，點擊互動分頁消耗真實材料。`, `Simulated an upgrade attempt for [${m.nameZh}]. In a real run, you need to stand near the Equipment Workbench and spend real materials from the Interact tab.`)}`);
+    詳情區.querySelector(".前往升星")!.addEventListener("click", () => {
+      應用程式狀態.額外.互動選中設施 = "合成";
+      應用程式狀態.進入管理介面("互動");
     });
   }
 
