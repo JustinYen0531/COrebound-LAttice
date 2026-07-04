@@ -523,6 +523,8 @@ export function 建立世界地圖層(): HTMLElement {
 
   const projectilePool = new ProjectilePool();
   const projectileNodes = new Map<number, HTMLElement>();
+  // 穿透彈可命中不同目標，但同一顆彈不能停留在碰撞圈內逐幀重複傷害同一目標。
+  const projectileHitTargets = new Map<number, Set<string>>();
   // 每個家族的發射計時器（秒）
   const familyFireTimers: Record<Family, number> = {
     shield: 0, multishot: 0, straight: 0, mine: 0, laser: 0,
@@ -986,7 +988,15 @@ export function 建立世界地圖層(): HTMLElement {
 
     // 我方子彈打怪物
     const playerShots = projectilePool.byFaction("player");
+    const consumedThisFrame = new Set<number>();
     for (const hit of detectHits(playerShots, monsterBodies)) {
+      if (consumedThisFrame.has(hit.projectile.id)) continue;
+      let hitTargets = projectileHitTargets.get(hit.projectile.id);
+      if (!hitTargets) {
+        hitTargets = new Set<string>();
+        projectileHitTargets.set(hit.projectile.id, hitTargets);
+      }
+      if (hitTargets.has(hit.target.id)) continue;
       const m = liveMonsters.find((x) => x.inst.id === hit.target.id);
       if (!m || m.inst.hp <= 0) continue;
       const res = resolveProjectileHit(hit.projectile, {
@@ -994,6 +1004,7 @@ export function 建立世界地圖層(): HTMLElement {
       });
       const appliedDamage = Math.min(m.inst.hp, res.damage);
       m.inst.hp = Math.max(0, m.inst.hp - appliedDamage);
+      hitTargets.add(m.inst.id);
       if (!訓練道場中) 記錄對局傷害(appliedDamage);
       m.lastHitMs = performance.now();
       // 隊長控制引擎：命中時套用（此處實作減速；其餘控制為 Batch 3 延伸）。
@@ -1003,8 +1014,13 @@ export function 建立世界地圖層(): HTMLElement {
         m.slowMult = 1 - ctrl.magnitude;
       }
       if (m.inst.hp <= 0) m.node.style.display = "none";
-      if (res.projectileConsumed) projectilePool.remove(hit.projectile.id);
-      else hit.projectile.remainingWeight = res.projectileRemainingWeight;
+      if (res.projectileConsumed) {
+        projectilePool.remove(hit.projectile.id);
+        consumedThisFrame.add(hit.projectile.id);
+        projectileHitTargets.delete(hit.projectile.id);
+      } else {
+        hit.projectile.remainingWeight = res.projectileRemainingWeight;
+      }
     }
 
     // 敵方子彈打玩家（玩家為單一圓形碰撞體）
@@ -1023,8 +1039,9 @@ export function 建立世界地圖層(): HTMLElement {
       projectilePool.remove(hit.projectile.id);
     }
     if (玩家承傷 > 0) {
-      設當前玩家生命(summary.playerHp - 玩家承傷);
-      if (!訓練道場中) 記錄對局傷害(0, 玩家承傷);
+      const appliedDamage = Math.min(summary.playerHp, 玩家承傷);
+      設當前玩家生命(summary.playerHp - appliedDamage);
+      if (!訓練道場中) 記錄對局傷害(0, appliedDamage);
     }
 
     // 同步子彈 DOM 節點：新增缺的、移除已消散的。
@@ -1043,6 +1060,7 @@ export function 建立世界地圖層(): HTMLElement {
       if (!alive.has(id)) {
         node.remove();
         projectileNodes.delete(id);
+        projectileHitTargets.delete(id);
       }
     }
 
@@ -1373,6 +1391,7 @@ export function 建立世界地圖層(): HTMLElement {
     monsters.length = 0;
     if (訓練道場中) 覆蓋訓練敵群([]);
     projectilePool.clear();
+    projectileHitTargets.clear();
     for (const node of projectileNodes.values()) node.remove();
     projectileNodes.clear();
   }
