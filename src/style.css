@@ -1266,7 +1266,7 @@ button.禁用:hover {
 }
 .世界地圖層-物件 {
   position: absolute;
-  transform: translate(-50%, -100%) translateY(var(--object-optical-y, 32px));
+  transform: translate(-50%, -100%) translateY(var(--object-optical-y, -18px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1291,39 +1291,40 @@ button.禁用:hover {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: calc(var(--world-object-size, 720px) * 0.045);
-  width: calc(var(--world-object-size, 720px) * 0.44);
-  height: calc(var(--world-object-size, 720px) * 0.14);
-  transform: translateX(-50%) skewX(-18deg) scaleX(1.08);
+  bottom: calc(var(--world-object-size, 720px) * 0.028);
+  width: calc(var(--world-object-size, 720px) * 0.40);
+  height: calc(var(--world-object-size, 720px) * 0.12);
+  transform: translateX(-50%) scaleX(1.02);
   border-radius: 50%;
   background: radial-gradient(
     ellipse at center,
-    rgba(122, 126, 136, 0.64) 0%,
-    rgba(122, 126, 136, 0.42) 38%,
-    rgba(122, 126, 136, 0.18) 58%,
-    rgba(122, 126, 136, 0) 80%
+    rgba(122, 126, 136, 0.58) 0%,
+    rgba(122, 126, 136, 0.34) 44%,
+    rgba(122, 126, 136, 0.14) 64%,
+    rgba(122, 126, 136, 0) 82%
   );
-  filter: blur(8px);
-  opacity: 0.95;
+  filter: blur(10px);
+  opacity: 0.92;
   pointer-events: none;
   z-index: 1;
 }
 .世界地圖層-視覺層-禁走地板::before {
-  content: none;
+  content: "";
   position: absolute;
   left: 50%;
-  bottom: calc(var(--world-object-size, 720px) * 0.02);
-  width: calc(var(--world-object-size, 720px) * 0.34);
-  height: calc(var(--world-object-size, 720px) * 0.11);
+  bottom: calc(var(--world-object-size, 720px) * 0.016);
+  width: calc(var(--world-object-size, 720px) * 0.365);
+  height: calc(var(--world-object-size, 720px) * 0.126);
   transform: translateX(-50%);
-  border-radius: 50%;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   background: #ffffff;
   opacity: 1;
   filter: none;
   mix-blend-mode: normal;
   box-shadow:
     0 0 0 3px #ffffff,
-    0 0 24px rgba(255, 255, 255, 0.36);
+    0 0 20px rgba(134, 138, 146, 0.44),
+    0 0 34px rgba(134, 138, 146, 0.22);
   pointer-events: none;
   z-index: 1;
 }
@@ -1344,6 +1345,11 @@ button.禁用:hover {
 .世界地圖層-物件-主體 {
   position: relative;
   z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  transform: translateY(calc(var(--world-object-size, 720px) * -0.012));
 }
 .世界地圖層-物件-glyph {
   font-size: calc(var(--world-object-size, 240px) * 0.52);
@@ -1390,7 +1396,7 @@ button.禁用:hover {
   z-index: 3;
 }
 .世界地圖層-物件:hover {
-  transform: translate(-50%, -100%) translateY(var(--object-optical-y, 32px)) scale(1.08);
+  transform: translate(-50%, -100%) translateY(var(--object-optical-y, -18px)) scale(1.08);
   filter: brightness(1.3);
   z-index: 5;
 }
@@ -1419,7 +1425,7 @@ button.禁用:hover {
 }
 .世界地圖層-環境物件 {
   position: absolute;
-  transform: translate(-50%, -100%) translateY(var(--object-optical-y, 32px));
+  transform: translate(-50%, -100%) translateY(var(--object-optical-y, -18px));
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1443,6 +1449,50 @@ button.禁用:hover {
 .世界地圖層-環境物件-障礙物 {
   opacity: 0.98;
 }
+
+/* 怪物圖層：疊在環境物件之上、玩家之下的俯視 token */
+.世界地圖層-怪物圖層 {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.世界地圖層-怪物 {
+  position: absolute;
+  /* 俯視 token：以世界座標為中心點置中（不像場景物件那樣底部站立） */
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  isolation: isolate;
+  will-change: left, top;
+}
+.世界地圖層-怪物-image {
+  width: var(--monster-size, 360px);
+  height: var(--monster-size, 360px);
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+}
+/* 影子：壓扁、下沉、模糊，強化俯視地面感 */
+.世界地圖層-怪物-image-shadow {
+  position: absolute;
+  left: 0;
+  top: 12%;
+  width: var(--monster-size, 360px);
+  height: var(--monster-size, 360px);
+  object-fit: contain;
+  z-index: 1;
+  transform: scaleY(0.34) translateY(60%);
+  filter: brightness(0) blur(5px);
+  opacity: 0.4;
+}
+/* T2 精英略帶金色光暈，凸顯威脅度 */
+.世界地圖層-怪物-T2 .世界地圖層-怪物-image {
+  filter: drop-shadow(0 0 6px rgba(216, 180, 106, 0.4));
+}
+
 /* 玩家標記 */
 .世界地圖層-玩家 {
   position: absolute;
