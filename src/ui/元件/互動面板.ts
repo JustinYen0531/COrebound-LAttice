@@ -34,27 +34,27 @@ import { 取得上陣養成, 升星上陣隊員 } from "../../progression/養成
 import { 刷新正式最大生命 } from "../正式對局小隊狀態";
 
 // ============================================================
-// 共享沙盒玩家背包狀態 (全局持久，操作會即時扣減顯示)
+// 尚未完全接入正式持有清單的互動進度；資源交易已走正式背包。
 // ============================================================
-interface 沙盒背包 {
+interface 互動進度 {
   unlockedMembers: Set<number>;
   skills: Record<string, number>; // 紀錄技能等級
 }
 
-const sandboxInv: 沙盒背包 = {
+const interactionProgress: 互動進度 = {
   unlockedMembers: new Set([1, 2, 3, 6, 11, 16]), // 預設解鎖幾位
   skills: { shield: 1, multishot: 1, straight: 1, mine: 1, laser: 1 },
 };
 
 // ============================================================
 // 推斷玩家目前所在世界(供地緣 +20% 加成提示用)
-// 正式版應由地圖層寫入狀態;沙盒模式預設 geometry,讓玩家可完整操作。
+// 正式版由地圖層寫入狀態；沒有現場物件時，以 geometry 作為預覽地緣。
 function regionNearby(): import("../../data/成員型別").World {
   const object = MAP_OBJECTS.find((entry) => entry.id === 應用程式狀態.額外.靠近的地圖物件ID);
   return object && object.region !== "plaza" ? object.region : "geometry";
 }
 
-// 離線模擬警示 Banner
+// 現場/遠端狀態 Banner
 // ============================================================
 function 建立狀態警示條(設施: 互動設施): HTMLElement {
   const near = 應用程式狀態.額外.靠近的互動設施;
@@ -73,10 +73,10 @@ function 建立狀態警示條(設施: 互動設施): HTMLElement {
     div.innerHTML = `
       <div style="background: rgba(216, 180, 106, 0.12); border: 1px solid rgba(216, 180, 106, 0.35); padding: 10px; border-radius: 6px; margin-bottom: 16px; font-size: 0.85rem; color: #e5cd9c; display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span>⚠️ 偵測到離線：你目前未靠近戰場中的 <b>${設施}</b> 設施。</span>
-          <span style="margin-left: auto; background: #d8b46a; color: #05060b; padding: 1px 6px; border-radius: 3px; font-size: 0.72rem; font-weight: bold;">沙盒模擬預覽</span>
+          <span>你目前未靠近戰場中的 <b>${設施}</b> 設施。</span>
+          <span style="margin-left: auto; background: #d8b46a; color: #05060b; padding: 1px 6px; border-radius: 3px; font-size: 0.72rem; font-weight: bold;">遠端預覽</span>
         </div>
-        <div style="font-size: 0.75rem; color: #8d93ad;">你仍然可以直接在此進行點擊與模擬操作，資源將會正常扣減與刷新！</div>
+        <div style="font-size: 0.75rem; color: #8d93ad;">可查看配方與庫存；需要現場條件的操作會維持鎖定，交易成功會寫入正式背包。</div>
       </div>
     `;
   }
@@ -139,7 +139,7 @@ function 合成面板(): HTMLElement {
         <p style="font-size: 0.75rem; color: #8d93ad; margin-bottom: 10px;">直接消耗對應的家族碎片與原石提升局內威力。</p>
         <div style="display: flex; flex-direction: column; gap: 6px;">
           ${(Object.keys(inventory.碎片) as Family[]).map((f) => {
-            const currentLvl = sandboxInv.skills[f] ?? 1;
+            const currentLvl = interactionProgress.skills[f] ?? 1;
             const isMax = currentLvl >= 3;
             const nextCost = currentLvl === 1 ? 10 : currentLvl === 2 ? 30 : 90;
             const gemsCost = currentLvl === 1 ? 100 : currentLvl === 2 ? 400 : 1200;
@@ -193,7 +193,7 @@ function 合成面板(): HTMLElement {
   container.querySelectorAll("[data-upgrade-skill]").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const f = (e.currentTarget as HTMLElement).dataset.upgradeSkill as Family;
-      const currentLvl = sandboxInv.skills[f] ?? 1;
+      const currentLvl = interactionProgress.skills[f] ?? 1;
       const cost = currentLvl === 1 ? 10 : currentLvl === 2 ? 30 : 90;
       const gemsCost = currentLvl === 1 ? 100 : currentLvl === 2 ? 400 : 1200;
 
@@ -204,7 +204,7 @@ function 合成面板(): HTMLElement {
 
       背包.花費碎片(f, cost);
       背包.花費原石(gemsCost);
-      sandboxInv.skills[f] = currentLvl + 1;
+      interactionProgress.skills[f] = currentLvl + 1;
       alert(`🎉 升級成功！${FAMILY_LABEL[f]}技能已提升至 Lv.${currentLvl + 1}。`);
       應用程式狀態.進入管理介面("互動");
     });
@@ -393,7 +393,7 @@ function 雕像面板(): HTMLElement {
   const scrollArea = container.querySelector(".雕像成員列表-滾動") as HTMLElement;
 
   for (const m of MEMBERS) {
-    const isUnlocked = sandboxInv.unlockedMembers.has(m.no);
+    const isUnlocked = interactionProgress.unlockedMembers.has(m.no);
     const row = document.createElement("div");
     row.style.display = "flex";
     row.style.alignItems = "center";
@@ -432,7 +432,7 @@ function 雕像面板(): HTMLElement {
         }
 
         背包.花費碎片(m.family, 10);
-        sandboxInv.unlockedMembers.add(m.no);
+        interactionProgress.unlockedMembers.add(m.no);
         alert(`🗿 儀式完成！[${m.nameZh}] 雕像破繭而化為純白光芒！\n小隊已成功解鎖該角色 (0 ➔ 1★)！`);
         應用程式狀態.進入管理介面("互動");
       });
