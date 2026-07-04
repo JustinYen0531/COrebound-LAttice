@@ -92,6 +92,7 @@ const FAMILY_FURNACE_IMAGE: Record<Family, string> = {
 };
 
 let playerPos = { x: 0, y: 0 };
+let playerMoving = false;
 
 type 可見怪物實例 = MonsterInstance | 訓練召喚敵人;
 
@@ -110,11 +111,16 @@ const BLOCKING_WORLD_OBJECTS = [
 
 export function resetPlayerPos(): void {
   playerPos = { x: 0, y: 0 };
+  playerMoving = false;
   cameraZoom = DEFAULT_CAMERA_ZOOM;
 }
 
 export function 讀取玩家位置(): { x: number; y: number } {
   return { ...playerPos };
+}
+
+export function 讀取玩家移動狀態(): boolean {
+  return playerMoving;
 }
 
 function clampPlayerPosition(next: { x: number; y: number }): { x: number; y: number } {
@@ -690,8 +696,9 @@ export function 建立世界地圖層(): HTMLElement {
 
       if (Math.abs(playerVelocity.x) < 0.01) playerVelocity.x = 0;
       if (Math.abs(playerVelocity.y) < 0.01) playerVelocity.y = 0;
+      playerMoving = playerVelocity.x !== 0 || playerVelocity.y !== 0;
 
-      if (playerVelocity.x !== 0 || playerVelocity.y !== 0) {
+      if (playerMoving) {
         playerPos = clampTraversablePlayerPosition({
           x: playerPos.x + playerVelocity.x * dt,
           y: playerPos.y + playerVelocity.y * dt,
