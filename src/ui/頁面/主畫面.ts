@@ -8,29 +8,42 @@ import type { 主畫面分頁 } from "../共用型別";
 
 const 主按鈕清單: 主畫面分頁[] = ["開始遊玩", "圖鑑", "遊玩記錄", "新手入門", "設定"];
 
+function 雙語(中文: string, 英文: string): string {
+  return `${中文} / ${英文}`;
+}
+
+/** 主按鈕內部 id（中文）→ 中英雙語顯示標籤。id 仍作為狀態鍵。 */
+const 分頁標籤: Record<string, string> = {
+  開始遊玩: 雙語("開始遊玩", "Play"),
+  圖鑑: 雙語("圖鑑", "Codex"),
+  遊玩記錄: 雙語("遊玩記錄", "Records"),
+  新手入門: 雙語("新手入門", "Getting Started"),
+  設定: 雙語("設定", "Settings"),
+};
+
 function 開始遊玩子頁(): HTMLElement {
   const el = document.createElement("div");
   el.className = "子頁內容 子頁內容-narrow";
-  el.innerHTML = `<h3>開始遊玩</h3><p class="占位說明">從這裡進入正式流程，或先保留多人連線入口的位置。</p>`;
+  el.innerHTML = `<h3>${雙語("開始遊玩", "Play")}</h3><p class="占位說明">${雙語("從這裡進入主流程，或先保留多人模式入口。", "Enter the main flow here, or leave a placeholder for the multiplayer entry.")}</p>`;
 
   const list = document.createElement("div");
   list.className = "按鈕列";
 
   const newGame = document.createElement("button");
   newGame.className = "一級按鈕";
-  newGame.textContent = "New Game";
+  newGame.textContent = 雙語("新遊戲", "New Game");
   newGame.onclick = () => 應用程式狀態.進入遊戲準備流程("New Game");
 
   const continueGame = document.createElement("button");
   continueGame.className = "二級按鈕";
-  continueGame.textContent = "Continue Game";
+  continueGame.textContent = 雙語("繼續遊戲", "Continue Game");
   continueGame.onclick = () => 應用程式狀態.進入遊戲準備流程("Continue Game");
 
   const multiplayer = document.createElement("button");
   multiplayer.className = "二級按鈕";
-  multiplayer.textContent = "多人連線（暫未開放）";
+  multiplayer.textContent = 雙語("多人模式（即將推出）", "Multiplayer (Coming Soon)");
   multiplayer.disabled = true;
-  multiplayer.title = "目前保留入口，之後再接多人流程。";
+  multiplayer.title = 雙語("這個入口先保留，之後再接多人流程。", "Entry reserved for now; the multiplayer flow will be wired up later.");
 
   list.append(newGame, continueGame, multiplayer);
   el.appendChild(list);
@@ -41,10 +54,17 @@ function 遊玩記錄子頁(): HTMLElement {
   const el = document.createElement("div");
   el.className = "子頁內容";
   el.innerHTML = `
-    <h3>遊玩記錄</h3>
-    <p class="占位說明">僅存在於主畫面（帳號等級資料），管理介面沒有對應頁（規則 R9）。</p>
+    <h3>${雙語("遊玩記錄", "Records")}</h3>
+    <p class="占位說明">${雙語("這裡只存在於主畫面（帳號層級資料）；管理介面沒有對應頁面（規則 R9）。", "Lives only on the main screen (account-level data); there is no matching page in the Management panel (rule R9).")}</p>
     <div class="占位卡片格">
-      ${["存檔記錄", "通關次數", "使用過的角色", "通關時間", "歷次配置", "成就"]
+      ${[
+        雙語("存檔紀錄", "Save Records"),
+        雙語("通關紀錄", "Clears"),
+        雙語("使用角色", "Characters Used"),
+        雙語("通關時間", "Clear Time"),
+        雙語("歷史編隊", "Past Loadouts"),
+        雙語("成就", "Achievements"),
+      ]
         .map((n) => `<div class="占位卡片">${n}</div>`)
         .join("")}
     </div>
@@ -55,18 +75,18 @@ function 遊玩記錄子頁(): HTMLElement {
 function 新手入門子頁(): HTMLElement {
   const el = document.createElement("div");
   el.className = "子頁內容 子頁內容-narrow";
-  el.innerHTML = `<h3>新手入門</h3>`;
+  el.innerHTML = `<h3>${雙語("新手入門", "Getting Started")}</h3>`;
   const list = document.createElement("div");
   list.className = "按鈕列";
 
   const guide = document.createElement("button");
   guide.className = "二級按鈕";
-  guide.textContent = "新手導覽";
+  guide.textContent = 雙語("新手指南", "New Player Guide");
 
   const dojo = document.createElement("button");
   dojo.className = "一級按鈕";
-  dojo.textContent = "訓練道場";
-  dojo.title = "借用操作頁面＋管理介面骨架（R12），退出直接回主畫面，無結算頁";
+  dojo.textContent = 雙語("訓練道場", "Training Dojo");
+  dojo.title = 雙語("借用操作頁面 + 管理介面的骨架（R12）；離開後直接回主畫面，不進結算頁。", "Borrows the operation-page + management-panel skeleton (R12); quitting returns straight to the main screen, with no settlement page.");
   dojo.onclick = () => 應用程式狀態.進入訓練道場();
 
   list.append(guide, dojo);
@@ -78,9 +98,14 @@ function 設定子頁(): HTMLElement {
   const el = document.createElement("div");
   el.className = "子頁內容";
   el.innerHTML = `
-    <h3>設定</h3>
+    <h3>${雙語("設定", "Settings")}</h3>
     <div class="占位卡片格">
-      ${["音樂", "音效", "顯示", "操作"].map((n) => `<div class="占位卡片">${n}</div>`).join("")}
+      ${[
+        雙語("音樂", "Music"),
+        雙語("音效", "Sound"),
+        雙語("顯示", "Display"),
+        雙語("操作", "Controls"),
+      ].map((n) => `<div class="占位卡片">${n}</div>`).join("")}
     </div>
   `;
   return el;
@@ -96,28 +121,28 @@ export function 渲染主畫面(容器: HTMLElement) {
 
   const 標題 = document.createElement("div");
   標題.className = "主畫面-標題";
-  標題.innerHTML = `<h1>COrebound LAttence</h1><p>主流程骨架原型 — 圍繞核心展開的小隊圖騰</p>`;
+  標題.innerHTML = `<h1>COrebound LAttence</h1><p>${雙語("主流程骨架原型：以核心為中心展開的小隊圖騰", "Main-flow skeleton prototype: a squad totem unfolding around the core")}</p>`;
   root.appendChild(標題);
 
   const 進度摘要 = document.createElement("div");
   進度摘要.className = "主畫面-進度摘要";
   進度摘要.innerHTML = `
-    <h3>目前第一版已串起的主線</h3>
+    <h3>${雙語("這一輪先接好的主線流程", "The Main Line Wired Up In This First Pass")}</h3>
     <ol>
-      <li>主畫面：展開主按鈕子頁</li>
-      <li>開始遊玩：進入賽前準備，選擇隊長</li>
-      <li>正式遊玩：查看 HUD、展開圓盤、進入管理介面</li>
-      <li>管理介面：切換小隊 / 背包 / 互動 / 圖鑑 / 地圖</li>
-      <li>結算頁：回大廳或再來一場</li>
+      <li>${雙語("主畫面：展開第一層主按鈕子頁", "Main screen: expand the primary-button subpages")}</li>
+      <li>${雙語("開始遊玩：進入開局準備、選擇隊長", "Play: enter pre-match setup, choose a captain")}</li>
+      <li>${雙語("對局中：查看 HUD、展開圓盤、進入管理介面", "In play: check the HUD, expand the disc, enter the Management panel")}</li>
+      <li>${雙語("管理介面：切換小隊 / 背包 / 互動 / 圖鑑 / 地圖", "Management panel: switch between Squad / Bag / Interact / Codex / Map")}</li>
+      <li>${雙語("結算：回到大廳或再來一場", "Settlement: return to the lobby or run it again")}</li>
     </ol>
-    <p class="占位說明">這一版先把主流程接通，很多內容仍是骨架占位，但已經不是互相分離的孤島。</p>
+    <p class="占位說明">${雙語("這一輪先把主流程接起來；很多內容仍然是骨架占位，但已經不是各自漂浮的孤島。", "This pass wires the main flow together first; a lot of content is still skeleton placeholder, but it's no longer a set of disconnected islands.")}</p>
     <p class="占位說明" style="margin-top: 12px; margin-bottom: 0;">
-      <a href="/totem-preview.html" target="_blank" style="color: #ff8a3b; font-weight: bold; text-decoration: underline; cursor: pointer;">
-        🔗 點此開啟「圖騰全貌預覽 HTML 頁面 (totem-preview.html)」
+      <a href="/totem-preview.html" target="_blank" style="font-weight: bold; text-decoration: underline; cursor: pointer;">
+        🔗 ${雙語("打開「圖騰完整預覽」", `Open the "Totem Full-View Preview"`)} (totem-preview.html)
       </a>
-      <span style="margin: 0 8px; color: #8f8f9c;">|</span>
-      <a href="/totem-weaving.html" target="_blank" style="color: #ff8a3b; font-weight: bold; text-decoration: underline; cursor: pointer;">
-        🧬 點此開啟「Living Totem 疊加編織模擬器 (totem-weaving.html)」
+      <span style="margin: 0 8px;">|</span>
+      <a href="/totem-weaving.html" target="_blank" style="font-weight: bold; text-decoration: underline; cursor: pointer;">
+        🧬 ${雙語("打開「活體圖騰層疊編織模擬器」", `Open the "Living Totem Layered Weaving Simulator"`)} (totem-weaving.html)
       </a>
     </p>
   `;
@@ -133,8 +158,8 @@ export function 渲染主畫面(容器: HTMLElement) {
   // 最左邊的「回上頁」按鈕：收起當前展開的子頁，回到主畫面初始狀態。
   const 回上頁 = document.createElement("button");
   回上頁.className = "主畫面-主按鈕 主畫面-回上頁按鈕";
-  回上頁.textContent = "回上頁";
-  回上頁.title = "收起當前子頁";
+  回上頁.textContent = 雙語("返回", "Back");
+  回上頁.title = 雙語("收起目前展開的子頁", "Collapse the current subpage");
   回上頁.disabled = state.子頁 === null;
   回上頁.onclick = () => 應用程式狀態.切換主畫面子頁(state.子頁 ?? null);
   主按鈕欄.appendChild(回上頁);
@@ -142,15 +167,15 @@ export function 渲染主畫面(容器: HTMLElement) {
   for (const 名稱 of 主按鈕清單) {
     const btn = document.createElement("button");
     btn.className = "主畫面-主按鈕";
-    btn.textContent = 名稱 ?? "";
+    btn.textContent = 名稱 ? 分頁標籤[名稱] ?? 名稱 : "";
     btn.classList.toggle("作用中", state.子頁 === 名稱);
     btn.onclick = () => 應用程式狀態.切換主畫面子頁(名稱);
     主按鈕欄.appendChild(btn);
   }
   const 離開 = document.createElement("button");
   離開.className = "主畫面-離開按鈕";
-  離開.textContent = "離開遊戲";
-  離開.title = "刻意不算主按鈕，放在角落次級位置";
+  離開.textContent = 雙語("離開遊戲", "Quit Game");
+  離開.title = 雙語("刻意不算進主按鈕列，收在次要角落位置。", "Deliberately not counted as a primary button; tucked into a secondary corner spot.");
   主按鈕欄.appendChild(離開);
 
   if (state.子頁 !== "圖鑑") 版面.appendChild(主按鈕欄);
@@ -167,7 +192,7 @@ export function 渲染主畫面(容器: HTMLElement) {
     返回列.className = "主畫面-圖鑑返回列";
     const 返回按鈕 = document.createElement("button");
     返回按鈕.className = "三級按鈕 主畫面-圖鑑返回按鈕";
-    返回按鈕.textContent = "← 回上頁";
+    返回按鈕.textContent = `← ${雙語("返回", "Back")}`;
     返回按鈕.onclick = () => 應用程式狀態.切換主畫面子頁("圖鑑");
     返回列.appendChild(返回按鈕);
     box.appendChild(返回列);

@@ -18,6 +18,10 @@ import {
 } from "../資料/圖鑑資料庫";
 import { 生成角色迷你頭像HTML } from "./css角色頭像";
 
+function 雙語(中文: string, 英文: string): string {
+  return `${中文} / ${英文}`;
+}
+
 const 怪物圖鑑編號對照: Record<string, number> = {
   mon_circle: 1,
   mon_triangle: 2,
@@ -94,7 +98,7 @@ function 建立星級切換(選中星級: number): string {
           <span class="圖鑑星級頭像框">
             ${生成角色迷你頭像HTML("__MEMBER__", lv, "圖鑑星級頭像")}
           </span>
-          <span class="圖鑑星級文字">${lv}★</span>
+          <span class="圖鑑星級文字">${雙語(`${lv} 星`, `${lv}★`)}</span>
         </button>
       `
     )
@@ -152,12 +156,12 @@ function 建立詳情HTML(選中條目: 圖鑑條目): string {
   const 成員立繪HTML = 建立成員立繪HTML(選中條目.id);
   const 怪物立繪HTML = 建立怪物立繪HTML(選中條目.id);
   const 立繪HTML =
-    成員立繪HTML || 怪物立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>這筆資料沒有立繪</span></div>`;
+    成員立繪HTML || 怪物立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>${雙語("這筆資料沒有立繪", "No portrait for this entry")}</span></div>`;
   const 表格HTML =
     選中條目.表格數值 && 選中條目.表格數值.length > 0
       ? `
         <section class="圖鑑詳情-表格區">
-          <h5 class="圖鑑詳情-小標">星級數值</h5>
+          <h5 class="圖鑑詳情-小標">${雙語("星級數值", "Star Stats")}</h5>
           <table class="圖鑑詳情-表格">
             <thead>
               <tr>${Object.keys(選中條目.表格數值[0])
@@ -186,9 +190,9 @@ function 建立詳情HTML(選中條目: 圖鑑條目): string {
     <section class="圖鑑詳情">
       <div class="圖鑑詳情-頂部">
         <div>
-          <p class="圖鑑詳情-眉標">展開紀錄</p>
+          <p class="圖鑑詳情-眉標">${雙語("展開紀錄", "Expanded Entry")}</p>
           <h4 class="圖鑑詳情-標題">${選中條目.名稱}</h4>
-          <p class="圖鑑詳情-屬性">🏷️ ${選中條目.所屬}</p>
+          <p class="圖鑑詳情-屬性">🏷️ ${雙語("分類", "Category")}：${選中條目.所屬}</p>
         </div>
         <p class="圖鑑詳情-摘要">${選中條目.簡介}</p>
       </div>
@@ -228,7 +232,14 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
   for (const 名稱 of 分頁清單) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.textContent = 名稱;
+    btn.textContent =
+      名稱 === "成員圖鑑" ? 雙語("成員圖鑑", "Member Codex") :
+      名稱 === "怪物圖鑑" ? 雙語("怪物圖鑑", "Monster Codex") :
+      名稱 === "世界圖鑑" ? 雙語("世界圖鑑", "World Codex") :
+      名稱 === "材料圖鑑" ? 雙語("材料圖鑑", "Material Codex") :
+      名稱 === "機制圖鑑" ? 雙語("機制圖鑑", "Mechanics Codex") :
+      名稱 === "Boss圖鑑" ? "Boss圖鑑 / Boss Codex" :
+      雙語("世界故事", "World Stories");
     btn.classList.toggle("作用中", 名稱 === 選中名稱);
     if (名稱 === "世界故事") btn.classList.add("圖鑑瀏覽器-世界故事按鈕");
     btn.addEventListener("click", () => 應用程式狀態.設定圖鑑分頁(情境, 名稱));
@@ -240,10 +251,18 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
 
   const 標題列 = document.createElement("div");
   標題列.className = "圖鑑瀏覽器-標題列";
+  const 選中名稱顯示 =
+    選中名稱 === "成員圖鑑" ? 雙語("成員圖鑑", "Member Codex") :
+    選中名稱 === "怪物圖鑑" ? 雙語("怪物圖鑑", "Monster Codex") :
+    選中名稱 === "世界圖鑑" ? 雙語("世界圖鑑", "World Codex") :
+    選中名稱 === "材料圖鑑" ? 雙語("材料圖鑑", "Material Codex") :
+    選中名稱 === "機制圖鑑" ? 雙語("機制圖鑑", "Mechanics Codex") :
+    選中名稱 === "Boss圖鑑" ? "Boss圖鑑 / Boss Codex" :
+    雙語("世界故事", "World Stories");
   標題列.innerHTML = `
     <div>
-      <h3>${選中名稱}</h3>
-      <p class="占位說明">共 ${當前資料列表.length} 筆資料。點一筆後，上方列表會自動收起，避免擋住下面內容。</p>
+      <h3>${選中名稱顯示}</h3>
+      <p class="占位說明">${雙語(`共 ${當前資料列表.length} 筆資料。點一筆後，上方列表會自動收起，避免擋住下面內容。`, `Total ${當前資料列表.length} entries. Once you click one, the top list auto-collapses to keep the lower panel clear.`)}</p>
     </div>
   `;
 
@@ -252,10 +271,10 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
     工具列.className = "圖鑑瀏覽器-選中列";
     工具列.innerHTML = `
       <div class="圖鑑瀏覽器-選中摘要">
-        <span class="圖鑑瀏覽器-選中標籤">已選中</span>
+        <span class="圖鑑瀏覽器-選中標籤">${雙語("已選中", "Selected")}</span>
         <strong>${選中條目.名稱}</strong>
       </div>
-      <button type="button" class="三級按鈕 圖鑑瀏覽器-切換列表">${列表展開 ? "收起上方列表" : "展開角色列表"}</button>
+      <button type="button" class="三級按鈕 圖鑑瀏覽器-切換列表">${列表展開 ? 雙語("收起上方列表", "Collapse Top List") : 雙語("展開上方列表", "Expand Top List")}</button>
     `;
     工具列.querySelector("button")?.addEventListener("click", () => {
       應用程式狀態.設定圖鑑列表展開(情境, !列表展開);
@@ -279,11 +298,11 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
     ];
 
     const 家族配置 = [
-      { key: "護盾家族", name: "護盾家族" },
-      { key: "多發家族", name: "多發家族" },
-      { key: "直線家族", name: "直線家族" },
-      { key: "地雷家族", name: "地雷家族" },
-      { key: "激光家族", name: "激光家族" },
+      { key: "護盾家族", name: 雙語("護盾家族", "Shield Family") },
+      { key: "多發家族", name: 雙語("多發家族", "Multishot Family") },
+      { key: "直線家族", name: 雙語("直線家族", "Straight Family") },
+      { key: "地雷家族", name: 雙語("地雷家族", "Mine Family") },
+      { key: "激光家族", name: 雙語("激光家族", "Laser Family") },
     ];
 
     const table = document.createElement("table");
@@ -292,7 +311,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
     const thFamily = document.createElement("th");
-    thFamily.textContent = "家族";
+    thFamily.textContent = 雙語("家族", "Family");
     headerRow.appendChild(thFamily);
     for (const conf of 世界配置) {
       const th = document.createElement("th");
@@ -359,7 +378,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
   展開區.className = "圖鑑瀏覽器-展開區";
   展開區.innerHTML = 選中條目
     ? 建立詳情HTML(選中條目)
-    : `<p class="占位說明 置中">先點一筆資料，下面就會展開。</p>`;
+    : `<p class="占位說明 置中">${雙語("先點一筆資料，下面就會展開。", "Pick an entry first and the detail panel will open below.")}</p>`;
 
   主區.append(標題列, 卡片格, 展開區);
   wrap.append(書籤欄, 主區);

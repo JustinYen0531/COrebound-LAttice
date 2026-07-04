@@ -17,8 +17,28 @@ import { MATERIALS } from "../../data/素材資料庫";
 import { FAMILY_LABEL } from "../../data/成員型別";
 import { MATERIAL_RARITY_LABEL } from "../../data/戰鬥原語";
 
+function 雙語(中文: string, 英文: string): string {
+  return `${中文} / ${英文}`;
+}
+
 const 分頁清單: 管理介面分頁[] = ["小隊", "背包", "互動", "圖鑑", "地圖"];
 const 互動設施清單: 互動設施[] = ["合成", "熔爐", "雕像", "商店", "召喚"];
+
+/** 內部中文 id → 中英雙語顯示標籤（id 仍作狀態鍵）。 */
+const 分頁標籤: Record<管理介面分頁, string> = {
+  小隊: 雙語("小隊", "Squad"),
+  背包: 雙語("背包", "Bag"),
+  互動: 雙語("互動", "Interact"),
+  圖鑑: 雙語("圖鑑", "Codex"),
+  地圖: 雙語("地圖", "Map"),
+};
+const 互動設施標籤: Record<互動設施, string> = {
+  合成: 雙語("合成", "Craft"),
+  熔爐: 雙語("熔爐", "Forge"),
+  雕像: 雙語("雕像", "Statue"),
+  商店: 雙語("商店", "Shop"),
+  召喚: 雙語("召喚", "Summon"),
+};
 
 // 模擬背包測試數據
 const bagItems = {
@@ -95,15 +115,19 @@ function 小隊分頁內容(): HTMLElement {
     詳情區.innerHTML = `
       <div style="text-align: center; margin: auto; padding: 40px 0; color: #8d93ad;">
         <span style="font-size: 2rem;">🛡️</span>
-        <h4 style="margin: 10px 0 6px; color: #ff8a3b;">小隊編制詳情</h4>
-        <p style="font-size: 0.82rem; line-height: 1.5;">點選左側圓盤的任一槽位，即可查看該成員的戰鬥定位、屬性星級與升星食譜配方。</p>
+        <h4 style="margin: 10px 0 6px; color: #ff8a3b;">${雙語("小隊編制詳情", "Squad Slot Details")}</h4>
+        <p style="font-size: 0.82rem; line-height: 1.5;">${雙語("點選左側圓盤的任一槽位，即可查看該成員的戰鬥定位、屬性星級與升星食譜配方。", "Click any slot on the left disc to inspect that member's combat role, stat stars, and upgrade recipe.")}</p>
       </div>
     `;
   } else if (!訓練道場模式 && 選中槽位 !== null) {
     // 槽位編號映射到對應成員數據 (槽位 0~8 對應資料庫成員)
     const mIndex = 選中槽位 % MEMBERS.length;
     const m = MEMBERS[mIndex];
-    const userRole = 選中槽位 % 3 === 0 ? "保護 (藍色)" : 選中槽位 % 3 === 1 ? "火力 (紅色)" : "補給 (黃色)";
+    const userRole = 選中槽位 % 3 === 0
+      ? 雙語("保護（藍色）", "Protection (Blue)")
+      : 選中槽位 % 3 === 1
+        ? 雙語("火力（紅色）", "Firepower (Red)")
+        : 雙語("補給（黃色）", "Support (Yellow)");
     const roleColor = 選中槽位 % 3 === 0 ? "#4d8dff" : 選中槽位 % 3 === 1 ? "#ff4d5e" : "#ffd24d";
 
     詳情區.innerHTML = `
@@ -117,59 +141,59 @@ function 小隊分頁內容(): HTMLElement {
           </span>
         </div>
         <div style="font-size: 0.8rem; color: #8d93ad; margin-top: 6px;">
-          家族歸屬：<span style="color:#fff;">${FAMILY_LABEL[m.family]}</span> | 
-          定位：<span style="color:#fff;">${m.family === "shield" ? "全隊減傷/外環增防" : "穿透攻擊/爆裂火焰"}</span>
+          ${雙語("家族歸屬", "Family")}：<span style="color:#fff;">${FAMILY_LABEL[m.family]}</span> | 
+          ${雙語("定位", "Role")}：<span style="color:#fff;">${m.family === "shield" ? 雙語("全隊減傷／外環增防", "Squad damage reduction / outer-ring defense") : 雙語("穿透攻擊／爆裂火焰", "Piercing attack / explosive flame")}</span>
         </div>
       </div>
 
       <!-- 星等預覽區 -->
       <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; text-align: center;">
-        <h4 style="margin: 0 0 8px; font-size: 0.8rem; color: #ff8a3b; text-align: left;">⭐ 戰鬥圖騰 Slice 星級演變</h4>
+        <h4 style="margin: 0 0 8px; font-size: 0.8rem; color: #ff8a3b; text-align: left;">⭐ ${雙語("戰鬥圖騰 Slice 星級演變", "Battle Totem Slice Star Evolution")}</h4>
         <div style="display: flex; align-items: center; justify-content: space-around; margin: 10px 0;">
           <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
             <div style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #ff8a3b; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #ff8a3b;">1★</div>
-            <span style="font-size: 0.65rem; color: #8d93ad;">初醒(極簡線條)</span>
+            <span style="font-size: 0.65rem; color: #8d93ad;">${雙語("初醒（極簡線條）", "Awakened (Minimal Lines)")}</span>
           </div>
           <div style="font-size: 1rem; color: #ff8a3b;">➜</div>
           <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
             <div style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px dashed #ffd24d; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #ffd24d;">2★</div>
-            <span style="font-size: 0.65rem; color: #8d93ad;">茂盛(次級能量)</span>
+            <span style="font-size: 0.65rem; color: #8d93ad;">${雙語("茂盛（次級能量）", "Grown (Secondary Energy)")}</span>
           </div>
           <div style="font-size: 1rem; color: #ffd24d;">➜</div>
           <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
             <div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #4d8dff; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #4d8dff; font-weight: bold;">3★</div>
-            <span style="font-size: 0.65rem; color: #8d93ad;">完全體(幾何圖騰)</span>
+            <span style="font-size: 0.65rem; color: #8d93ad;">${雙語("完全體（幾何圖騰）", "Complete Form (Geometric Totem)")}</span>
           </div>
         </div>
       </div>
 
       <!-- 升星食譜配方 -->
       <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 12px; border-radius: 8px;">
-        <h4 style="margin: 0 0 8px; font-size: 0.8rem; color: #ff8a3b;">🍲 進化食譜材料需求 (2★ ➔ 3★)</h4>
+        <h4 style="margin: 0 0 8px; font-size: 0.8rem; color: #ff8a3b;">🍲 ${雙語("進化食譜材料需求", "Evolution Recipe Material Requirements")} (2★ ➔ 3★)</h4>
         <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem;">
           <div style="display: flex; justify-content: space-between;">
-            <span>1★ 高級材料 ([幾何高級頂角石])</span>
-            <span style="color:#ffd24d;">1 / 1 個 (已滿足)</span>
+            <span>${雙語("1★ 高級材料", "1★ Fine Material")} ([幾何高級頂角石])</span>
+            <span style="color:#ffd24d;">${雙語("1 / 1 個（已滿足）", "1 / 1 (Ready)")}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
-            <span>1★ 普通材料 ([幾何軌道晶體])</span>
-            <span style="color:#ffd24d;">3 / 3 個 (已滿足)</span>
+            <span>${雙語("1★ 普通材料", "1★ Common Material")} ([幾何軌道晶體])</span>
+            <span style="color:#ffd24d;">${雙語("3 / 3 個（已滿足）", "3 / 3 (Ready)")}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
-            <span>${FAMILY_LABEL[m.family]}碎片</span>
-            <span style="color:#ff4d5e;">8 / 15 個 (不足)</span>
+            <span>${雙語(`${FAMILY_LABEL[m.family]}碎片`, `${FAMILY_LABEL[m.family]} Shards`)}</span>
+            <span style="color:#ff4d5e;">${雙語("8 / 15 個（不足）", "8 / 15 (Missing)")}</span>
           </div>
         </div>
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: auto;">
-        <button class="一級按鈕 升星模擬" style="flex: 1; padding: 8px 0; font-size: 0.8rem;">模擬提升星級 (離線)</button>
+        <button class="一級按鈕 升星模擬" style="flex: 1; padding: 8px 0; font-size: 0.8rem;">${雙語("模擬提升星級（離線）", "Simulate Star Upgrade (Offline)")}</button>
       </div>
     </div>
   `;
 
     詳情區.querySelector(".升星模擬")!.addEventListener("click", () => {
-      alert(`[小隊沙盒] 模擬嘗試將 [${m.nameZh}] 升級。正式對局需在「裝備工作台」靠近時，點擊互動分頁消耗真實材料。`);
+      alert(`[${雙語("小隊沙盒", "Squad Sandbox")}] ${雙語(`模擬嘗試將 [${m.nameZh}] 升級。正式對局需在「裝備工作台」靠近時，點擊互動分頁消耗真實材料。`, `Simulated an upgrade attempt for [${m.nameZh}]. In a real run, you need to stand near the Equipment Workbench and spend real materials from the Interact tab.`)}`);
     });
   }
 
@@ -200,7 +224,11 @@ function 背包分頁內容(): HTMLElement {
   書籤欄.className = "資料夾式版面-書籤欄";
   for (const 名稱 of 背包分類清單) {
     const btn = document.createElement("button");
-    btn.textContent = 名稱;
+    btn.textContent =
+      名稱 === "材料" ? 雙語("材料", "Materials") :
+      名稱 === "消耗品" ? 雙語("消耗品", "Consumables") :
+      名稱 === "任務物" ? 雙語("任務物", "Quest Items") :
+      雙語("追蹤中", "Tracked");
     btn.classList.toggle("作用中", 應用程式狀態.額外.背包選中分類 === 名稱);
     btn.onclick = () => {
       應用程式狀態.設定背包分類(名稱);
@@ -223,7 +251,7 @@ function 背包分頁內容(): HTMLElement {
   itemsGrid.style.marginTop = "12px";
 
   if (items.length === 0) {
-    itemsGrid.innerHTML = `<p class="占位說明" style="grid-column: 1/-1; text-align: center; padding: 40px 0;">此類別中尚無物品。</p>`;
+    itemsGrid.innerHTML = `<p class="占位說明" style="grid-column: 1/-1; text-align: center; padding: 40px 0;">${雙語("此類別中尚無物品。", "No items in this category yet.")}</p>`;
   } else {
     items.forEach((item: any) => {
       const cell = document.createElement("div");
@@ -260,7 +288,11 @@ function 背包分頁內容(): HTMLElement {
     });
   }
 
-  內容區.innerHTML = `<h3>🎒 背包儲備 / ${activeTab}</h3>`;
+  const 背包分類標籤 = activeTab === "材料" ? 雙語("材料", "Materials")
+    : activeTab === "消耗品" ? 雙語("消耗品", "Consumables")
+    : activeTab === "任務物" ? 雙語("任務物", "Quest Items")
+    : 雙語("追蹤中", "Tracked");
+  內容區.innerHTML = `<h3>🎒 ${雙語("背包儲備", "Bag Inventory")} / ${背包分類標籤}</h3>`;
   內容區.appendChild(itemsGrid);
 
   const 補充區 = document.createElement("div");
@@ -268,8 +300,8 @@ function 背包分頁內容(): HTMLElement {
 
   if (選中背包物品 === null) {
     補充區.innerHTML = `
-      <h4>🔍 物品詳細說明</h4>
-      <p style="font-size: 0.8rem; color: #8d93ad; line-height: 1.5;">點選左側格網中的任何物品，即可在此查看材料地緣歸屬、熔煉轉化率或合成配方用途。</p>
+      <h4>🔍 ${雙語("物品詳細說明", "Item Details")}</h4>
+      <p style="font-size: 0.8rem; color: #8d93ad; line-height: 1.5;">${雙語("點選左側格網中的任何物品，即可在此查看材料地緣歸屬、熔煉轉化率或合成配方用途。", "Click any item in the left grid to inspect its world origin, forge conversion rate, or crafting usage here.")}</p>
     `;
   } else {
     let specDetails = "";
@@ -284,22 +316,22 @@ function 背包分頁內容(): HTMLElement {
       
       specDetails = `
         <div style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; line-height: 1.6;">
-          <div>地緣出處：<span style="color:#ffd24d;">${worldName}</span></div>
-          <div>星級星等：<span style="color:#ffd24d;">${選中背包物品.star}★</span></div>
-          <div style="color: #4d8dff; margin-top: 4px;">熔爐轉化：投入熔爐可轉化為對應家族碎片</div>
+          <div>${雙語("地緣出處", "World Origin")}：<span style="color:#ffd24d;">${worldName}</span></div>
+          <div>${雙語("星級星等", "Star Rating")}：<span style="color:#ffd24d;">${選中背包物品.star}★</span></div>
+          <div style="color: #4d8dff; margin-top: 4px;">${雙語("熔爐轉化：投入熔爐可轉化為對應家族碎片", "Forge Conversion: feed it into the forge to turn it into matching family shards.")}</div>
         </div>
       `;
     } else if (activeTab === "消耗品") {
       specDetails = `
         <div style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
-          <div style="color: #ffd24d; font-weight: bold;">使用效果：${選中背包物品.effect}</div>
-          <button class="三級按鈕" style="width: 100%; margin-top: 12px; font-size: 0.75rem; padding: 4px 0;">在對局中快捷使用</button>
+          <div style="color: #ffd24d; font-weight: bold;">${雙語("使用效果", "Effect")}：${選中背包物品.effect}</div>
+          <button class="三級按鈕" style="width: 100%; margin-top: 12px; font-size: 0.75rem; padding: 4px 0;">${雙語("在對局中快捷使用", "Quick-Use In Battle")}</button>
         </div>
       `;
     } else if (activeTab === "追蹤中") {
       specDetails = `
         <div style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; line-height: 1.5;">
-          <div>獲取來源：<span style="color:#4d8dff;">${選中背包物品.source}</span></div>
+          <div>${雙語("獲取來源", "Source")}：<span style="color:#4d8dff;">${選中背包物品.source}</span></div>
         </div>
       `;
     }
@@ -307,7 +339,7 @@ function 背包分頁內容(): HTMLElement {
     補充區.innerHTML = `
       <h4 style="color: #ff8a3b; margin-top: 0;">${選中背包物品.name}</h4>
       <p style="font-size: 0.8rem; line-height: 1.4; color: #fff;">
-        ${選中背包物品.info || 選中背包物品.desc || "無說明文件。"}
+        ${選中背包物品.info || 選中背包物品.desc || 雙語("無說明文件。", "No description available.")}
       </p>
       ${specDetails}
     `;
@@ -339,7 +371,11 @@ function 地圖分頁內容(): HTMLElement {
   書籤欄.className = "資料夾式版面-書籤欄";
   for (const 名稱 of 地圖分類清單) {
     const btn = document.createElement("button");
-    btn.textContent = 名稱;
+    btn.textContent =
+      名稱 === "總覽" ? 雙語("總覽", "Overview") :
+      名稱 === "設施" ? 雙語("設施", "Facilities") :
+      名稱 === "Boss" ? "Boss / Boss" :
+      雙語("標記", "Markers");
     btn.classList.toggle("作用中", 應用程式狀態.額外.地圖選中分類 === 名稱);
     btn.onclick = () => {
       應用程式狀態.設定地圖分類(名稱);
@@ -453,7 +489,12 @@ function 地圖分頁內容(): HTMLElement {
 
   mapSvgWrapper.appendChild(svg);
 
-  內容區.innerHTML = `<h3>🛰️ 戰術地圖 / ${應用程式狀態.額外.地圖選中分類}</h3>`;
+  const 地圖分類顯示 =
+    應用程式狀態.額外.地圖選中分類 === "總覽" ? 雙語("總覽", "Overview") :
+    應用程式狀態.額外.地圖選中分類 === "設施" ? 雙語("設施", "Facilities") :
+    應用程式狀態.額外.地圖選中分類 === "Boss" ? "Boss / Boss" :
+    雙語("標記", "Markers");
+  內容區.innerHTML = `<h3>🛰️ ${雙語("戰術地圖", "Tactical Map")} / ${地圖分類顯示}</h3>`;
   內容區.appendChild(mapSvgWrapper);
 
   const 補充區 = document.createElement("div");
@@ -483,7 +524,7 @@ function 地圖分頁內容(): HTMLElement {
     坐標提示.style.color = "#8d93ad";
     坐標提示.innerHTML = `
       <div>目前召喚中心：<span style="color:#fff;font-family:monospace;">X ${Math.round(玩家位置.x)} / Y ${Math.round(玩家位置.y)}</span></div>
-      <div style="margin-top:4px;">召喚時會直接以你現在站的位置為中心，丟到附近做即時碰撞測試。</div>
+      <div style="margin-top:4px;">${雙語("召喚時會直接以你現在站的位置為中心，丟到附近做即時碰撞測試。", "Summons will use your current standing point as the center and drop nearby for live collision testing.")}</div>
     `;
     補充區.appendChild(坐標提示);
   } else {
@@ -492,15 +533,15 @@ function 地圖分頁內容(): HTMLElement {
       <span>${selectedMarker.icon}</span> ${selectedMarker.label}
     </h4>
     <div style="font-size: 0.8rem; color: #8d93ad; margin-bottom: 10px;">
-      所屬區域：<span style="color:#fff;">${selectedMarker.zone}</span><br/>
-      座標：<span style="color:#fff; font-family: monospace;">X: ${selectedMarker.x}, Y: ${320 - selectedMarker.y}</span>
+      ${雙語("所屬區域", "Zone")}：<span style="color:#fff;">${selectedMarker.zone}</span><br/>
+      ${雙語("座標", "Coordinates")}：<span style="color:#fff; font-family: monospace;">X: ${selectedMarker.x}, Y: ${320 - selectedMarker.y}</span>
     </div>
     <p style="font-size: 0.82rem; line-height: 1.5; color: #fff; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
       ${selectedMarker.desc}
     </p>
 
     <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 6px; font-size: 0.75rem; color: #8d93ad; margin-top: auto;">
-      💡 提示：點擊左側雷達圖上的標記，可以直接快速定位並查看詳細說明。
+      💡 ${雙語("提示：點擊左側雷達圖上的標記，可以直接快速定位並查看詳細說明。", "Tip: click markers on the radar map to jump straight to their details.")}
     </div>
   `;
   }
@@ -522,7 +563,7 @@ function 互動分頁內容(): HTMLElement {
 
   for (const 設施 of 互動設施清單) {
     const btn = document.createElement("button");
-    btn.textContent = 設施;
+    btn.textContent = 互動設施標籤[設施] ?? 設施;
     const 啟用中 = 應用程式狀態.額外.靠近的互動設施 === 設施;
     btn.classList.toggle("作用中", 選中設施 === 設施);
     btn.classList.toggle("鎖定", !啟用中);
@@ -539,19 +580,19 @@ function 互動分頁內容(): HTMLElement {
   const 補充區 = document.createElement("div");
   補充區.className = "資料夾式版面-補充區";
   補充區.innerHTML = `
-    <h4 style="margin-top: 0; color: #ff8a3b;">互動子分頁鎖定規則 (R5)</h4>
-    <p style="font-size: 0.8rem; line-height: 1.5; color: #8d93ad;">每個子分頁各自依「玩家是否正靠近對應設施」獨立判定，互不連動。</p>
+    <h4 style="margin-top: 0; color: #ff8a3b;">${雙語("互動子分頁鎖定規則", "Interact Sub-Tab Lock Rules")} (R5)</h4>
+    <p style="font-size: 0.8rem; line-height: 1.5; color: #8d93ad;">${雙語("每個子分頁各自依「玩家是否正靠近對應設施」獨立判定，互不連動。", "Each sub-tab unlocks independently based on whether the player is standing near its matching facility.")}</p>
     
     <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; font-size: 0.8rem; line-height: 1.6; margin-top: 10px;">
-      <div>目前靠近：<b style="color: #ffd24d;">${應用程式狀態.額外.靠近的互動設施 ?? "（無）"}</b></div>
-      <div>選中設施：<b style="color: #fff;">${選中設施}</b></div>
-      <div style="margin-top: 4px;">狀態：${啟用中 
-        ? "<span style='color: #4d8dff; font-weight: bold;'>✅ 已連接啟用 (現場操作)</span>" 
-        : "<span style='color: #d8b46a; font-weight: bold;'>⚠️ 離線模擬 (沙盒操作)</span>"
+      <div>${雙語("目前靠近", "Currently Near")}：<b style="color: #ffd24d;">${應用程式狀態.額外.靠近的互動設施 ?? 雙語("（無）", "(None)")}</b></div>
+      <div>${雙語("選中設施", "Selected Facility")}：<b style="color: #fff;">${選中設施}</b></div>
+      <div style="margin-top: 4px;">${雙語("狀態", "Status")}：${啟用中 
+        ? `<span style='color: #4d8dff; font-weight: bold;'>✅ ${雙語("已連接啟用（現場操作）", "Connected (Live Operation)")}</span>` 
+        : `<span style='color: #d8b46a; font-weight: bold;'>⚠️ ${雙語("離線模擬（沙盒操作）", "Offline Simulation (Sandbox)")}</span>`
       }</div>
     </div>
     
-    <p class="占位說明" style="margin-top: 12px; font-size: 0.76rem;">提示：回到操作頁面利用 WASD 移動靠近對應設施，即可進入完全在線的操作模式。</p>
+    <p class="占位說明" style="margin-top: 12px; font-size: 0.76rem;">${雙語("提示：回到操作頁面利用 WASD 移動靠近對應設施，即可進入完全在線的操作模式。", "Tip: move with WASD on the operation page to stand near the matching facility and enter full live mode.")}</p>
   `;
 
   wrap.append(書籤欄, 內容區, 補充區);
@@ -570,8 +611,8 @@ export function 渲染管理介面(容器: HTMLElement) {
   const 頂部 = document.createElement("div");
   頂部.className = "操作頁面-頂部";
   頂部.innerHTML = `
-    <span>管理介面 ${state.訓練道場 ? "（訓練道場）" : ""}</span>
-    <span class="世界時鐘 ${額外.縮圈警戒 ? "警戒" : ""}">世界時鐘：${額外.世界時鐘秒數}s (R3：不因開啟管理介面而暫停)${
+    <span>${雙語("管理介面", "Management")}${state.訓練道場 ? ` (${雙語("訓練道場", "Training Dojo")})` : ""}</span>
+    <span class="世界時鐘 ${額外.縮圈警戒 ? "警戒" : ""}">${雙語("世界時鐘", "World Clock")}: ${額外.世界時鐘秒數}s (${雙語("規則 R3：管理介面開啟時不會暫停", "R3: does not pause just because the Management panel is open")})${
     額外.縮圈警戒 ? " ⚠" : ""
   }</span>
   `;
@@ -581,7 +622,7 @@ export function 渲染管理介面(容器: HTMLElement) {
   分頁列.className = "管理介面-分頁列";
   for (const 分頁 of 分頁清單) {
     const btn = document.createElement("button");
-    btn.textContent = 分頁;
+    btn.textContent = 分頁標籤[分頁] ?? 分頁;
     btn.classList.toggle("作用中", state.分頁 === 分頁);
     btn.onclick = () => 應用程式狀態.切換管理介面分頁(分頁);
     分頁列.appendChild(btn);
@@ -616,15 +657,15 @@ export function 渲染管理介面(容器: HTMLElement) {
 
   const 返回 = document.createElement("button");
   返回.className = "一級按鈕";
-  返回.textContent = "返回戰場";
-  返回.title = "R7：只能回操作頁面，不能直接回主畫面";
+  返回.textContent = 雙語("返回戰場", "Back to Battlefield");
+  返回.title = 雙語("規則 R7：只能回操作頁面，不能直接回主畫面", "R7: can only return to the operation page, not straight to the main screen");
   返回.onclick = () => 應用程式狀態.返回戰場();
   底部按鈕列.appendChild(返回);
 
   if (!state.訓練道場) {
     const 終局 = document.createElement("button");
     終局.className = "危險按鈕";
-    終局.textContent = "觸發終局事件 (R11：可打斷管理介面直接進結算頁)";
+    終局.textContent = `${雙語("觸發終局事件", "Trigger End-Game Event")} (${雙語("規則 R11：可中斷管理介面並直接進入結算", "R11: can interrupt the Management panel and go straight to Settlement")})`;
     終局.onclick = () => 應用程式狀態.觸發終局事件();
     底部按鈕列.appendChild(終局);
   }
