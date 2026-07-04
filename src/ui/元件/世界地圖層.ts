@@ -411,6 +411,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   const pressed = new Set<string>();
   let rafId = 0;
+  let destroyed = false;
   let lastNow = performance.now();
   let playerVelocity = { x: 0, y: 0 };
   let collisionTickCarry = 0;
@@ -1235,6 +1236,12 @@ export function 建立世界地圖層(): HTMLElement {
   }
 
   function tick(now: number): void {
+    // 管理介面切換會直接移除整個操作頁。舊版依賴已淘汰的 DOM 移除事件，
+    // 導致舊 RAF 與鍵盤監聽殘留；每次返回戰場就再疊一套更新迴圈。
+    if (!root.isConnected) {
+      cleanup();
+      return;
+    }
     // dt 上限放寬到 0.1 秒：掉幀時讓移動距離能補上，避免一頓一頓的「一波一波」感。
     // （原本 0.05 上限在掉幀時會截斷移動量，卡頓幀走得短，看起來像在跳格。）
     const dt = Math.min(0.1, (now - lastNow) / 1000);
@@ -1373,7 +1380,9 @@ export function 建立世界地圖層(): HTMLElement {
   window.addEventListener("resize", render);
   root.addEventListener("wheel", onWheel, { passive: false });
 
-  root.addEventListener("DOMNodeRemovedFromDocument", () => {
+  function cleanup(): void {
+    if (destroyed) return;
+    destroyed = true;
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("keyup", onKeyUp);
     window.removeEventListener("resize", render);
@@ -1382,7 +1391,8 @@ export function 建立世界地圖層(): HTMLElement {
     window.removeEventListener("captain-active-cast", onCaptainCast as EventListener);
     window.clearTimeout(skillToastTimer);
     window.cancelAnimationFrame(rafId);
-  });
+    pressed.clear();
+  }
 
   function 清空場上敵軍與彈體(): void {
     for (const monster of monsters) {
