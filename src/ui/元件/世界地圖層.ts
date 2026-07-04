@@ -145,7 +145,8 @@ const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
 const MIN_CAMERA_ZOOM = 0.85;
 const MAX_CAMERA_ZOOM = 4.0;
 const ENABLE_DETAILED_WORLD_FLOORS = true;
-const ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS = false;
+const ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS = true;
+const ENABLE_DETAILED_FLOOR_TEXTURES = false;
 let cameraZoom = DEFAULT_CAMERA_ZOOM;
 
 const GUARDIAN_ALTAR_IMAGE: Record<World, string> = {
@@ -2209,9 +2210,6 @@ function createLightweightWrinkleFloors(host: SVGSVGElement): void {
     clipPath.appendChild(clipShape);
     defs.appendChild(clipPath);
 
-    const tilePattern = createLightweightTilePattern(svgNamespace, world);
-    defs.appendChild(tilePattern);
-
     const image = document.createElementNS(svgNamespace, "image");
     image.setAttribute("class", `世界地圖層-輕量折皺地板圖 世界地圖層-輕量折皺地板圖-${world}`);
     image.setAttribute("href", LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE[world]);
@@ -2222,71 +2220,9 @@ function createLightweightWrinkleFloors(host: SVGSVGElement): void {
     image.setAttribute("preserveAspectRatio", "xMidYMid slice");
     image.setAttribute("clip-path", `url(#${clipId})`);
     group.appendChild(image);
-
-    const tileLines = document.createElementNS(svgNamespace, "rect");
-    tileLines.setAttribute("class", `世界地圖層-輕量磁磚線 世界地圖層-輕量磁磚線-${world}`);
-    tileLines.setAttribute("x", String(MAP_BOUNDS.minX));
-    tileLines.setAttribute("y", String(MAP_BOUNDS.minY));
-    tileLines.setAttribute("width", String(worldWidth));
-    tileLines.setAttribute("height", String(worldHeight));
-    tileLines.setAttribute("fill", `url(#lightweight-tile-pattern-${world})`);
-    tileLines.setAttribute("clip-path", `url(#${clipId})`);
-    group.appendChild(tileLines);
   });
 
   host.append(defs, group);
-}
-
-function createLightweightTilePattern(svgNamespace: string, world: World): SVGPatternElement {
-  const pattern = document.createElementNS(svgNamespace, "pattern");
-  pattern.setAttribute("id", `lightweight-tile-pattern-${world}`);
-  pattern.setAttribute("patternUnits", "userSpaceOnUse");
-  pattern.setAttribute("width", "220");
-  pattern.setAttribute("height", "220");
-  pattern.setAttribute("patternTransform", tilePatternTransform(world));
-
-  const lineColor: Record<World, string> = {
-    geometry: "rgba(255, 238, 200, 0.54)",
-    organic: "rgba(255, 213, 213, 0.46)",
-    fractal: "rgba(251, 197, 255, 0.50)",
-    mechanical: "rgba(192, 240, 255, 0.48)",
-  };
-  const stroke = lineColor[world];
-
-  const addPath = (d: string, opacity = "1", width = "4") => {
-    const path = document.createElementNS(svgNamespace, "path");
-    path.setAttribute("d", d);
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke", stroke);
-    path.setAttribute("stroke-width", width);
-    path.setAttribute("stroke-linecap", "round");
-    path.setAttribute("stroke-linejoin", "round");
-    path.setAttribute("opacity", opacity);
-    pattern.appendChild(path);
-  };
-
-  if (world === "mechanical") {
-    addPath("M55 0 L165 0 L220 95 L165 190 L55 190 L0 95 Z", "0.9", "5");
-    addPath("M0 95 H220 M55 0 L55 190 M165 0 L165 190", "0.35", "2.5");
-  } else if (world === "fractal") {
-    addPath("M110 0 L220 110 L110 220 L0 110 Z", "0.82", "5");
-    addPath("M0 0 L220 220 M220 0 L0 220 M110 0 V220 M0 110 H220", "0.32", "2.5");
-  } else if (world === "organic") {
-    addPath("M0 110 C55 55 165 55 220 110 M0 110 C55 165 165 165 220 110", "0.76", "5");
-    addPath("M110 0 C70 55 70 165 110 220 M110 0 C150 55 150 165 110 220", "0.28", "2.5");
-  } else {
-    addPath("M0 0 H220 V220 H0 Z M0 110 H220 M110 0 V220", "0.72", "4");
-    addPath("M0 0 L220 220 M220 0 L0 220", "0.26", "2.5");
-  }
-
-  return pattern;
-}
-
-function tilePatternTransform(world: World): string {
-  if (world === "geometry") return "rotate(12)";
-  if (world === "organic") return "rotate(-8)";
-  if (world === "fractal") return "rotate(45)";
-  return "rotate(0)";
 }
 
 function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
@@ -2304,6 +2240,8 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   clipPath.appendChild(clipShape);
   definitions.appendChild(clipPath);
 
+  if (ENABLE_DETAILED_FLOOR_TEXTURES) {
+  if (ENABLE_DETAILED_FLOOR_TEXTURES) {
   for (const zone of ["outer", "core"] as const) {
     for (let variant = 0; variant < 6; variant += 1) {
       const pattern = document.createElementNS(svgNamespace, "pattern");
@@ -2346,6 +2284,7 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
       definitions.appendChild(pattern);
     }
   }
+  }
 
   host.appendChild(definitions);
 
@@ -2353,7 +2292,7 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   tileGroup.setAttribute("class", "世界地圖層-愛因斯坦地板");
   tileGroup.setAttribute("clip-path", "url(#geometry-world-floor-clip)");
 
-  const supertile = buildEinsteinHatSupertile(3);
+  const supertile = buildEinsteinHatSupertile(2);
   const sourceTiles = supertile.tiles;
   const sourcePoints = sourceTiles.flatMap((tile) => tile.points);
   const sourceBounds = boundsOf(sourcePoints);
@@ -2419,10 +2358,8 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "geometry", floorZone, variant, index, tile.center, svgNamespace);
-    path.setAttribute("fill", `url(#${uniqueId})`);
+    applyDetailedTileFill(path, definitions, "geometry", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
-    path.style.fillOpacity = String(stableTileOpacity(tile.center, index, floorZone));
     tileGroup.appendChild(path);
 
     // 障礙物與設施所在的整塊磁磚必須是純白，不混入底圖顏色。
@@ -2464,6 +2401,7 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
   clipPath.appendChild(clipShape);
   definitions.appendChild(clipPath);
 
+  if (ENABLE_DETAILED_FLOOR_TEXTURES) {
   for (const zone of ["outer", "core"] as const) {
     for (let variant = 0; variant < 6; variant += 1) {
       const pattern = document.createElementNS(svgNamespace, "pattern");
@@ -2518,6 +2456,7 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
       definitions.appendChild(pattern);
     }
   }
+  }
 
   host.appendChild(definitions);
 
@@ -2525,7 +2464,7 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
   tileGroup.setAttribute("class", "世界地圖層-彭羅斯地板");
   tileGroup.setAttribute("clip-path", "url(#fractal-world-floor-clip)");
 
-  const supertile = buildPenroseSupertile(6);
+  const supertile = buildPenroseSupertile(4);
   const sourceTiles = supertile.tiles;
   const sourcePoints = sourceTiles.flatMap((tile) => tile.points);
   const sourceBounds = boundsOf(sourcePoints);
@@ -2590,13 +2529,11 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "fractal", floorZone, variant, index, tile.center, svgNamespace);
-    path.setAttribute("fill", `url(#${uniqueId})`);
+    applyDetailedTileFill(path, definitions, "fractal", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute(
       "class",
       `世界地圖層-彭羅斯磁磚 世界地圖層-彭羅斯磁磚-${floorZone} 世界地圖層-彭羅斯磁磚-${tile.kind}`,
     );
-    path.style.fillOpacity = String(stableTileOpacity(tile.center, index, floorZone));
     tileGroup.appendChild(path);
 
     // 障礙物與設施瓷磚疊加白色半透明遮罩
@@ -2689,6 +2626,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
       definitions.appendChild(pattern);
     }
   }
+  }
 
   host.appendChild(definitions);
 
@@ -2697,7 +2635,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
   tileGroup.setAttribute("clip-path", "url(#organic-world-floor-clip)");
 
   const targetBounds = boundsOf(organicPolygon);
-  const field = buildEscherBirdField(targetBounds, 260);
+  const field = buildEscherBirdField(targetBounds, 520);
 
   const regionArea = Math.abs(polygonArea(organicPolygon));
   const coreRadius = Math.sqrt((regionArea * 0.3) / Math.PI);
@@ -2739,10 +2677,8 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "organic", floorZone, variant, index, tile.center, svgNamespace);
-    path.setAttribute("fill", `url(#${uniqueId})`);
+    applyDetailedTileFill(path, definitions, "organic", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("class", `世界地圖層-艾雪鳥磁磚 世界地圖層-艾雪鳥磁磚-${floorZone}`);
-    path.style.fillOpacity = String(stableTileOpacity(tile.center, index, floorZone));
     tileGroup.appendChild(path);
 
     // 障礙物與設施瓷磚疊加白色半透明遮罩
@@ -2783,6 +2719,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
   definitions.appendChild(clipPath);
 
   // 建立 6 種鏡射與方向變體，與分形、有機世界相同
+  if (ENABLE_DETAILED_FLOOR_TEXTURES) {
   for (const zone of ["outer", "core"] as const) {
     for (let variant = 0; variant < 6; variant += 1) {
       const pattern = document.createElementNS(svgNamespace, "pattern");
@@ -2837,6 +2774,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
       definitions.appendChild(pattern);
     }
   }
+  }
 
   host.appendChild(definitions);
 
@@ -2847,7 +2785,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
   const targetBounds = boundsOf(mechanicalPolygon);
   
   // 建立正六邊形平鋪蜂巢網格
-  const R = 150; // 六角形半徑，大小契合其他世界
+  const R = 300; // 六角形半徑加大，保留開羅磁磚語言但減少 DOM path 數量。
   const dx = 1.5 * R;
   const dy = Math.sqrt(3) * R;
   const tiles: Array<{ center: { x: number; y: number }; points: Array<{ x: number; y: number }> }> = [];
@@ -2911,11 +2849,8 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
-    // 呼叫同款隨機偏移旋轉公式
-    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, "mechanical", floorZone, variant, index, tile.center, svgNamespace);
-    path.setAttribute("fill", `url(#${uniqueId})`);
+    applyDetailedTileFill(path, definitions, "mechanical", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("class", `世界地圖層-開羅磁磚 世界地圖層-開羅磁磚-${floorZone}`);
-    path.style.fillOpacity = String(stableTileOpacity(tile.center, index, floorZone));
     tileGroup.appendChild(path);
 
     // 障礙物與設施瓷磚疊加白色半透明遮罩
@@ -3062,6 +2997,37 @@ function stableTileOpacity(center: EinsteinPoint, index: number, floorZone: "out
   const mean = floorZone === "core" ? 0.91 : 0.78;
   const spread = floorZone === "core" ? 0.08 : 0.14;
   return mean + (random - 0.5) * spread;
+}
+
+function applyDetailedTileFill(
+  path: SVGPathElement,
+  definitions: SVGDefsElement,
+  world: World,
+  floorZone: "outer" | "core",
+  variant: number,
+  tileIndex: number,
+  center: { x: number; y: number },
+  svgNamespace: string,
+): void {
+  if (ENABLE_DETAILED_FLOOR_TEXTURES) {
+    const uniqueId = 創建並綁定隨機偏移旋轉圖樣(definitions, world, floorZone, variant, tileIndex, center, svgNamespace);
+    path.setAttribute("fill", `url(#${uniqueId})`);
+    path.style.fillOpacity = String(stableTileOpacity(center, tileIndex, floorZone));
+    return;
+  }
+
+  path.setAttribute("fill", detailedTileFlatFill(world, floorZone));
+  path.style.fillOpacity = floorZone === "core" ? "0.34" : "0.22";
+}
+
+function detailedTileFlatFill(world: World, floorZone: "outer" | "core"): string {
+  const fills: Record<World, Record<"outer" | "core", string>> = {
+    geometry: { outer: "#315d91", core: "#9bc9f2" },
+    organic: { outer: "#1a4321", core: "#5a9c5f" },
+    fractal: { outer: "#b49bdc", core: "#d0bdeb" },
+    mechanical: { outer: "#4b3426", core: "#c9a227" },
+  };
+  return fills[world][floorZone];
 }
 
 function 創建並綁定隨機偏移旋轉圖樣(
