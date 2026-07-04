@@ -61,6 +61,20 @@ export function 材料總數(): number {
   for (const v of 狀態.材料.values()) n += v;
   return n;
 }
+export function 藥水總數(): number {
+  let n = 0;
+  for (const v of 狀態.藥水.values()) n += v;
+  return n;
+}
+
+/** 首次正式進場的最低補給；只在背包完全空時生效，避免重複刷資源。 */
+export function 確保初始補給(): void {
+  const shardTotal = Object.values(狀態.碎片).reduce((sum, count) => sum + count, 0);
+  if (狀態.原石 > 0 || 材料總數() > 0 || 藥水總數() > 0 || shardTotal > 0) return;
+  狀態.原石 = 120;
+  加入藥水("hp_small", 2);
+  加入藥水("energy_small", 1);
+}
 
 export interface 死亡懲罰結果 {
   原石損失: number;
