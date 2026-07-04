@@ -2117,6 +2117,10 @@ button.禁用:hover {
 .世界地圖層-區域片-mechanical {
   fill: rgba(255, 197, 111, 0.14);
 }
+.世界地圖層-輕量折皺地板 {
+  pointer-events: none;
+  opacity: 0.34;
+}
 .世界地圖層-分界線 {
   fill: none;
   stroke: rgba(255, 255, 255, 0.9);

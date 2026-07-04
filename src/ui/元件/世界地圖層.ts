@@ -145,6 +145,7 @@ const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
 const MIN_CAMERA_ZOOM = 0.85;
 const MAX_CAMERA_ZOOM = 4.0;
 const ENABLE_DETAILED_WORLD_FLOORS = false;
+const ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS = true;
 let cameraZoom = DEFAULT_CAMERA_ZOOM;
 
 const GUARDIAN_ALTAR_IMAGE: Record<World, string> = {
@@ -165,6 +166,13 @@ const FAMILY_FURNACE_IMAGE: Record<Family, string> = {
 // 工作台與流浪商店：全種類共用單張去背圖，不分家族／世界。
 const WORKBENCH_IMAGE = "/images/props/facilities/workbenches/workbench.png";
 const SHOP_IMAGE = "/images/props/facilities/shops/shop.png";
+
+const LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE: Record<World, string> = {
+  geometry: "/images/maps/wrinkles/geometry.png",
+  organic: "/images/maps/wrinkles/organic.png",
+  fractal: "/images/maps/wrinkles/fractal.png",
+  mechanical: "/images/maps/wrinkles/mechanical.png",
+};
 
 let playerPos = { x: 0, y: 0 };
 let playerMoving = false;
@@ -306,6 +314,7 @@ export function 建立世界地圖層(): HTMLElement {
   canvas.appendChild(objectLayer);
 
   const regionPaths = createRegionPaths(zoneSvg);
+  if (ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS) createLightweightWrinkleFloors(zoneSvg);
   const geometryCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createGeometryEinsteinFloor(zoneSvg) : [];
   const fractalCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createFractalPenroseFloor(zoneSvg) : [];
   const organicCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createOrganicBirdFloor(zoneSvg) : [];
@@ -2179,6 +2188,40 @@ function createRegionPaths(host: SVGSVGElement): Record<World, SVGPathElement> {
     regions[world] = path;
   });
   return regions;
+}
+
+function createLightweightWrinkleFloors(host: SVGSVGElement): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const polygons = buildRegionPolygons();
+  const defs = document.createElementNS(svgNamespace, "defs");
+  const group = document.createElementNS(svgNamespace, "g");
+  group.setAttribute("class", "世界地圖層-輕量折皺地板");
+
+  const worldWidth = MAP_BOUNDS.maxX - MAP_BOUNDS.minX;
+  const worldHeight = MAP_BOUNDS.maxY - MAP_BOUNDS.minY;
+
+  (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
+    const clipId = `lightweight-wrinkle-floor-clip-${world}`;
+    const clipPath = document.createElementNS(svgNamespace, "clipPath");
+    clipPath.setAttribute("id", clipId);
+    const clipShape = document.createElementNS(svgNamespace, "path");
+    clipShape.setAttribute("d", polygonToPath(polygons[world], (point) => point));
+    clipPath.appendChild(clipShape);
+    defs.appendChild(clipPath);
+
+    const image = document.createElementNS(svgNamespace, "image");
+    image.setAttribute("class", `世界地圖層-輕量折皺地板圖 世界地圖層-輕量折皺地板圖-${world}`);
+    image.setAttribute("href", LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE[world]);
+    image.setAttribute("x", String(MAP_BOUNDS.minX));
+    image.setAttribute("y", String(MAP_BOUNDS.minY));
+    image.setAttribute("width", String(worldWidth));
+    image.setAttribute("height", String(worldHeight));
+    image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    image.setAttribute("clip-path", `url(#${clipId})`);
+    group.appendChild(image);
+  });
+
+  host.append(defs, group);
 }
 
 function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
