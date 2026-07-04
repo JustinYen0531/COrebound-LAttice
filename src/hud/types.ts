@@ -92,10 +92,12 @@ export const HEALTH_STAGE = {
 
 export type Role = "protect" | "firepower" | "supply";
 
+// 與 src/style.css 的 --role-protect / --role-fire / --role-supply 同值，
+// 確保 HUD 與地圖圖層的職責色標全專案統一。
 export const ROLE_COLOR: Record<Role, string> = {
-  protect: "#3b82f6", // 藍 — 保護位
-  firepower: "#ef4444", // 紅 — 火力位
-  supply: "#eab308", // 黃 — 補給位
+  protect: "#4d8dff", // 藍 — 保護位
+  firepower: "#ff4d5e", // 紅 — 火力位
+  supply: "#ffd24d", // 黃 — 補給位
 };
 
 export const ROLE_LABEL: Record<Role, string> = {

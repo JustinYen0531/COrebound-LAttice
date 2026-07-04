@@ -22,6 +22,7 @@ import {
   type RosterMember,
   type Role,
 } from "./types";
+import { potionGlyphSvg } from "./glyphs";
 
 /** 大藥水確認時限(ms) — 規格 §6.5 */
 const BIG_CONFIRM_MS = 3000;
@@ -181,7 +182,7 @@ export class ItemDrawer {
     if (this.dragging) return;
     const ghost = document.createElement("div");
     ghost.className = "drag-ghost";
-    ghost.textContent = this.potionGlyph(potion);
+    ghost.innerHTML = this.potionGlyph(potion);
     ghost.style.left = `${x}px`;
     ghost.style.top = `${y}px`;
     document.body.appendChild(ghost);
@@ -366,9 +367,9 @@ export class ItemDrawer {
   // 工具
   // ----------------------------------------------------------
   private potionGlyph(p: PotionItem): string {
-    if (p.effect === "hp") return p.size === "big" ? "🧪" : "❤";
-    if (p.effect === "energy") return p.size === "big" ? "🔋" : "⚡";
-    return "🍇"; // hybrid
+    if (p.effect === "hp") return potionGlyphSvg(p.size === "big" ? "hp-big" : "hp-small");
+    if (p.effect === "energy") return potionGlyphSvg(p.size === "big" ? "energy-big" : "energy-small");
+    return potionGlyphSvg("hybrid");
   }
 
   private hpColor(ratio: number): string {

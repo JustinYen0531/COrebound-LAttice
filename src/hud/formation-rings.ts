@@ -28,7 +28,7 @@ const LAYERS: Layer[] = ["inner", "middle", "outer"];
 
 interface RingNodes {
   group: SVGGElement; // 整層的旋轉群組(承載 spin 動畫)
-  slots: Record<Role, { wrap: SVGGElement; fill: SVGPathElement; label: SVGTextElement }>;
+  slots: Record<Role, { wrap: SVGGElement; fill: SVGPathElement; gem: SVGGElement }>;
 }
 
 /**
@@ -36,9 +36,9 @@ interface RingNodes {
  *
  * SVG 結構(以 (0,0) 為圓心):
  *   <g class="layer inner" data-layer="inner">
- *     <circle class="ring-track" r="..." />
+ *     <circle class="ring-track-outer" r="..." /><circle class="ring-track-inner" r="..." />
  *     <g class="spin-group">  ← 旋轉動畫在此
- *       <g class="slot protect"><path class="slot-fill"/><text/></g>
+ *       <g class="slot protect"><path class="slot-fill"/><g class="slot-gem"/></g>
  *       <g class="slot firepower">...</g>
  *       <g class="slot supply">...</g>
  *     </g>
@@ -125,35 +125,37 @@ export class FormationRings {
     _layer: Layer,
     _role: Role,
   ): void {
-    const { wrap, fill, label } = nodes;
+    const { wrap, fill, gem } = nodes;
     if (!slot.occupied) {
-      // 空槽:暗色
+      // 空槽:暗色，職責記號保留但降到極低不透明度(保留位置記憶，不強調)
       wrap.classList.add("empty");
       wrap.classList.remove("dead", "shielded", "filled");
-      fill.setAttribute("fill", "rgba(255,255,255,0.06)");
-      fill.setAttribute("stroke", "rgba(255,255,255,0.1)");
-      label.textContent = "";
+      fill.setAttribute("fill", "rgba(233,236,248,0.05)");
+      fill.setAttribute("stroke", "rgba(233,236,248,0.14)");
+      gem.style.opacity = "0.25";
       return;
     }
     wrap.classList.remove("empty");
     wrap.classList.toggle("dead", slot.dead);
     wrap.classList.toggle("shielded", slot.shielded);
     wrap.classList.add("filled");
+    gem.style.opacity = "1";
     // 死亡 → 虛線外框(保留位置記憶) — 規格 §2.2
     if (slot.dead) {
-      fill.setAttribute("fill", "rgba(255,255,255,0.04)");
-      fill.setAttribute("stroke", "rgba(255,255,255,0.3)");
+      fill.setAttribute("fill", "rgba(233,236,248,0.04)");
+      fill.setAttribute("stroke", "rgba(233,236,248,0.32)");
       fill.setAttribute("stroke-dasharray", "4 3");
+      fill.setAttribute("opacity", "0.42");
     } else {
       fill.setAttribute("fill", ROLE_COLOR[_role]);
-      fill.setAttribute("stroke", "rgba(255,255,255,0.5)");
+      fill.setAttribute("stroke", "rgba(233,236,248,0.55)");
       fill.setAttribute("stroke-dasharray", "none");
+      fill.setAttribute("opacity", "0.42");
       // 護盾 → 灰色外框 — 規格 §2.2
       if (slot.shielded) {
         fill.setAttribute("stroke", "var(--c-shield-stroke)");
       }
     }
-    label.textContent = slot.label;
   }
 
   /** 設定各層旋轉速度(CSS animation-duration) */
@@ -181,8 +183,8 @@ export class FormationRings {
     const grab = (role: Role) => {
       const wrap = group.querySelector(`[data-role="${role}"]`) as unknown as SVGGElement;
       const fill = wrap.querySelector(".slot-fill") as unknown as SVGPathElement;
-      const label = wrap.querySelector("text") as unknown as SVGTextElement;
-      return { wrap, fill, label };
+      const gem = wrap.querySelector(".slot-gem") as unknown as SVGGElement;
+      return { wrap, fill, gem };
     };
     return {
       group,
@@ -211,17 +213,30 @@ export class FormationRings {
     return svg;
   }
 
+  /**
+   * 圈層外框：改成雙細線「刻度環」取代原本的粗虛線圓——
+   * 外沿＋內沿各一條髮絲線，槽位邊界另加放射刻度，呼應世界觀線稿語言（精確、非裝飾）。
+   */
   private buildLayer(layer: Layer): string {
     const r = LAYER_RADIUS[layer];
     const thickness = layer === "inner" ? 28 : layer === "middle" ? 26 : 24;
+    const rOuter = r + thickness / 2;
+    const rInner = r - thickness / 2;
     const slots = ROLE_ORDER.map((role, i) =>
       this.buildSlot(role, r, thickness, i, ROLE_ORDER.length, layer),
     ).join("");
+    const total = ROLE_ORDER.length;
+    const ticks = ROLE_ORDER.map((_, i) => {
+      const deg = i * (360 / total) - 90;
+      return this.tickMark(deg, rInner - 3, rOuter + 3);
+    }).join("");
     return `
       <g class="layer" data-layer="${layer}" style="opacity:0;">
-        <circle class="ring-track" r="${r}" fill="none"
-          stroke="rgba(255,255,255,0.08)" stroke-width="${thickness}"
-          stroke-dasharray="2 4" />
+        <circle class="ring-track-outer" r="${rOuter}" fill="none"
+          stroke="rgba(233,236,248,0.22)" stroke-width="1" />
+        <circle class="ring-track-inner" r="${rInner}" fill="none"
+          stroke="rgba(233,236,248,0.14)" stroke-width="1" />
+        ${ticks}
         <g class="spin-group">
           ${slots}
         </g>
@@ -229,9 +244,21 @@ export class FormationRings {
     `;
   }
 
+  /** 槽位邊界的放射刻度線(短) */
+  private tickMark(deg: number, rFrom: number, rTo: number): string {
+    const a = (deg * Math.PI) / 180;
+    const x1 = Math.cos(a) * rFrom;
+    const y1 = Math.sin(a) * rFrom;
+    const x2 = Math.cos(a) * rTo;
+    const y2 = Math.sin(a) * rTo;
+    return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"
+      stroke="rgba(233,236,248,0.3)" stroke-width="1" />`;
+  }
+
   /**
    * 建構單一槽位:在三等分圓弧上的扇形 path。
-   * 為視覺清晰,槽位之間留小間隙。
+   * 為視覺清晰,槽位之間留小間隙；扇形改為低飽和「彩繪玻璃」式填色 + 髮絲雙邊框，
+   * 中央疊一個對應職責的線稿小記號，取代原本的「·」佔位字。
    */
   private buildSlot(
     role: Role,
@@ -253,14 +280,28 @@ export class FormationRings {
     const slotKey = `${layer}:${role}`;
     return `
       <g class="slot" data-role="${role}" data-slot-key="${slotKey}"
-        style="cursor:pointer;">
+        style="cursor:pointer; color:${color};">
         <path class="slot-fill" d="${path}"
-          fill="${color}" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"
-          opacity="0.9" />
-        <text x="${lx}" y="${ly + 4}" text-anchor="middle"
-          font-size="11" fill="#fff" style="pointer-events:none;">·</text>
+          fill="${color}" stroke="rgba(233,236,248,0.55)" stroke-width="1.25"
+          opacity="0.42" />
+        <g class="slot-gem" transform="translate(${lx.toFixed(2)},${ly.toFixed(2)})" style="pointer-events:none;">
+          ${this.roleGlyph(role)}
+        </g>
       </g>
     `;
+  }
+
+  /** 職責線稿小記號：保護＝盾尖弧、火力＝上箭頭、補給＝菱形，皆為單色細線 */
+  private roleGlyph(role: Role): string {
+    switch (role) {
+      case "protect":
+        return `<path d="M0,-6 A6,6 0 0 1 5.2,3 L0,6 L-5.2,3 A6,6 0 0 1 0,-6 Z"
+          fill="none" stroke="currentColor" stroke-width="1.4" />`;
+      case "firepower":
+        return `<path d="M0,-6 L5,4 L0,1.5 L-5,4 Z" fill="currentColor" stroke="none" />`;
+      case "supply":
+        return `<path d="M0,-6 L6,0 L0,6 L-6,0 Z" fill="none" stroke="currentColor" stroke-width="1.4" />`;
+    }
   }
 
   /**

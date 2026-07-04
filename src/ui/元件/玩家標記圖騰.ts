@@ -295,6 +295,8 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
   const 大環列表: 大環類型[] = ["內", "中", "外"];
   const 環角度: Record<大環類型, number> = { 內: 0, 中: 0, 外: 0 };
   const 環速度: Record<大環類型, number> = { 內: 0.16, 中: -0.10, 外: 0.05 };
+  const 大環線條節點 = {} as Record<大環類型, SVGElement>;
+  const 大環徽章節點 = {} as Record<大環類型, SVGElement>;
 
   for (const 環 of 大環列表) {
     const linesG = 建立元素("g", { id: `pm-ring-${環}-lines` });
@@ -311,6 +313,7 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
       }
     }
     svg.appendChild(linesG);
+    大環線條節點[環] = linesG;
   }
 
   // 2. 中央隊長圖騰(6 重對稱,獨立自旋)
@@ -345,33 +348,27 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
       emblemsG.appendChild(容器G);
     });
     svg.appendChild(emblemsG);
+    大環徽章節點[環] = emblemsG;
   }
 
   // 啟動差速旋轉動畫
   if (旋轉) {
     let rafId: number | null = null;
     const tick = () => {
+      if (!svg.isConnected) {
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        return;
+      }
       隊長角 += 隊長速度;
-      const el隊長 = svg.querySelector("#pm-ring-隊長") as SVGElement | null;
-      if (el隊長) el隊長.setAttribute("transform", `rotate(${隊長角} ${中心} ${中心})`);
+      隊長G.setAttribute("transform", `rotate(${隊長角} ${中心} ${中心})`);
       for (const 環 of 大環列表) {
         環角度[環] += 環速度[環];
-        const elL = svg.querySelector(`#pm-ring-${環}-lines`) as SVGElement | null;
-        const elE = svg.querySelector(`#pm-ring-${環}-emblems`) as SVGElement | null;
-        if (elL) elL.setAttribute("transform", `rotate(${環角度[環]} ${中心} ${中心})`);
-        if (elE) elE.setAttribute("transform", `rotate(${環角度[環]} ${中心} ${中心})`);
+        大環線條節點[環].setAttribute("transform", `rotate(${環角度[環]} ${中心} ${中心})`);
+        大環徽章節點[環].setAttribute("transform", `rotate(${環角度[環]} ${中心} ${中心})`);
       }
       rafId = requestAnimationFrame(tick);
     };
     rafId = requestAnimationFrame(tick);
-    // 容器從 DOM 移除時停止動畫
-    const observer = new MutationObserver(() => {
-      if (!svg.isConnected) {
-        if (rafId) cancelAnimationFrame(rafId);
-        observer.disconnect();
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   return svg;

@@ -16,8 +16,8 @@ import {
   SIZE,
   type PeriodicSkillState,
   type WeaponGroupState,
-  type WeaponFamily,
 } from "./types";
+import { familyGlyphSvg, lockGlyphSvg, periodicGlyphSvg } from "./glyphs";
 
 const ICON_R = 18; // 圖示半徑(用於環)
 
@@ -82,16 +82,15 @@ export class SkillStrips {
     node.innerHTML = `
       <svg viewBox="0 0 ${SIZE.WEAPON_ICON} ${SIZE.WEAPON_ICON}">
         <circle class="track" cx="50%" cy="50%" r="${ICON_R}"
-          fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.15)" stroke-width="2" />
+          fill="rgba(4,5,9,0.7)" stroke="rgba(233,236,248,0.16)" stroke-width="1.5" />
         <circle class="cooldown" cx="50%" cy="50%" r="${ICON_R}"
-          fill="none" stroke="var(--c-weapon)" stroke-width="2.5" stroke-linecap="round"
+          fill="none" stroke="var(--c-weapon)" stroke-width="2" stroke-linecap="round"
           stroke-dasharray="${filled} ${circ - filled}"
           transform="rotate(-90 ${SIZE.WEAPON_ICON / 2} ${SIZE.WEAPON_ICON / 2})" />
-        <text x="50%" y="56%" text-anchor="middle" font-size="13" fill="#fff"
-          style="pointer-events:none;">${this.familyGlyph(w.family)}</text>
       </svg>
+      <span class="glyph-inline">${familyGlyphSvg(w.family)}</span>
       <span class="star">${w.star}★</span>
-      ${w.disabledByRoster ? '<span class="lock">🔒</span>' : ""}
+      ${w.disabledByRoster ? `<span class="lock">${lockGlyphSvg()}</span>` : ""}
     `;
     node.title = `${FAMILY_LABEL[w.family]} ${w.star}★`;
     return node;
@@ -114,32 +113,15 @@ export class SkillStrips {
     node.innerHTML = `
       <svg viewBox="0 0 ${SIZE.PERIODIC_ICON} ${SIZE.PERIODIC_ICON}">
         <circle class="track" cx="50%" cy="50%" r="${ICON_R - 2}"
-          fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.12)" stroke-width="2" />
+          fill="rgba(4,5,9,0.7)" stroke="rgba(233,236,248,0.14)" stroke-width="1.5" />
         <circle class="charge" cx="50%" cy="50%" r="${ICON_R - 2}"
-          fill="none" stroke="${ringColor}" stroke-width="2.5" stroke-linecap="round"
+          fill="none" stroke="${ringColor}" stroke-width="2" stroke-linecap="round"
           stroke-dasharray="${filled} ${circ - filled}"
           transform="rotate(-90 ${SIZE.PERIODIC_ICON / 2} ${SIZE.PERIODIC_ICON / 2})" />
-        <text x="50%" y="58%" text-anchor="middle" font-size="11" fill="#fff"
-          style="pointer-events:none;">${p.kind === "periodic" ? "↻" : "✦"}</text>
       </svg>
+      <span class="glyph-inline">${periodicGlyphSvg(p.kind)}</span>
     `;
     node.title = `${p.label} (${p.kind === "periodic" ? "週期" : "自動"})`;
     return node;
-  }
-
-  /** 家族簡化字元(護盾🛡 多發💥 直線🎯 地雷💣 激光⚡) */
-  private familyGlyph(f: WeaponFamily): string {
-    switch (f) {
-      case "shield":
-        return "🛡";
-      case "multishot":
-        return "💥";
-      case "straight":
-        return "🎯";
-      case "mine":
-        return "💣";
-      case "laser":
-        return "⚡";
-    }
   }
 }

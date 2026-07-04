@@ -28,6 +28,23 @@ function arcDash(ratio: number, circumference: number): string {
   return `${filled} ${circumference - filled}`;
 }
 
+/** 切角矩形 path：取代圓角矩形，呼應世界地板／按鈕的切角線稿語言 */
+function chamferPath(x: number, y: number, w: number, h: number, cut: number): string {
+  const c = Math.max(0, Math.min(cut, w / 2, h / 2));
+  if (w <= 0 || h <= 0) return "";
+  return [
+    `M${x + c},${y}`,
+    `L${x + w - c},${y}`,
+    `L${x + w},${y + c}`,
+    `L${x + w},${y + h - c}`,
+    `L${x + w - c},${y + h}`,
+    `L${x + c},${y + h}`,
+    `L${x},${y + h - c}`,
+    `L${x},${y + c}`,
+    "Z",
+  ].join(" ");
+}
+
 /**
  * 核心三件組檢視。
  *
@@ -44,7 +61,7 @@ function arcDash(ratio: number, circumference: number): string {
 export class CoreTrio {
   readonly el: HTMLElement;
 
-  private readonly healthFill: SVGRectElement;
+  private readonly healthFill: SVGPathElement;
   private readonly healthShield: SVGRectElement;
   private readonly healthRoot: SVGSVGElement;
   private readonly healthText: SVGTextElement;
@@ -52,7 +69,7 @@ export class CoreTrio {
   private readonly cooldownTrack: SVGCircleElement;
   private readonly avatarFace: HTMLDivElement;
   private readonly avatarBtn: HTMLDivElement;
-  private readonly energyFill: SVGRectElement;
+  private readonly energyFill: SVGPathElement;
   private readonly energyRoot: SVGSVGElement;
   private readonly energyText: SVGTextElement;
   private readonly energyReadyDot: HTMLDivElement;
@@ -68,7 +85,7 @@ export class CoreTrio {
     this.el = this.build();
     // 綁定後再取出關鍵節點
     this.healthRoot = this.el.querySelector(".health-bar") as SVGSVGElement;
-    this.healthFill = this.healthRoot.querySelector(".bar-fill") as SVGRectElement;
+    this.healthFill = this.healthRoot.querySelector(".bar-fill") as SVGPathElement;
     this.healthShield = this.healthRoot.querySelector(".bar-shield") as SVGRectElement;
     this.healthText = this.healthRoot.querySelector(".bar-text") as SVGTextElement;
     this.cooldownTrack = this.el.querySelector(".cooldown-track") as SVGCircleElement;
@@ -76,7 +93,7 @@ export class CoreTrio {
     this.avatarFace = this.el.querySelector(".avatar-face") as HTMLDivElement;
     this.avatarBtn = this.el.querySelector(".avatar") as HTMLDivElement;
     this.energyRoot = this.el.querySelector(".energy-bar") as SVGSVGElement;
-    this.energyFill = this.energyRoot.querySelector(".bar-fill") as SVGRectElement;
+    this.energyFill = this.energyRoot.querySelector(".bar-fill") as SVGPathElement;
     this.energyText = this.energyRoot.querySelector(".bar-text") as SVGTextElement;
     this.energyReadyDot = this.el.querySelector(".energy-ready-dot") as HTMLDivElement;
 
@@ -117,8 +134,9 @@ export class CoreTrio {
   private renderHealth(snap: HudSnapshot): void {
     const ratio = Math.max(0, Math.min(1, snap.hpRatio));
     const w = SIZE.HEALTH_BAR_W;
-    // 填充寬度
-    this.healthFill.setAttribute("width", `${w * ratio}`);
+    const h = SIZE.HEALTH_BAR_H;
+    // 填充寬度(切角矩形，端頭跟外框一致)
+    this.healthFill.setAttribute("d", chamferPath(2, 8, Math.max(0, w * ratio - 4), h - 10, 3));
     this.healthFill.setAttribute("fill", healthColorVar(ratio));
     // 護盾覆蓋(外側上方獨立條) — 規格 §1.3
     const shieldW = w * Math.max(0, Math.min(1, snap.shieldRatio));
@@ -136,7 +154,8 @@ export class CoreTrio {
   private renderEnergy(snap: HudSnapshot): void {
     const ratio = Math.max(0, Math.min(1, snap.energyRatio));
     const w = SIZE.ENERGY_BAR_W;
-    this.energyFill.setAttribute("width", `${w * ratio}`);
+    const h = SIZE.ENERGY_BAR_H;
+    this.energyFill.setAttribute("d", chamferPath(2, 2, Math.max(0, w * ratio - 4), h - 4, 3));
     this.energyText.textContent = `${Math.round(ratio * 100)}%`;
     // 能量足夠施放主動技能 → 右端亮點 — 規格 §1.4
     if (snap.active.energyEnough && snap.active.cooldownRatio >= 1) {
@@ -220,11 +239,9 @@ export class CoreTrio {
       : "";
     return `
       <svg class="${cls}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
-        <rect x="0" y="0" width="${w}" height="${h}" rx="6"
-          fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.18)" stroke-width="2" />
+        <path class="bar-frame" d="${chamferPath(0, 0, w, h, 6)}" />
         ${shield}
-        <rect class="bar-fill" x="2" y="${withShield ? 8 : 2}"
-          width="0" height="${h - (withShield ? 10 : 4)}" rx="4" fill="${fillVar}" />
+        <path class="bar-fill" d="" fill="${fillVar}" />
         <text class="bar-text" x="${w / 2}" y="${h / 2 + 5}"
           text-anchor="middle" font-size="14" fill="#fff"
           style="opacity:0; transition: opacity .15s;">0%</text>

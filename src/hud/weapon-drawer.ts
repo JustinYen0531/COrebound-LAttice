@@ -15,6 +15,7 @@ import {
   type WeaponFamily,
   type WeaponGroupState,
 } from "./types";
+import { familyGlyphSvg, lockGlyphSvg } from "./glyphs";
 
 export class WeaponDrawer {
   readonly el: HTMLElement;
@@ -73,17 +74,15 @@ export class WeaponDrawer {
     if (w.disabledByRoster) node.classList.add("locked");
     const cdPct = Math.round(w.cooldownRatio * 100);
     node.innerHTML = `
-      <div class="wi-glyph">${this.glyph(w.family)}</div>
+      <div class="wi-glyph">${familyGlyphSvg(w.family)}</div>
       <div class="wi-meta">
         <div class="wi-name">${FAMILY_LABEL[w.family]} <span class="wi-star">${w.star}★</span></div>
         <div class="wi-cd">冷卻 ${cdPct}%</div>
       </div>
-      <div class="wi-state">${w.disabledByRoster ? "🔒人數不足" : w.active ? "啟用中" : "已關閉"}</div>
+      <div class="wi-state">${
+        w.disabledByRoster ? `${lockGlyphSvg()}人數不足` : w.active ? "啟用中" : "已關閉"
+      }</div>
     `;
     return node;
-  }
-
-  private glyph(f: WeaponFamily): string {
-    return { shield: "🛡", multishot: "💥", straight: "🎯", mine: "💣", laser: "⚡" }[f];
   }
 }
