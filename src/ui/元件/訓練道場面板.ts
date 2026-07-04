@@ -33,6 +33,7 @@ import {
 } from "../訓練道場狀態";
 
 type 職責色 = "保護" | "火力" | "補給";
+type 左側視圖模式 = "編排" | "預覽";
 
 const 槽位職責色票: Record<職責色, { label: string; color: string }> = {
   保護: { label: "保護位", color: "#4d8dff" },
@@ -54,6 +55,7 @@ const 軌道槽位配置: Array<{ slotId: number; layer: "外" | "中" | "內"; 
 
 const 軌道半徑: Record<"外" | "中" | "內", number> = { 外: 140, 中: 98, 內: 60 };
 let 正在編輯槽位: number | null = null;
+let 左側模式: 左側視圖模式 = "編排";
 const 全部圖騰角色 = [...幾何世界圖騰清單, ...有機世界圖騰清單, ...分形世界圖騰清單, ...機械世界圖騰清單];
 const 成員圖騰索引 = new Map(全部圖騰角色.map((entry) => [entry.名稱, entry]));
 const 隊長圖騰索引 = new Map(隊長圖騰清單.map((entry) => [entry.id, entry]));
@@ -126,17 +128,17 @@ function 建立正式圖騰預覽(): HTMLElement {
     .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
   const root = document.createElement("div");
-  root.className = "訓練軌道編排器-圖騰預覽浮窗";
+  root.className = "訓練軌道編排器-圖騰預覽畫面";
   root.innerHTML = `
     <div class="訓練軌道編排器-圖騰預覽標題">主畫面圖騰預覽</div>
-    <div class="訓練軌道編排器-圖騰預覽說明">這裡直接套用正式遊戲的圖騰元件。</div>
+    <div class="訓練軌道編排器-圖騰預覽說明">這裡直接套用正式遊戲的圖騰元件，方便看整體圖騰樣貌。</div>
   `;
 
   const view = document.createElement("div");
   view.className = "訓練軌道編排器-圖騰預覽框";
   view.appendChild(
     建立玩家標記圖騰({
-      size: 162,
+      size: 258,
       隊長: captain,
       隊長等級: 4,
       小隊: totemSquad,
@@ -158,6 +160,22 @@ function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
 
   const stage = document.createElement("div");
   stage.className = "訓練軌道編排器-舞台";
+
+  const topBar = document.createElement("div");
+  topBar.className = "訓練軌道編排器-視圖列";
+  const viewTitle = document.createElement("div");
+  viewTitle.className = "訓練軌道編排器-視圖標題";
+  viewTitle.textContent = "編排視圖";
+  const previewBtn = document.createElement("button");
+  previewBtn.type = "button";
+  previewBtn.className = "訓練軌道編排器-切換箭頭";
+  previewBtn.textContent = "→ 圖騰預覽";
+  previewBtn.onclick = () => {
+    左側模式 = "預覽";
+    刷新();
+  };
+  topBar.append(viewTitle, previewBtn);
+  stage.appendChild(topBar);
 
   const orbit = document.createElement("div");
   orbit.className = "訓練軌道編排器-軌道";
@@ -217,7 +235,6 @@ function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
   core.style.setProperty("--captain-color", captain.代表色);
   core.textContent = captain.名稱.slice(0, 1);
   orbit.appendChild(core);
-  orbit.appendChild(建立正式圖騰預覽());
 
   stage.appendChild(orbit);
 
@@ -340,6 +357,33 @@ function 建立訓練軌道編排器(刷新: () => void): HTMLElement {
   return root;
 }
 
+function 建立訓練圖騰預覽面板(刷新: () => void): HTMLElement {
+  const root = document.createElement("section");
+  root.className = "訓練軌道編排器";
+
+  const stage = document.createElement("div");
+  stage.className = "訓練軌道編排器-舞台 訓練軌道編排器-預覽舞台";
+
+  const topBar = document.createElement("div");
+  topBar.className = "訓練軌道編排器-視圖列";
+  const viewTitle = document.createElement("div");
+  viewTitle.className = "訓練軌道編排器-視圖標題";
+  viewTitle.textContent = "圖騰預覽";
+  const backBtn = document.createElement("button");
+  backBtn.type = "button";
+  backBtn.className = "訓練軌道編排器-切換箭頭";
+  backBtn.textContent = "← 返回編排";
+  backBtn.onclick = () => {
+    左側模式 = "編排";
+    刷新();
+  };
+  topBar.append(viewTitle, backBtn);
+  stage.append(topBar, 建立正式圖騰預覽());
+
+  root.appendChild(stage);
+  return root;
+}
+
 export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
   const root = document.createElement("section");
   root.style.display = "flex";
@@ -380,7 +424,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
     <div class="訓練軌道編排器-隊長描述">${captain.主動位移技能} ｜ ${captain.週期技能}</div>
   `;
   leftPane.appendChild(captainCard);
-  leftPane.appendChild(建立訓練軌道編排器(刷新));
+  leftPane.appendChild(左側模式 === "編排" ? 建立訓練軌道編排器(刷新) : 建立訓練圖騰預覽面板(刷新));
 
   const rightPane = document.createElement("div");
   rightPane.style.display = "flex";
