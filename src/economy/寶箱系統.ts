@@ -3,7 +3,7 @@
  * @description 處理禪繞寶箱的刷新時間、開啟條件、能量消耗、解鎖流程，以及開啟後的戰利品掉落分配。
  *              對應「doc/系統機制/機制指南.md」§7（寶箱），掉落委由 資源掉落系統.rollChestDrop。
  *
- *              純演算：開箱需消耗當前能量的一定比例，能量足夠才開，開啟後回傳掉落。
+ *              純演算：開箱需消耗最大能量的一定比例，能量足夠才開，開啟後回傳掉落。
  */
 
 import {
@@ -33,19 +33,20 @@ export interface ChestOpenResult {
 }
 
 /**
- * 嘗試開啟寶箱：消耗「當前能量 × CHEST_OPEN_ENERGY_COST_RATIO」。
+ * 嘗試開啟寶箱：消耗「最大能量 × CHEST_OPEN_ENERGY_COST_RATIO」。
  * @param currentEnergy 小隊當前能量
- * @param maxEnergy 能量上限（用來換算消耗基準；此處以當前能量比例計）
+ * @param maxEnergy 能量上限（用來換算固定開啟成本）
  */
 export function openChest(
   chest: ChestState,
   currentEnergy: number,
+  maxEnergy: number,
   rng: () => number = Math.random,
 ): ChestOpenResult {
   if (chest.opened) {
     return { ok: false, reason: "寶箱已開啟", energySpent: 0, energyRemaining: currentEnergy, drop: null };
   }
-  const cost = currentEnergy * CHEST_OPEN_ENERGY_COST_RATIO;
+  const cost = Math.max(0, maxEnergy) * CHEST_OPEN_ENERGY_COST_RATIO;
   if (currentEnergy < cost || cost <= 0) {
     return { ok: false, reason: "能量不足以開啟", energySpent: 0, energyRemaining: currentEnergy, drop: null };
   }

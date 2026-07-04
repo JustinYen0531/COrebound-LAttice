@@ -20,6 +20,7 @@ import type {
   RosterMember,
   WeaponGroupState,
 } from "./types";
+import { openChest, type ChestOpenResult, type ChestState } from "../economy/寶箱系統";
 
 type SnapshotMode = "dojo" | "formal";
 
@@ -150,6 +151,14 @@ export class GameSnapshotSource {
       );
     }
     return ok;
+  }
+
+  /** 以 HUD 使用中的同一份能量池開啟世界寶箱。 */
+  openWorldChest(chest: ChestState): ChestOpenResult {
+    const energy = this.energySystem.snapshot();
+    const result = openChest(chest, energy.current, energy.max);
+    if (result.ok) this.energySystem.spend(result.energySpent);
+    return result;
   }
 
   /** 給驗收控制台顯示：目前隊長主動技能的能量/冷卻讀數。 */

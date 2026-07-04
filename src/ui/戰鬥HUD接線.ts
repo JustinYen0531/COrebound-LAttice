@@ -5,6 +5,7 @@ import type { HudEvent } from "../hud/types";
 import { TickScheduler } from "../core/Tick排程器";
 import { 應用程式狀態 } from "./應用程式狀態";
 import { 讀取玩家移動狀態 } from "./元件/世界地圖層";
+import type { ChestOpenResult, ChestState } from "../economy/寶箱系統";
 
 class 戰鬥HUD接線器 {
   private readonly hud = new HudController();
@@ -24,11 +25,25 @@ class 戰鬥HUD接線器 {
     });
     // 施放請求（Space 鍵 / 驗收控制台按鈕）走事件進來，避免與世界地圖層互相 import 造成環依賴。
     window.addEventListener("request-cast-active", this.onRequestCast);
+    window.addEventListener("request-open-world-chest", this.onRequestOpenChest as EventListener);
   }
 
   private onRequestCast = (): void => {
     if (應用程式狀態.畫面.層 !== "操作頁面") return;
     this.source.castActive();
+    this.source.syncFromGame(this.currentMode());
+    this.hud.update(this.source.snapshot(this.currentMode()));
+  };
+
+  private onRequestOpenChest = (raw: Event): void => {
+    if (應用程式狀態.畫面.層 !== "操作頁面" || 應用程式狀態.畫面.訓練道場) return;
+    const event = raw as CustomEvent<{
+      chest?: ChestState;
+      resolve?: (result: ChestOpenResult) => void;
+    }>;
+    if (!event.detail?.chest || !event.detail.resolve) return;
+    const result = this.source.openWorldChest(event.detail.chest);
+    event.detail.resolve(result);
     this.source.syncFromGame(this.currentMode());
     this.hud.update(this.source.snapshot(this.currentMode()));
   };

@@ -95,6 +95,13 @@ import {
   記錄對局掉落,
   記錄對局擊殺,
 } from "../對局戰報狀態";
+import type { ChestOpenResult } from "../../economy/寶箱系統";
+import {
+  取得未開世界寶箱,
+  同步世界寶箱,
+  標記世界寶箱已開啟,
+  type WorldChestInstance,
+} from "../世界寶箱狀態";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -295,6 +302,10 @@ export function 建立世界地圖層(): HTMLElement {
     objectNodes.set(object.id, node);
   }
 
+  const chestNodes = new Map<string, HTMLElement>();
+  let worldChests: WorldChestInstance[] = [];
+  let lastChestSyncSecond = -1;
+
   const envNodes = new Map<string, HTMLElement>();
   for (const env of ENV_OBJECTS) {
     const node = createEnvObjectNode(env);
@@ -450,6 +461,65 @@ export function 建立世界地圖層(): HTMLElement {
   skillToast.style.zIndex = "28";
   root.appendChild(skillToast);
   let skillToastTimer = 0;
+
+  function syncWorldChests(force = false): void {
+    if (訓練道場中) return;
+    const elapsed = 應用程式狀態.額外.世界時鐘秒數 ?? 0;
+    const second = Math.floor(elapsed);
+    if (!force && second === lastChestSyncSecond) return;
+    lastChestSyncSecond = second;
+    同步世界寶箱(elapsed);
+    worldChests = 取得未開世界寶箱();
+    const liveIds = new Set(worldChests.map((chest) => chest.id));
+    for (const chest of worldChests) {
+      if (chestNodes.has(chest.id)) continue;
+      const node = createWorldChestNode(chest);
+      node.addEventListener("click", () => 嘗試開啟寶箱(chest));
+      objectLayer.appendChild(node);
+      chestNodes.set(chest.id, node);
+    }
+    for (const [id, node] of chestNodes) {
+      if (liveIds.has(id)) continue;
+      node.remove();
+      chestNodes.delete(id);
+    }
+  }
+
+  function 嘗試開啟寶箱(chest: WorldChestInstance): void {
+    if (Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) > 190) {
+      顯示技能提示("靠近寶箱後按 E 開啟");
+      return;
+    }
+    let handled = false;
+    window.dispatchEvent(
+      new CustomEvent("request-open-world-chest", {
+        detail: {
+          chest: { id: chest.id, world: chest.world, opened: false },
+          resolve: (result: ChestOpenResult) => {
+            handled = true;
+            處理寶箱結果(chest, result);
+          },
+        },
+      }),
+    );
+    if (!handled) 顯示技能提示("能量系統尚未就緒");
+  }
+
+  function 處理寶箱結果(chest: WorldChestInstance, result: ChestOpenResult): void {
+    if (!result.ok || !result.drop) {
+      顯示技能提示(result.reason ?? "無法開啟寶箱");
+      return;
+    }
+    const drop = result.drop;
+    for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count);
+    背包.加入原石(drop.gems);
+    記錄對局掉落(drop.gems, drop.materials.reduce((total, entry) => total + entry.count, 0));
+    標記世界寶箱已開啟(chest.id);
+    syncWorldChests(true);
+    顯示技能提示(`禪繞寶箱｜原石 ${drop.gems}｜材料 ${drop.materials.reduce((total, entry) => total + entry.count, 0)}`);
+  }
+
+  syncWorldChests(true);
 
   const projectilePool = new ProjectilePool();
   const projectileNodes = new Map<number, HTMLElement>();
@@ -720,6 +790,16 @@ export function 建立世界地圖層(): HTMLElement {
       node.style.top = `${pos.y}px`;
       node.style.display = isVisible(pos, viewport) ? "flex" : "none";
       node.classList.toggle("靠近中", nearIds.has(object.id));
+    }
+
+    for (const chest of worldChests) {
+      const node = chestNodes.get(chest.id);
+      if (!node) continue;
+      const pos = worldToScreen(chest, playerPos, viewport);
+      node.style.left = `${pos.x}px`;
+      node.style.top = `${pos.y}px`;
+      node.style.display = isVisible(pos, viewport) ? "grid" : "none";
+      node.style.filter = Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) <= 190 ? "brightness(1.35)" : "none";
     }
 
     const nearest = near[0];
@@ -1199,6 +1279,7 @@ export function 建立世界地圖層(): HTMLElement {
       updateCollisions(dt);
       結算死亡掉落();
       updateErosion(dt);
+      syncWorldChests();
     }
 
     render();
@@ -1224,6 +1305,17 @@ export function 建立世界地圖層(): HTMLElement {
     if (event.code === "Space") {
       event.preventDefault();
       if (!event.repeat) window.dispatchEvent(new CustomEvent("request-cast-active"));
+      return;
+    }
+    if (event.code === "KeyE") {
+      event.preventDefault();
+      if (!event.repeat && !訓練道場中) {
+        const nearest = worldChests
+          .map((chest) => ({ chest, distance: Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) }))
+          .filter((entry) => entry.distance <= 190)
+          .sort((a, b) => a.distance - b.distance)[0];
+        if (nearest) 嘗試開啟寶箱(nearest.chest);
+      }
       return;
     }
     if (!["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight"].includes(event.code)) {
@@ -1708,6 +1800,30 @@ function createMonsterNode(inst: 可見怪物實例): HTMLElement {
 
   node.title = `${inst.nameZh}（T${inst.tier}）`;
   node.append(shadow, img, hpBar);
+  return node;
+}
+
+function createWorldChestNode(chest: WorldChestInstance): HTMLElement {
+  const node = document.createElement("button");
+  node.type = "button";
+  node.title = "禪繞寶箱｜靠近後按 E，消耗最大能量 50% 開啟";
+  node.setAttribute("aria-label", `${chest.world} 禪繞寶箱`);
+  Object.assign(node.style, {
+    position: "absolute",
+    width: "58px",
+    height: "46px",
+    transform: "translate(-50%, -78%)",
+    placeItems: "center",
+    border: "2px solid rgba(255,255,255,0.92)",
+    borderRadius: "9px 9px 5px 5px",
+    background: "linear-gradient(145deg, #2d3138 0 48%, #16191f 49% 100%)",
+    boxShadow: "0 0 0 2px #737982, 0 9px 14px rgba(0,0,0,0.42), 0 0 18px rgba(220,230,235,0.58)",
+    color: "#f8f8f4",
+    font: "700 20px Georgia, serif",
+    cursor: "pointer",
+    zIndex: "4",
+  });
+  node.textContent = "◇";
   return node;
 }
 
