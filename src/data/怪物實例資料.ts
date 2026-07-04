@@ -135,6 +135,11 @@ function buildMonsterInstances(): MonsterInstance[] {
 
 export const MONSTER_INSTANCES: readonly MonsterInstance[] = buildMonsterInstances();
 
+/** 每個戰場必須使用獨立副本，避免扣血直接污染下一局的模板資料。 */
+export function 建立怪物實例副本(): MonsterInstance[] {
+  return MONSTER_INSTANCES.map((monster) => ({ ...monster }));
+}
+
 export function monsterInstancesByWorld(world: World): MonsterInstance[] {
   return MONSTER_INSTANCES.filter((m) => m.world === world);
 }

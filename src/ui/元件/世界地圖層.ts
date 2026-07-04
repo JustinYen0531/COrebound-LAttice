@@ -71,7 +71,7 @@ import {
   type Region,
 } from "../../data/地圖物件資料";
 import { ENV_OBJECTS, type EnvObjectInstance } from "../../data/環境物件資料";
-import { MONSTER_INSTANCES, type MonsterInstance } from "../../data/怪物實例資料";
+import type { MonsterInstance } from "../../data/怪物實例資料";
 import { decideEnemyAction } from "../../enemies/敵人AI";
 import { circlesOverlap, settleContactTick } from "../../combat/碰撞解析";
 import { TICK_SECONDS } from "../../data/戰鬥原語";
@@ -102,6 +102,11 @@ import {
   標記世界寶箱已開啟,
   type WorldChestInstance,
 } from "../世界寶箱狀態";
+import {
+  加入正式戰場怪物,
+  取得正式戰場怪物,
+  type 正式戰場怪物,
+} from "../正式戰場狀態";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -319,11 +324,26 @@ export function 建立世界地圖層(): HTMLElement {
   monsterLayer.className = "世界地圖層-怪物圖層";
   canvas.appendChild(monsterLayer);
 
-  const 初始怪物清單: readonly 可見怪物實例[] = 訓練道場中 ? 取得訓練召喚敵群() : MONSTER_INSTANCES;
-  const monsters: MonsterRuntime[] = 初始怪物清單.map((inst) => {
+  const 初始怪物狀態: Array<{ inst: 可見怪物實例; x: number; y: number; persistent?: 正式戰場怪物 }> = 訓練道場中
+    ? 取得訓練召喚敵群().map((inst) => ({ inst, x: inst.x, y: inst.y }))
+    : 取得正式戰場怪物().map((persistent) => ({
+        inst: persistent.inst,
+        x: persistent.x,
+        y: persistent.y,
+        persistent,
+      }));
+  const monsters: MonsterRuntime[] = 初始怪物狀態.map(({ inst, x, y, persistent }) => {
     const node = createMonsterNode(inst);
     monsterLayer.appendChild(node);
-    return { inst, pos: { x: inst.x, y: inst.y }, node };
+    return {
+      inst,
+      pos: { x, y },
+      node,
+      persistent,
+      dropped: persistent?.dropped,
+      bossKind: persistent?.bossKind,
+      bossWorld: persistent?.bossWorld,
+    };
   });
 
   const playerNode = document.createElement("div");
@@ -559,6 +579,7 @@ export function 建立世界地圖層(): HTMLElement {
     for (const m of monsters) {
       if (m.inst.hp > 0 || m.dropped) continue;
       m.dropped = true;
+      if (m.persistent) m.persistent.dropped = true;
       m.node.style.display = "none";
       擊殺數 += 1;
       if (!訓練道場中) 記錄對局擊殺();
@@ -669,7 +690,11 @@ export function 建立世界地圖層(): HTMLElement {
     const node = createMonsterNode(inst);
     node.classList.add("世界地圖層-怪物-boss");
     monsterLayer.appendChild(node);
-    monsters.push({ inst, pos: { x: spawnX, y: spawnY }, node, bossKind, bossWorld });
+    const persistent = 訓練道場中
+      ? undefined
+      : { inst, x: spawnX, y: spawnY, dropped: false, bossKind, bossWorld } satisfies 正式戰場怪物;
+    if (persistent) 加入正式戰場怪物(persistent);
+    monsters.push({ inst, pos: { x: spawnX, y: spawnY }, node, bossKind, bossWorld, persistent });
   }
 
   /** 目前上陣小隊的家族清單（含個人星級），供 技能管理 判定各家族可用武器星級。 */
@@ -887,6 +912,10 @@ export function 建立世界地圖層(): HTMLElement {
         const speed = worldSpeed * (active ? 1 : 0.35);
         m.pos.x = Math.max(MAP_BOUNDS.minX, Math.min(MAP_BOUNDS.maxX, m.pos.x + (moveX / len) * speed * dt));
         m.pos.y = Math.max(MAP_BOUNDS.minY, Math.min(MAP_BOUNDS.maxY, m.pos.y + (moveY / len) * speed * dt));
+        if (m.persistent) {
+          m.persistent.x = m.pos.x;
+          m.persistent.y = m.pos.y;
+        }
       }
     }
     if (訓練道場中) {
@@ -1474,6 +1503,10 @@ export function 建立世界地圖層(): HTMLElement {
         if (target) {
           target.pos.x = pull.to.x;
           target.pos.y = pull.to.y;
+          if (target.persistent) {
+            target.persistent.x = pull.to.x;
+            target.persistent.y = pull.to.y;
+          }
         }
       }
     }
@@ -1798,6 +1831,8 @@ interface MonsterRuntime {
   /** 隊長減速控制：受影響到此時間戳（ms）為止，期間移速乘 slowMult */
   slowUntil?: number;
   slowMult?: number;
+  /** 正式對局的跨頁持久狀態；訓練道場不使用。 */
+  persistent?: 正式戰場怪物;
 }
 
 /** 建立一隻怪物的 DOM 節點（去背立繪 + 影子，比照環境物件的視覺結構）。 */

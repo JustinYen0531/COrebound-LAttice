@@ -1,0 +1,32 @@
+import { 建立怪物實例副本, type MonsterInstance } from "../data/怪物實例資料";
+import type { World } from "../data/成員型別";
+
+export interface 正式戰場怪物 {
+  inst: MonsterInstance;
+  x: number;
+  y: number;
+  dropped: boolean;
+  bossKind?: "guardian" | "cola";
+  bossWorld?: World;
+}
+
+let 怪物群: 正式戰場怪物[] = [];
+
+export function 重置正式戰場(): void {
+  怪物群 = 建立怪物實例副本().map((inst) => ({
+    inst,
+    x: inst.x,
+    y: inst.y,
+    dropped: false,
+  }));
+}
+
+/** 回傳單局內的持久物件；世界地圖會直接同步其生命與位置。 */
+export function 取得正式戰場怪物(): 正式戰場怪物[] {
+  if (怪物群.length === 0) 重置正式戰場();
+  return 怪物群;
+}
+
+export function 加入正式戰場怪物(monster: 正式戰場怪物): void {
+  怪物群.push(monster);
+}
