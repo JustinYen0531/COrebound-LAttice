@@ -5,6 +5,7 @@
  */
 import { 應用程式狀態 } from "../應用程式狀態";
 import { 選文 } from "../語系";
+import { 取得對局戰報 } from "../對局戰報狀態";
 
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
@@ -14,21 +15,28 @@ export function 渲染結算頁(容器: HTMLElement) {
   容器.innerHTML = "";
   const state = 應用程式狀態.畫面;
   if (state.層 !== "結算頁") return;
+  const report = 取得對局戰報();
+  const minutes = Math.floor(report.durationSeconds / 60);
+  const seconds = report.durationSeconds % 60;
+  const resultLabel = report.result === "victory" ? 雙語("通關", "Victory") : 雙語("本輪結束", "Run Ended");
 
   const root = document.createElement("div");
   root.className = "結算頁-root";
   root.innerHTML = `
-    <h2>${雙語("對局結算", "Match Settlement")}</h2>
-    <p class="占位說明">${雙語("由終局事件強制觸發（R11）；優先權高於操作頁面與管理介面的任何狀態。", "Forcibly triggered by an end-game event (R11); takes priority over any state of the operation page / Management panel.")}</p>
+    <h2>${resultLabel}</h2>
+    <p class="占位說明">${report.reason}</p>
     <div class="占位卡片格">
       ${[
-        雙語("查看戰報", "View Battle Report"),
-        雙語("查看最終編隊", "View Final Squad Composition"),
-        雙語("查看死亡原因", "View Cause of Death"),
-        雙語("查看獲得材料", "View Materials Earned"),
-        雙語("查看表現評級", "View Performance Rating"),
+        `${雙語("遊玩時間", "Run Time")}<strong>${minutes}:${seconds.toString().padStart(2, "0")}</strong>`,
+        `${雙語("擊殺", "Kills")}<strong>${report.kills}</strong>`,
+        `${雙語("造成傷害", "Damage Dealt")}<strong>${report.damageDealt}</strong>`,
+        `${雙語("承受傷害", "Damage Taken")}<strong>${report.damageTaken}</strong>`,
+        `${雙語("取得原石", "Gems Earned")}<strong>${report.gemsEarned}</strong>`,
+        `${雙語("取得材料", "Materials Earned")}<strong>${report.materialsEarned}</strong>`,
+        `${雙語("擊敗守護者", "Guardians Defeated")}<strong>${report.guardiansDefeated} / 4</strong>`,
+        `${雙語("核心鑰匙", "Core Key")}<strong>${report.coreKeyEarned ? 雙語("已取得", "Obtained") : 雙語("未取得", "Not obtained")}</strong>`,
       ]
-        .map((n) => `<div class="占位卡片">${n}</div>`)
+        .map((n) => `<div class="占位卡片" style="display:grid;gap:8px;">${n}</div>`)
         .join("")}
     </div>
   `;

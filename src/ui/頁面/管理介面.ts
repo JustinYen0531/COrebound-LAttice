@@ -370,13 +370,15 @@ function 地圖分頁內容(): HTMLElement {
 
   const 書籤欄 = document.createElement("div");
   書籤欄.className = "資料夾式版面-書籤欄";
+  const 地圖分類標籤: Record<(typeof 地圖分類清單)[number], string> = {
+    縮影: 雙語("縮影", "Overview"),
+    互動點: 雙語("互動點", "Interactions"),
+    危險區: 雙語("危險區", "Danger Zones"),
+    事件區: 雙語("事件區", "Events"),
+  };
   for (const 名稱 of 地圖分類清單) {
     const btn = document.createElement("button");
-    btn.textContent =
-      名稱 === "總覽" ? 雙語("總覽", "Overview") :
-      名稱 === "設施" ? 雙語("設施", "Facilities") :
-      名稱 === "Boss" ? "Boss / Boss" :
-      雙語("標記", "Markers");
+    btn.textContent = 地圖分類標籤[名稱];
     btn.classList.toggle("作用中", 應用程式狀態.額外.地圖選中分類 === 名稱);
     btn.onclick = () => {
       應用程式狀態.設定地圖分類(名稱);
@@ -491,10 +493,8 @@ function 地圖分頁內容(): HTMLElement {
   mapSvgWrapper.appendChild(svg);
 
   const 地圖分類顯示 =
-    應用程式狀態.額外.地圖選中分類 === "總覽" ? 雙語("總覽", "Overview") :
-    應用程式狀態.額外.地圖選中分類 === "設施" ? 雙語("設施", "Facilities") :
-    應用程式狀態.額外.地圖選中分類 === "Boss" ? "Boss / Boss" :
-    雙語("標記", "Markers");
+    地圖分類標籤[應用程式狀態.額外.地圖選中分類 as (typeof 地圖分類清單)[number]] ??
+    地圖分類標籤.縮影;
   內容區.innerHTML = `<h3>🛰️ ${雙語("戰術地圖", "Tactical Map")} / ${地圖分類顯示}</h3>`;
   內容區.appendChild(mapSvgWrapper);
 

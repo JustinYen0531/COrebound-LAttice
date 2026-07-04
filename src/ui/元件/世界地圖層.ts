@@ -88,6 +88,13 @@ import {
 } from "../驗收場狀態";
 import type { CaptainId } from "../../data/戰鬥原語";
 import { 計算主動技能效果, type 主動技能情境 } from "../../captain/主動技能效果";
+import {
+  結束對局,
+  記錄守護者擊敗,
+  記錄對局傷害,
+  記錄對局掉落,
+  記錄對局擊殺,
+} from "../對局戰報狀態";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -481,14 +488,30 @@ export function 建立世界地圖層(): HTMLElement {
       m.dropped = true;
       m.node.style.display = "none";
       擊殺數 += 1;
+      if (!訓練道場中) 記錄對局擊殺();
 
       // Boss 特殊結算：守護者 → 印記+狂暴；COLA → 勝利。
       if (m.bossKind === "guardian" && m.bossWorld) {
         const sigil = 擊敗守護者(m.bossWorld);
-        if (sigil) 設定驗收事件(`${REGION_LABEL[m.bossWorld]}守護者已倒下，取得 ${sigil}。`);
+        if (sigil) {
+          if (!訓練道場中) 記錄守護者擊敗();
+          設定驗收事件(`${REGION_LABEL[m.bossWorld]}守護者已倒下，取得 ${sigil}。`);
+        }
         continue;
       }
       if (m.bossKind === "cola") {
+        if (!訓練道場中) {
+          const drop = rollMonsterDrop(finalBoss(), true);
+          for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count);
+          if (drop.keyItem) 背包.加入材料(drop.keyItem.no, 1);
+          背包.加入原石(drop.gems);
+          記錄對局掉落(
+            drop.gems,
+            drop.materials.reduce((total, entry) => total + entry.count, 0) + (drop.keyItem ? 1 : 0),
+            Boolean(drop.keyItem),
+          );
+          結束對局("victory", "擊敗 COLA，取得 COrebound 核心鑰匙");
+        }
         標記驗收結果("victory", "COLA 已被擊敗，整條驗收主線完成。");
         if (!訓練道場中) 應用程式狀態.觸發終局事件(); // 勝利進結算頁
         continue;
@@ -505,6 +528,9 @@ export function 建立世界地圖層(): HTMLElement {
       const drop = rollMonsterDrop(def, enraged);
       for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count);
       背包.加入原石(drop.gems);
+      if (!訓練道場中) {
+        記錄對局掉落(drop.gems, drop.materials.reduce((total, entry) => total + entry.count, 0));
+      }
     }
   }
 
@@ -529,7 +555,11 @@ export function 建立世界地圖層(): HTMLElement {
     if (distToCenter <= safeRadius) return;
     const summary = 取得正式小隊摘要();
     const dmg = summary.playerMaxHp * EROSION_DAMAGE_RATIO_PER_TICK * dt;
-    if (dmg > 0) 手動設定正式玩家生命(summary.playerHp - dmg);
+    if (dmg > 0) {
+      const applied = Math.min(summary.playerHp, dmg);
+      手動設定正式玩家生命(summary.playerHp - applied);
+      記錄對局傷害(0, applied);
+    }
   }
 
   /**
@@ -882,7 +912,9 @@ export function 建立世界地圖層(): HTMLElement {
       const res = resolveProjectileHit(hit.projectile, {
         id: m.inst.id, position: m.pos, radius: 0, hp: m.inst.hp, weight: m.inst.weight,
       });
-      m.inst.hp = Math.max(0, m.inst.hp - res.damage);
+      const appliedDamage = Math.min(m.inst.hp, res.damage);
+      m.inst.hp = Math.max(0, m.inst.hp - appliedDamage);
+      if (!訓練道場中) 記錄對局傷害(appliedDamage);
       m.lastHitMs = performance.now();
       // 隊長控制引擎：命中時套用（此處實作減速；其餘控制為 Batch 3 延伸）。
       const ctrl = controlEffectAtStar(小隊屬性摘要().captainId, 當前隊長星級());
@@ -910,7 +942,10 @@ export function 建立世界地圖層(): HTMLElement {
       玩家承傷 += hit.projectile.damage;
       projectilePool.remove(hit.projectile.id);
     }
-    if (玩家承傷 > 0) 設當前玩家生命(summary.playerHp - 玩家承傷);
+    if (玩家承傷 > 0) {
+      設當前玩家生命(summary.playerHp - 玩家承傷);
+      if (!訓練道場中) 記錄對局傷害(0, 玩家承傷);
+    }
 
     // 同步子彈 DOM 節點：新增缺的、移除已消散的。
     const alive = new Set<number>();
@@ -941,6 +976,7 @@ export function 建立世界地圖層(): HTMLElement {
     }
     if (!已觸發陣亡 && 正式玩家已陣亡()) {
       已觸發陣亡 = true;
+      結束對局("defeat", "隊長生命歸零");
       標記驗收結果("defeat", "正式對局中玩家陣亡，已進入結算。");
       應用程式狀態.觸發終局事件();
     }
@@ -1088,11 +1124,14 @@ export function 建立世界地圖層(): HTMLElement {
       for (const result of resolutions) {
         const runtime = contacts.find((monster) => monster.inst.id === result.id);
         if (!runtime) continue;
-        runtime.inst.hp = Math.max(0, runtime.inst.hp - result.damage);
+        const appliedDamage = Math.min(runtime.inst.hp, result.damage);
+        runtime.inst.hp = Math.max(0, runtime.inst.hp - appliedDamage);
+        記錄對局傷害(appliedDamage);
         if (result.dead) runtime.node.style.display = "none";
       }
 
       手動設定正式玩家生命(summary.playerHp - squadDamageTaken);
+      記錄對局傷害(0, squadDamageTaken);
       collisionTickCarry -= TICK_SECONDS;
     }
   }
