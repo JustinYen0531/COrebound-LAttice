@@ -10,6 +10,19 @@
 
 import { 應用程式狀態 } from "../應用程式狀態";
 import {
+  取得訓練召喚敵群,
+  取得訓練道場摘要,
+  手動設定訓練玩家生命,
+  覆蓋訓練敵群,
+  記錄訓練碰撞,
+  type 訓練召喚敵人,
+} from "../訓練道場狀態";
+import {
+  取得正式小隊摘要,
+  手動設定正式玩家生命,
+  初始化正式玩家生命,
+} from "../正式對局小隊狀態";
+import {
   FACILITY_GLYPH,
   MAP_HORIZONTAL_DIVIDER,
   MAP_BOUNDS,
@@ -24,6 +37,10 @@ import {
   type Region,
 } from "../../data/地圖物件資料";
 import { ENV_OBJECTS, type EnvObjectInstance } from "../../data/環境物件資料";
+import { MONSTER_INSTANCES, type MonsterInstance } from "../../data/怪物實例資料";
+import { decideEnemyAction } from "../../enemies/敵人AI";
+import { circlesOverlap, settleContactTick } from "../../combat/碰撞解析";
+import { TICK_SECONDS } from "../../data/戰鬥原語";
 import type { Family, World } from "../../data/成員型別";
 import { buildEinsteinHatSupertile, type EinsteinPoint } from "../../world/愛因斯坦地板";
 import { 建立玩家標記圖騰 } from "./玩家標記圖騰";
@@ -33,6 +50,17 @@ import { buildCairoField, type CairoPoint } from "../../world/開羅五邊形地
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
+
+// 怪物 token 比場景物件小，依 Tier 微調：T2 精英最大、T0 資源怪最小。
+const MONSTER_SIZE_AT_REFERENCE_ZOOM: Record<0 | 1 | 2, number> = {
+  0: 300,
+  1: 360,
+  2: 440,
+};
+// 怪物 CombatStats.speed（約 200~300）換算成世界座標移動速度的比例，使其與玩家步速相當。
+const MONSTER_SPEED_SCALE = 0.16;
+// 只有距離玩家這麼近的怪物才跑 AI／移動，遠處待命，避免全圖 200 隻同時朝玩家聚集。
+const MONSTER_ACTIVE_RADIUS = 2600;
 
 const MOVE_SPEED = 42;
 const MOVE_ACCELERATION = 220;
@@ -65,6 +93,8 @@ const FAMILY_FURNACE_IMAGE: Record<Family, string> = {
 
 let playerPos = { x: 0, y: 0 };
 
+type 可見怪物實例 = MonsterInstance | 訓練召喚敵人;
+
 const BLOCKING_WORLD_OBJECTS = [
   ...MAP_OBJECTS.filter((object) => facilityImagePath(object) !== null).map((object) => ({
     x: object.x,
@@ -81,6 +111,10 @@ const BLOCKING_WORLD_OBJECTS = [
 export function resetPlayerPos(): void {
   playerPos = { x: 0, y: 0 };
   cameraZoom = DEFAULT_CAMERA_ZOOM;
+}
+
+export function 讀取玩家位置(): { x: number; y: number } {
+  return { ...playerPos };
 }
 
 function clampPlayerPosition(next: { x: number; y: number }): { x: number; y: number } {
@@ -155,6 +189,8 @@ function isVisible(point: { x: number; y: number }, viewport: { w: number; h: nu
 }
 
 export function 建立世界地圖層(): HTMLElement {
+  const 訓練道場中 =
+    應用程式狀態.畫面.層 === "操作頁面" && 應用程式狀態.畫面.訓練道場;
   const root = document.createElement("div");
   root.className = "世界地圖層";
 
@@ -207,6 +243,19 @@ export function 建立世界地圖層(): HTMLElement {
     envLayer.appendChild(node);
     envNodes.set(env.id, node);
   }
+
+  // 怪物圖層：疊在環境物件之上、玩家之下。每隻怪物有自己的可變位置與 DOM 節點，
+  // 由 tick() 依 敵人AI 決策移動，render() 換算成螢幕座標（與玩家共用同一套俯視鏡頭）。
+  const monsterLayer = document.createElement("div");
+  monsterLayer.className = "世界地圖層-怪物圖層";
+  canvas.appendChild(monsterLayer);
+
+  const 初始怪物清單: readonly 可見怪物實例[] = 訓練道場中 ? 取得訓練召喚敵群() : MONSTER_INSTANCES;
+  const monsters: MonsterRuntime[] = 初始怪物清單.map((inst) => {
+    const node = createMonsterNode(inst);
+    monsterLayer.appendChild(node);
+    return { inst, pos: { x: inst.x, y: inst.y }, node };
+  });
 
   const playerNode = document.createElement("div");
   playerNode.className = "世界地圖層-玩家";
@@ -295,6 +344,7 @@ export function 建立世界地圖層(): HTMLElement {
   let rafId = 0;
   let lastNow = performance.now();
   let playerVelocity = { x: 0, y: 0 };
+  let collisionTickCarry = 0;
 
   function setCameraZoom(nextZoom: number): void {
     cameraZoom = Math.max(MIN_CAMERA_ZOOM, Math.min(MAX_CAMERA_ZOOM, nextZoom));
@@ -308,6 +358,11 @@ export function 建立世界地圖層(): HTMLElement {
     for (const node of envNodes.values()) {
       node.style.setProperty("--world-object-size", `${worldObjectSize.toFixed(2)}px`);
       node.style.setProperty("--object-optical-y", `${opticalOffset.toFixed(2)}px`);
+    }
+    for (const m of monsters) {
+      const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[m.inst.tier as 0 | 1 | 2] ?? 360;
+      const size = baseSize * (cameraZoom / WORLD_OBJECT_REFERENCE_CAMERA_ZOOM);
+      m.node.style.setProperty("--monster-size", `${size.toFixed(2)}px`);
     }
     const playerSize = PLAYER_SIZE_AT_REFERENCE_ZOOM * (cameraZoom / REFERENCE_CAMERA_ZOOM);
     playerNode.style.setProperty("--player-world-size", `${playerSize.toFixed(2)}px`);
@@ -346,6 +401,13 @@ export function 建立世界地圖層(): HTMLElement {
       node.style.display = isVisible(pos, viewport) ? "block" : "none";
     }
 
+    for (const m of monsters) {
+      const pos = worldToScreen(m.pos, playerPos, viewport);
+      m.node.style.left = `${pos.x}px`;
+      m.node.style.top = `${pos.y}px`;
+      m.node.style.display = isVisible(pos, viewport) ? "block" : "none";
+    }
+
     const near = nearbyObjects(playerPos);
     const nearIds = new Set(near.map((object) => object.id));
 
@@ -372,11 +434,228 @@ export function 建立世界地圖層(): HTMLElement {
     renderMiniMapDynamic(miniMapInner, miniObjectNodes, miniPlayer);
   }
 
+  /**
+   * 依 敵人AI 決策推進每隻怪物一幀。
+   * 只有在玩家 MONSTER_ACTIVE_RADIUS 內的怪物才跑 AI／移動，遠處待命（省 CPU、避免全圖聚集）。
+   * 待命（idle）的怪物給一個緩慢隨機游走，讓地圖有「自由活動」的生氣。
+   */
+  function updateMonsters(dt: number): void {
+    const elapsedSeconds = 應用程式狀態.額外.世界時鐘秒數 ?? 0;
+    for (const m of monsters) {
+      if (m.inst.hp <= 0) continue;
+      const dToPlayer = Math.hypot(m.pos.x - playerPos.x, m.pos.y - playerPos.y);
+      const active = dToPlayer <= MONSTER_ACTIVE_RADIUS;
+
+      let moveX = 0;
+      let moveY = 0;
+      const worldSpeed = m.inst.speed * MONSTER_SPEED_SCALE;
+
+      if (active) {
+        const decision = decideEnemyAction({
+          tier: m.inst.tier,
+          selfPos: m.pos,
+          playerPos,
+          attackRange: m.inst.attackRange,
+          ranged: m.inst.ranged,
+          underFire: false, // 尚未接子彈系統，暫以 false（T0 因此以游走呈現）
+          elapsedSeconds,
+          nonHostileInitially: m.inst.nonHostileInitially,
+          immobilized: false,
+        });
+        if (decision.moveDir.x !== 0 || decision.moveDir.y !== 0) {
+          moveX = decision.moveDir.x;
+          moveY = decision.moveDir.y;
+        } else {
+          // idle / attack（原地）→ 緩慢游走
+          [moveX, moveY] = wanderStep(m, dt);
+        }
+      } else {
+        // 遠處待命：仍給極慢游走，讓整張圖有活性
+        [moveX, moveY] = wanderStep(m, dt);
+      }
+
+      if (moveX !== 0 || moveY !== 0) {
+        const len = Math.hypot(moveX, moveY) || 1;
+        const speed = worldSpeed * (active ? 1 : 0.35);
+        m.pos.x = Math.max(MAP_BOUNDS.minX, Math.min(MAP_BOUNDS.maxX, m.pos.x + (moveX / len) * speed * dt));
+        m.pos.y = Math.max(MAP_BOUNDS.minY, Math.min(MAP_BOUNDS.maxY, m.pos.y + (moveY / len) * speed * dt));
+      }
+    }
+    if (訓練道場中) {
+      覆蓋訓練敵群(
+        monsters
+          .filter((monster) => monster.inst.hp > 0)
+          .map((monster) => ({
+            ...(monster.inst as 訓練召喚敵人),
+            x: monster.pos.x,
+            y: monster.pos.y,
+          })),
+      );
+    }
+  }
+
+  /** 緩慢游走：每隔一段時間換一個隨機方向。 */
+  function wanderStep(m: MonsterRuntime, dt: number): [number, number] {
+    m.wanderTimer = (m.wanderTimer ?? 0) - dt;
+    if (m.wanderTimer <= 0 || m.wanderDir === undefined) {
+      const a = Math.random() * Math.PI * 2;
+      m.wanderDir = { x: Math.cos(a), y: Math.sin(a) };
+      m.wanderTimer = 1.5 + Math.random() * 2.5;
+    }
+    return [m.wanderDir.x * 0.5, m.wanderDir.y * 0.5];
+  }
+
+  function 訓練玩家碰撞半徑(weight: number): number {
+    return Math.max(96, Math.min(210, 82 + Math.sqrt(Math.max(0, weight)) * 9));
+  }
+
+  function 訓練敵人碰撞半徑(tier: 0 | 1 | 2): number {
+    switch (tier) {
+      case 0:
+        return 56;
+      case 1:
+        return 78;
+      case 2:
+        return 108;
+    }
+  }
+
+  function updateCollisions(dt: number): void {
+    // 訓練道場與正式遊玩共用同一套碰撞結算邏輯（§1.3 Tick 傷害）。
+    // 唯一差別在「全隊屬性」與「玩家生命」的資料來源：
+    //   訓練道場 → 訓練道場狀態（可自由編排小隊）
+    //   正式遊玩 → 正式對局小隊狀態（隊長 + 預設編隊）
+    if (訓練道場中) {
+      const summary = 取得訓練道場摘要();
+      const playerRadius = 訓練玩家碰撞半徑(summary.totalWeight);
+      const contacts = monsters.filter(
+        (monster) =>
+          monster.inst.hp > 0 &&
+          circlesOverlap(
+            playerPos,
+            playerRadius,
+            monster.pos,
+            訓練敵人碰撞半徑(monster.inst.tier as 0 | 1 | 2),
+          ),
+      );
+
+      if (contacts.length === 0) {
+        collisionTickCarry = 0;
+        return;
+      }
+
+      collisionTickCarry += dt;
+      while (collisionTickCarry >= TICK_SECONDS) {
+        const resolutions = settleContactTick(
+          summary.totalAtk,
+          contacts.map((monster) => ({
+            id: monster.inst.id,
+            position: monster.pos,
+            radius: 訓練敵人碰撞半徑(monster.inst.tier as 0 | 1 | 2),
+            hp: monster.inst.hp,
+            weight: monster.inst.weight,
+            dead: monster.inst.hp <= 0,
+          })),
+        );
+
+        let squadDamageTaken = 0;
+        let enemyWeight = 0;
+        for (const monster of contacts) {
+          enemyWeight += monster.inst.weight;
+          squadDamageTaken += monster.inst.atk;
+        }
+
+        let dealtTotal = 0;
+        for (const result of resolutions) {
+          const runtime = contacts.find((monster) => monster.inst.id === result.id);
+          if (!runtime) continue;
+          runtime.inst.hp = Math.max(0, runtime.inst.hp - result.damage);
+          if (result.dead) runtime.node.style.display = "none";
+          dealtTotal += result.damage;
+        }
+
+        手動設定訓練玩家生命(summary.playerHp - squadDamageTaken);
+        記錄訓練碰撞({
+          atMs: Date.now(),
+          enemyIds: contacts.map((monster) => monster.inst.id),
+          enemyNames: contacts.map((monster) => monster.inst.nameZh),
+          squadWeight: summary.totalWeight,
+          enemyWeight,
+          squadDamage: dealtTotal,
+          enemyDamage: squadDamageTaken,
+        });
+
+        覆蓋訓練敵群(
+          monsters
+            .filter((monster) => monster.inst.hp > 0)
+            .map((monster) => ({
+              ...(monster.inst as 訓練召喚敵人),
+              x: monster.pos.x,
+              y: monster.pos.y,
+            })),
+        );
+        collisionTickCarry -= TICK_SECONDS;
+      }
+      return;
+    }
+
+    // —— 正式遊玩碰撞結算 ——
+    const summary = 取得正式小隊摘要();
+    const playerRadius = 訓練玩家碰撞半徑(summary.totalWeight);
+    const contacts = monsters.filter(
+      (monster) =>
+        monster.inst.hp > 0 &&
+        circlesOverlap(
+          playerPos,
+          playerRadius,
+          monster.pos,
+          訓練敵人碰撞半徑(monster.inst.tier as 0 | 1 | 2),
+        ),
+    );
+
+    if (contacts.length === 0) {
+      collisionTickCarry = 0;
+      return;
+    }
+
+    collisionTickCarry += dt;
+    while (collisionTickCarry >= TICK_SECONDS) {
+      const resolutions = settleContactTick(
+        summary.totalAtk,
+        contacts.map((monster) => ({
+          id: monster.inst.id,
+          position: monster.pos,
+          radius: 訓練敵人碰撞半徑(monster.inst.tier as 0 | 1 | 2),
+          hp: monster.inst.hp,
+          weight: monster.inst.weight,
+          dead: monster.inst.hp <= 0,
+        })),
+      );
+
+      // 接觸期間，玩家每 Tick 承受所有接觸怪物的 ATK 加總（§1.3）。
+      let squadDamageTaken = 0;
+      for (const monster of contacts) {
+        squadDamageTaken += monster.inst.atk;
+      }
+
+      for (const result of resolutions) {
+        const runtime = contacts.find((monster) => monster.inst.id === result.id);
+        if (!runtime) continue;
+        runtime.inst.hp = Math.max(0, runtime.inst.hp - result.damage);
+        if (result.dead) runtime.node.style.display = "none";
+      }
+
+      手動設定正式玩家生命(summary.playerHp - squadDamageTaken);
+      collisionTickCarry -= TICK_SECONDS;
+    }
+  }
+
   function tick(now: number): void {
     const dt = Math.min(0.05, (now - lastNow) / 1000);
     lastNow = now;
 
     if (應用程式狀態.畫面.層 === "操作頁面") {
+      const moveScale = 訓練道場中 ? 取得訓練道場摘要().moveSpeedScale : 1;
       let axisX = 0;
       let axisY = 0;
       if (pressed.has("KeyA") || pressed.has("ArrowLeft")) axisX -= 1;
@@ -388,8 +667,8 @@ export function 建立世界地圖層(): HTMLElement {
       const targetVelocity =
         axisLength > 0
           ? {
-              x: (axisX / axisLength) * MOVE_SPEED,
-              y: (axisY / axisLength) * MOVE_SPEED,
+              x: (axisX / axisLength) * MOVE_SPEED * moveScale,
+              y: (axisY / axisLength) * MOVE_SPEED * moveScale,
             }
           : { x: 0, y: 0 };
 
@@ -420,6 +699,9 @@ export function 建立世界地圖層(): HTMLElement {
         syncNearbyToState();
 
       }
+
+      updateMonsters(dt);
+      updateCollisions(dt);
     }
 
     render();
@@ -588,6 +870,39 @@ function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
   shadowLayer.appendChild(shadowImg);
   visualLayer.append(shadowLayer, img);
   node.appendChild(visualLayer);
+  return node;
+}
+
+/** 一隻在場怪物的執行期狀態：靜態定義 + 可變位置 + DOM 節點 + 游走狀態。 */
+interface MonsterRuntime {
+  inst: 可見怪物實例;
+  pos: { x: number; y: number };
+  node: HTMLElement;
+  wanderDir?: { x: number; y: number };
+  wanderTimer?: number;
+}
+
+/** 建立一隻怪物的 DOM 節點（去背立繪 + 影子，比照環境物件的視覺結構）。 */
+function createMonsterNode(inst: 可見怪物實例): HTMLElement {
+  const node = document.createElement("div");
+  node.className = `世界地圖層-怪物 世界地圖層-怪物-T${inst.tier}`;
+  const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[inst.tier as 0 | 1 | 2] ?? 360;
+  node.style.setProperty("--monster-size", `${baseSize}px`);
+
+  const shadow = document.createElement("img");
+  shadow.className = "世界地圖層-怪物-image 世界地圖層-怪物-image-shadow";
+  shadow.src = inst.spritePath;
+  shadow.alt = "";
+  shadow.draggable = false;
+
+  const img = document.createElement("img");
+  img.className = "世界地圖層-怪物-image";
+  img.src = inst.spritePath;
+  img.alt = inst.nameZh;
+  img.draggable = false;
+
+  node.title = `${inst.nameZh}（T${inst.tier}）`;
+  node.append(shadow, img);
   return node;
 }
 
