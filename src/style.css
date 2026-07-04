@@ -1279,6 +1279,8 @@ button.禁用:hover {
 }
 .世界地圖層-物件-視覺層,
 .世界地圖層-環境物件-視覺層 {
+  --world-anchor-x: calc(var(--world-object-size, 720px) * 0.018);
+  --world-anchor-y: calc(var(--world-object-size, 720px) * 0.014);
   position: relative;
   width: var(--world-object-size, 720px);
   height: var(--world-object-size, 720px);
@@ -1290,8 +1292,8 @@ button.禁用:hover {
 .世界地圖層-環境物件-視覺層::after {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: calc(var(--world-object-size, 720px) * 0.028);
+  left: calc(50% + var(--world-anchor-x));
+  bottom: calc(var(--world-object-size, 720px) * 0.028 + var(--world-anchor-y));
   width: calc(var(--world-object-size, 720px) * 0.40);
   height: calc(var(--world-object-size, 720px) * 0.12);
   transform: translateX(-50%) scaleX(1.02);
@@ -1311,8 +1313,8 @@ button.禁用:hover {
 .世界地圖層-視覺層-禁走地板::before {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: calc(var(--world-object-size, 720px) * 0.016);
+  left: calc(50% + var(--world-anchor-x));
+  bottom: calc(var(--world-object-size, 720px) * 0.016 + var(--world-anchor-y));
   width: calc(var(--world-object-size, 720px) * 0.365);
   height: calc(var(--world-object-size, 720px) * 0.126);
   transform: translateX(-50%);
@@ -1336,8 +1338,8 @@ button.禁用:hover {
   width: var(--world-object-size, 720px);
   height: var(--world-object-size, 720px);
   transform:
-    translateX(calc(-20% + var(--world-object-size, 720px) * 0.018))
-    translateY(calc(-7% + var(--world-object-size, 720px) * 0.014))
+    translateX(calc(-20% + var(--world-anchor-x)))
+    translateY(calc(-7% + var(--world-anchor-y)))
     skewX(-38deg)
     scaleX(1.15)
     scaleY(0.34);
@@ -1355,8 +1357,8 @@ button.禁用:hover {
   justify-content: center;
   width: 100%;
   transform:
-    translateX(calc(var(--world-object-size, 720px) * 0.018))
-    translateY(calc(var(--world-object-size, 720px) * 0.004));
+    translateX(var(--world-anchor-x))
+    translateY(calc(var(--world-object-size, 720px) * 0.004 + var(--world-anchor-y)));
 }
 .世界地圖層-物件-glyph {
   font-size: calc(var(--world-object-size, 240px) * 0.52);
@@ -1483,6 +1485,9 @@ button.禁用:hover {
     drop-shadow(0 0 5px rgba(128, 132, 140, 0.46));
   position: relative;
   z-index: 2;
+  transform:
+    translateX(var(--world-anchor-x))
+    translateY(calc(var(--world-object-size, 720px) * 0.004 + var(--world-anchor-y)));
 }
 .世界地圖層-環境物件-障礙物 {
   opacity: 0.98;
