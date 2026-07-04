@@ -622,6 +622,7 @@ button.禁用:hover {
   color: #9ba4c5;
 }
 .訓練軌道編排器-舞台 {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -635,9 +636,13 @@ button.禁用:hover {
   position: relative;
   width: 336px;
   height: 336px;
+  overflow: visible;
 }
 .訓練軌道編排器-軌道:hover .訓練軌道編排器-環 {
   animation-play-state: paused;
+}
+.訓練軌道編排器-軌道.已暫停 .訓練軌道編排器-環 {
+  animation-play-state: paused !important;
 }
 .訓練軌道編排器-環 {
   position: absolute;
@@ -719,8 +724,8 @@ button.禁用:hover {
   gap: 1px;
   padding: 0;
   z-index: 2;
+  transition: box-shadow 140ms ease, border-color 140ms ease;
 }
-.訓練軌道編排器-槽位:hover,
 .訓練軌道編排器-槽位.作用中 {
   transform:
     translate(-50%, -50%)
@@ -731,6 +736,10 @@ button.禁用:hover {
 }
 .訓練軌道編排器-槽位.作用中 {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--slot-color) 80%, transparent), 0 0 20px color-mix(in srgb, var(--slot-color) 45%, transparent);
+}
+.訓練軌道編排器-槽位:hover {
+  border-color: color-mix(in srgb, var(--slot-color) 50%, rgba(255, 255, 255, 0.75));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--slot-color) 68%, transparent), 0 0 18px rgba(0, 0, 0, 0.35);
 }
 .訓練軌道編排器-編號 {
   font-size: 0.72rem;
@@ -761,6 +770,44 @@ button.禁用:hover {
   height: 12px;
   border-radius: 50%;
   display: inline-block;
+}
+.訓練軌道編排器-圖騰預覽浮窗 {
+  position: absolute;
+  right: -24px;
+  bottom: -12px;
+  width: 188px;
+  padding: 10px 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(9, 14, 27, 0.92), rgba(11, 19, 34, 0.84));
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.34);
+  pointer-events: none;
+  z-index: 4;
+}
+.訓練軌道編排器-圖騰預覽標題 {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #f5f7ff;
+}
+.訓練軌道編排器-圖騰預覽說明 {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: #8d93ad;
+}
+.訓練軌道編排器-圖騰預覽框 {
+  margin-top: 8px;
+  min-height: 170px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(77, 141, 255, 0.12), transparent 58%),
+    rgba(255, 255, 255, 0.025);
+}
+.訓練軌道編排器-圖騰預覽框 .玩家標記圖騰 {
+  filter: drop-shadow(0 0 18px rgba(77, 141, 255, 0.16));
 }
 .訓練軌道編排器-槽位格 {
   display: grid;
@@ -1142,6 +1189,13 @@ button.禁用:hover {
   height: auto;
   filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.6));
   animation: 圖鑑立繪進場 0.4s ease-out;
+}
+.圖鑑詳情-角色立繪圖-固定 {
+  width: 340px;
+  max-width: 100%;
+  margin: 0 auto;
+  object-fit: contain;
+  object-position: center bottom;
 }
 @keyframes 圖鑑立繪進場 {
   from { opacity: 0; transform: translateY(12px); }
