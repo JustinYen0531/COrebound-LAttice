@@ -144,6 +144,7 @@ const DEFAULT_CAMERA_ZOOM = 3.7;
 const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
 const MIN_CAMERA_ZOOM = 0.85;
 const MAX_CAMERA_ZOOM = 4.0;
+const ENABLE_DETAILED_WORLD_FLOORS = false;
 let cameraZoom = DEFAULT_CAMERA_ZOOM;
 
 const GUARDIAN_ALTAR_IMAGE: Record<World, string> = {
@@ -305,10 +306,10 @@ export function 建立世界地圖層(): HTMLElement {
   canvas.appendChild(objectLayer);
 
   const regionPaths = createRegionPaths(zoneSvg);
-  const geometryCoreBoundaries = createGeometryEinsteinFloor(zoneSvg);
-  const fractalCoreBoundaries = createFractalPenroseFloor(zoneSvg);
-  const organicCoreBoundaries = createOrganicBirdFloor(zoneSvg);
-  const mechanicalCoreBoundaries = createMechanicalCairoFloor(zoneSvg);
+  const geometryCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createGeometryEinsteinFloor(zoneSvg) : [];
+  const fractalCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createFractalPenroseFloor(zoneSvg) : [];
+  const organicCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createOrganicBirdFloor(zoneSvg) : [];
+  const mechanicalCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createMechanicalCairoFloor(zoneSvg) : [];
   const dividerPaths = createDividerPaths(zoneSvg);
   // 區域外框、分界線、地板花紋都是「世界座標固定」的靜態幾何，
   // 不會隨玩家移動改變；只在建圖時設定一次 d 屬性即可，
