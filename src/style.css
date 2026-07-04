@@ -760,7 +760,7 @@ button.禁用:hover {
 }
 .圖鑑詳情-下半 {
   display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
   gap: 22px;
   align-items: start;
 }

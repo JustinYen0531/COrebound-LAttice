@@ -6,34 +6,7 @@ import { 應用程式狀態 } from "../應用程式狀態";
 import { 建立圖鑑瀏覽器 } from "../元件/圖鑑瀏覽器";
 import type { 主畫面分頁 } from "../共用型別";
 
-const 主按鈕清單: 主畫面分頁[] = ["開始遊玩", "圖鑑", "遊玩記錄", "新手入門", "設定"];
-
-function 開始遊玩子頁(): HTMLElement {
-  const el = document.createElement("div");
-  el.className = "子頁內容 子頁內容-narrow";
-  el.innerHTML = `<h3>開始遊玩</h3>`;
-  const list = document.createElement("div");
-  list.className = "按鈕列";
-
-  const newGame = document.createElement("button");
-  newGame.textContent = "New Game";
-  newGame.className = "一級按鈕";
-  newGame.onclick = () => 應用程式狀態.進入遊戲準備流程("New Game");
-
-  const cont = document.createElement("button");
-  cont.textContent = "Continue Game";
-  cont.className = "二級按鈕";
-  cont.onclick = () => 應用程式狀態.進入遊戲準備流程("Continue Game");
-
-  const mp = document.createElement("button");
-  mp.textContent = "多人連線（暫未開放）";
-  mp.className = "二級按鈕 禁用";
-  mp.disabled = true;
-
-  list.append(newGame, cont, mp);
-  el.appendChild(list);
-  return el;
-}
+const 主按鈕清單: 主畫面分頁[] = ["圖鑑", "遊玩記錄", "新手入門", "設定"];
 
 function 遊玩記錄子頁(): HTMLElement {
   const el = document.createElement("div");
@@ -126,6 +99,16 @@ export function 渲染主畫面(容器: HTMLElement) {
 
   const 主按鈕欄 = document.createElement("div");
   主按鈕欄.className = "主畫面-主按鈕欄";
+
+  // 最左邊的「回上頁」按鈕：收起當前展開的子頁，回到主畫面初始狀態。
+  const 回上頁 = document.createElement("button");
+  回上頁.className = "主畫面-主按鈕 主畫面-回上頁按鈕";
+  回上頁.textContent = "回上頁";
+  回上頁.title = "收起當前子頁";
+  回上頁.disabled = state.子頁 === null;
+  回上頁.onclick = () => 應用程式狀態.切換主畫面子頁(state.子頁 ?? null);
+  主按鈕欄.appendChild(回上頁);
+
   for (const 名稱 of 主按鈕清單) {
     const btn = document.createElement("button");
     btn.className = "主畫面-主按鈕";
@@ -146,8 +129,7 @@ export function 渲染主畫面(容器: HTMLElement) {
   子頁容器.className = "主畫面-子頁容器";
   子頁容器.classList.toggle("展開", state.子頁 !== null);
 
-  if (state.子頁 === "開始遊玩") 子頁容器.appendChild(開始遊玩子頁());
-  else if (state.子頁 === "圖鑑") {
+  if (state.子頁 === "圖鑑") {
     const box = document.createElement("div");
     box.className = "子頁內容";
     box.innerHTML = `<h3>圖鑑（主畫面版，共用元件 A）</h3>`;
