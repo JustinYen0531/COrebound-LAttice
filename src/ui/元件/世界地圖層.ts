@@ -798,12 +798,10 @@ function createObjectNode(object: MapObject): HTMLElement {
   bodyLayer.className = "世界地圖層-物件-主體";
 
   if (imagePath) {
-    const shadowImg = document.createElement("img");
-    shadowImg.className = "世界地圖層-物件-image 世界地圖層-物件-image-shadow";
-    shadowImg.src = imagePath;
-    shadowImg.alt = "";
-    shadowImg.draggable = false;
-    shadowLayer.appendChild(shadowImg);
+    const shadowMask = document.createElement("div");
+    shadowMask.className = "世界地圖層-物件-image-shadow";
+    shadowMask.style.setProperty("--shadow-mask", `url("${imagePath}")`);
+    shadowLayer.appendChild(shadowMask);
 
     const mainImg = document.createElement("img");
     mainImg.className = "世界地圖層-物件-image";
@@ -852,11 +850,9 @@ function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
   const shadowLayer = document.createElement("div");
   shadowLayer.className = "世界地圖層-環境物件-影子";
 
-  const shadowImg = document.createElement("img");
-  shadowImg.className = "世界地圖層-環境物件-image 世界地圖層-環境物件-image-shadow";
-  shadowImg.src = env.iconPath;
-  shadowImg.alt = "";
-  shadowImg.draggable = false;
+  const shadowMask = document.createElement("div");
+  shadowMask.className = "世界地圖層-環境物件-image-shadow";
+  shadowMask.style.setProperty("--shadow-mask", `url("${env.iconPath}")`);
 
   const img = document.createElement("img");
   img.className = "世界地圖層-環境物件-image";
@@ -867,7 +863,7 @@ function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
   img.draggable = false;
   const 重量描述 = env.destructible ? `碰撞重量 ${env.weight ?? "?"}` : "不可破壞";
   node.title = `${env.nameZh}（${env.category}・${重量描述}）\n${env.mechanicText}`;
-  shadowLayer.appendChild(shadowImg);
+  shadowLayer.appendChild(shadowMask);
   visualLayer.append(shadowLayer, img);
   node.appendChild(visualLayer);
   return node;

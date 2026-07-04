@@ -1368,7 +1368,7 @@ button.禁用:hover {
     drop-shadow(0 8px 12px rgba(0,0,0,0.82));
 }
 .世界地圖層-物件-glyph-shadow {
-  color: #16191f;
+  color: #8b8f96;
   filter: none;
 }
 .世界地圖層-物件-image {
@@ -1390,7 +1390,18 @@ button.禁用:hover {
 }
 .世界地圖層-物件-image-shadow,
 .世界地圖層-環境物件-image-shadow {
-  filter: brightness(0) saturate(0) opacity(1);
+  width: var(--world-object-size, 240px);
+  height: var(--world-object-size, 240px);
+  background: #8b8f96;
+  opacity: 1;
+  -webkit-mask-image: var(--shadow-mask);
+  mask-image: var(--shadow-mask);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center bottom;
+  mask-position: center bottom;
+  -webkit-mask-size: contain;
+  mask-size: contain;
 }
 .世界地圖層-物件-label {
   font-size: 18px;
