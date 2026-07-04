@@ -86,6 +86,8 @@ import {
   記錄驗收擊殺,
   設定驗收事件,
 } from "../驗收場狀態";
+import type { CaptainId } from "../../data/戰鬥原語";
+import { 計算主動技能效果, type 主動技能情境 } from "../../captain/主動技能效果";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -103,7 +105,6 @@ const MONSTER_ACTIVE_RADIUS = 2600;
 
 const MOVE_SPEED = 42;
 const MOVE_ACCELERATION = 860;
-const MOVE_TURN_ACCELERATION = 920;
 const MOVE_DECELERATION = 1280;
 const VIEW_PADDING = 140;
 // 正交斜俯視：只壓縮地面縱深，場景物件與 HUD 仍保持直立比例。
@@ -130,6 +131,10 @@ const FAMILY_FURNACE_IMAGE: Record<Family, string> = {
   mine: "/images/props/facilities/furnaces/family_furnace_mine.png",
   laser: "/images/props/facilities/furnaces/family_furnace_laser.png",
 };
+
+// 工作台與流浪商店：全種類共用單張去背圖，不分家族／世界。
+const WORKBENCH_IMAGE = "/images/props/facilities/workbenches/workbench.png";
+const SHOP_IMAGE = "/images/props/facilities/shops/shop.png";
 
 let playerPos = { x: 0, y: 0 };
 let playerMoving = false;
@@ -392,12 +397,53 @@ export function 建立世界地圖層(): HTMLElement {
   let playerVelocity = { x: 0, y: 0 };
   let collisionTickCarry = 0;
 
+  // —— 隊長主動技能執行狀態（效果由 主動技能效果.ts 計算，這裡負責套用與時間管理）——
+  let lastMoveDir = { x: 0, y: -1 }; // 玩家面向（傳送用），靜止時沿用最後方向
+  let 速度增益倍率 = 1;
+  let 速度增益到期 = 0;
+  let 減速領域: { x: number; y: number; radius: number; until: number; mult: number } | null = null;
+
   // —— 投射物戰鬥（Batch 1 核心戰鬥迴圈）——
   // 小隊每個家族依發射週期自動朝最近怪物射擊；遠程怪物朝玩家回擊。
   // 子彈飛行、命中、扣血、死亡都走既有的 投射物系統 + 碰撞解析 + 重量物理。
   const projectileLayer = document.createElement("div");
   projectileLayer.className = "世界地圖層-投射物圖層";
   canvas.appendChild(projectileLayer);
+
+  // 減速領域視覺圈：隨鏡頭縮放，套俯視壓縮，只在領域生效期間顯示。
+  const slowFieldNode = document.createElement("div");
+  slowFieldNode.className = "世界地圖層-減速領域";
+  slowFieldNode.style.position = "absolute";
+  slowFieldNode.style.borderRadius = "50%";
+  slowFieldNode.style.border = "2px dashed rgba(63,111,73,0.85)";
+  slowFieldNode.style.background =
+    "radial-gradient(circle, rgba(63,111,73,0.18), rgba(63,111,73,0.05) 68%, transparent)";
+  slowFieldNode.style.transform = "translate(-50%, -50%)";
+  slowFieldNode.style.pointerEvents = "none";
+  slowFieldNode.style.display = "none";
+  slowFieldNode.style.zIndex = "1";
+  canvas.appendChild(slowFieldNode);
+
+  // 施放主動技能的螢幕提示（toast）。
+  const skillToast = document.createElement("div");
+  skillToast.className = "隊長技能提示";
+  skillToast.style.position = "absolute";
+  skillToast.style.left = "50%";
+  skillToast.style.top = "36%";
+  skillToast.style.transform = "translate(-50%, -50%)";
+  skillToast.style.padding = "8px 18px";
+  skillToast.style.background = "rgba(250,246,238,0.94)";
+  skillToast.style.border = "1.5px solid #3f6f49";
+  skillToast.style.color = "#1c1913";
+  skillToast.style.fontWeight = "700";
+  skillToast.style.letterSpacing = "0.04em";
+  skillToast.style.pointerEvents = "none";
+  skillToast.style.opacity = "0";
+  skillToast.style.transition = "opacity 0.2s ease";
+  skillToast.style.zIndex = "28";
+  root.appendChild(skillToast);
+  let skillToastTimer = 0;
+
   const projectilePool = new ProjectilePool();
   const projectileNodes = new Map<number, HTMLElement>();
   // 每個家族的發射計時器（秒）
@@ -656,6 +702,18 @@ export function 建立世界地圖層(): HTMLElement {
       exclaim.style.display = "none";
     }
 
+    // 減速領域圈：套用與地面相同的俯視鏡頭與縱深壓縮。
+    if (減速領域 && performance.now() < 減速領域.until) {
+      const center = worldToScreen(減速領域, playerPos, viewport);
+      slowFieldNode.style.left = `${center.x}px`;
+      slowFieldNode.style.top = `${center.y}px`;
+      slowFieldNode.style.width = `${減速領域.radius * 2 * cameraZoom}px`;
+      slowFieldNode.style.height = `${減速領域.radius * 2 * cameraZoom * GROUND_DEPTH_SCALE}px`;
+      slowFieldNode.style.display = "block";
+    } else {
+      slowFieldNode.style.display = "none";
+    }
+
     renderMiniMapDynamic(miniMapInner, miniObjectNodes, miniPlayer);
   }
 
@@ -666,8 +724,15 @@ export function 建立世界地圖層(): HTMLElement {
    */
   function updateMonsters(dt: number): void {
     const elapsedSeconds = 應用程式狀態.額外.世界時鐘秒數 ?? 0;
+    const nowMs = performance.now();
+    const fieldActive = 減速領域 !== null && nowMs < 減速領域.until;
     for (const m of monsters) {
       if (m.inst.hp <= 0) continue;
+      // 建築師減速領域：站在圈內的敵人持續被減速（沿用既有 slowUntil/slowMult 機制）。
+      if (fieldActive && 減速領域 && Math.hypot(m.pos.x - 減速領域.x, m.pos.y - 減速領域.y) <= 減速領域.radius) {
+        m.slowUntil = nowMs + 260;
+        m.slowMult = 減速領域.mult;
+      }
       const dToPlayer = Math.hypot(m.pos.x - playerPos.x, m.pos.y - playerPos.y);
       const active = dToPlayer <= MONSTER_ACTIVE_RADIUS;
 
@@ -1033,11 +1098,15 @@ export function 建立世界地圖層(): HTMLElement {
   }
 
   function tick(now: number): void {
-    const dt = Math.min(0.05, (now - lastNow) / 1000);
+    // dt 上限放寬到 0.1 秒：掉幀時讓移動距離能補上，避免一頓一頓的「一波一波」感。
+    // （原本 0.05 上限在掉幀時會截斷移動量，卡頓幀走得短，看起來像在跳格。）
+    const dt = Math.min(0.1, (now - lastNow) / 1000);
     lastNow = now;
 
     if (應用程式狀態.畫面.層 === "操作頁面") {
       const moveScale = 訓練道場中 ? 取得訓練道場摘要().moveSpeedScale : 1;
+      // 指導者加速：生效期間全隊移速倍率提升。
+      const 速度增益 = now < 速度增益到期 ? 速度增益倍率 : 1;
       let axisX = 0;
       let axisY = 0;
       if (pressed.has("KeyA") || pressed.has("ArrowLeft")) axisX -= 1;
@@ -1049,8 +1118,8 @@ export function 建立世界地圖層(): HTMLElement {
       const targetVelocity =
         axisLength > 0
           ? {
-              x: (axisX / axisLength) * MOVE_SPEED * moveScale,
-              y: (axisY / axisLength) * MOVE_SPEED * moveScale,
+              x: (axisX / axisLength) * MOVE_SPEED * moveScale * 速度增益,
+              y: (axisY / axisLength) * MOVE_SPEED * moveScale * 速度增益,
             }
           : { x: 0, y: 0 };
 
@@ -1075,6 +1144,8 @@ export function 建立世界地圖層(): HTMLElement {
       playerMoving = playerVelocity.x !== 0 || playerVelocity.y !== 0;
 
       if (playerMoving) {
+        const 速度 = Math.hypot(playerVelocity.x, playerVelocity.y) || 1;
+        lastMoveDir = { x: playerVelocity.x / 速度, y: playerVelocity.y / 速度 };
         playerPos = clampTraversablePlayerPosition({
           x: playerPos.x + playerVelocity.x * dt,
           y: playerPos.y + playerVelocity.y * dt,
@@ -1110,6 +1181,12 @@ export function 建立世界地圖層(): HTMLElement {
 
   function onKeyDown(event: KeyboardEvent): void {
     if (應用程式狀態.畫面.層 !== "操作頁面") return;
+    // Space：請求施放隊長主動技能（冷卻/能量閘門在 HUD 端，成功後才回送效果事件）。
+    if (event.code === "Space") {
+      event.preventDefault();
+      if (!event.repeat) window.dispatchEvent(new CustomEvent("request-cast-active"));
+      return;
+    }
     if (!["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight"].includes(event.code)) {
       return;
     }
@@ -1153,6 +1230,8 @@ export function 建立世界地圖層(): HTMLElement {
     window.removeEventListener("resize", render);
     root.removeEventListener("wheel", onWheel);
     window.removeEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
+    window.removeEventListener("captain-active-cast", onCaptainCast as EventListener);
+    window.clearTimeout(skillToastTimer);
     window.cancelAnimationFrame(rafId);
   });
 
@@ -1187,6 +1266,68 @@ export function 建立世界地圖層(): HTMLElement {
     設定驗收事件("COLA 已被召喚至場上。");
   }
 
+  function 顯示技能提示(text: string): void {
+    skillToast.textContent = text;
+    skillToast.style.opacity = "1";
+    window.clearTimeout(skillToastTimer);
+    skillToastTimer = window.setTimeout(() => {
+      skillToast.style.opacity = "0";
+    }, 1100);
+  }
+
+  /**
+   * 套用一次隊長主動技能效果到世界（位移玩家／拉近或減速敵人／加速全隊）。
+   * 冷卻與能量已由 HUD 端（GameSnapshotSource）閘住，這裡只在成功施放後被事件驅動呼叫。
+   */
+  function 施放隊長主動技能(captainId: CaptainId): void {
+    const live = monsters.filter((m) => m.inst.hp > 0);
+    const ctx: 主動技能情境 = {
+      captainId,
+      playerPos: { ...playerPos },
+      facing: lastMoveDir,
+      monsters: live.map((m) => ({ pos: m.pos, hp: m.inst.hp })),
+      nowMs: performance.now(),
+    };
+    const effect = 計算主動技能效果(ctx);
+
+    if (effect.playerTeleportTo) {
+      playerPos = clampTraversablePlayerPosition(effect.playerTeleportTo, playerPos);
+      playerVelocity = { x: 0, y: 0 };
+      syncNearbyToState();
+    }
+    if (effect.speedBuff) {
+      速度增益倍率 = effect.speedBuff.mult;
+      速度增益到期 = performance.now() + effect.speedBuff.durationMs;
+    }
+    if (effect.slowField) {
+      減速領域 = {
+        x: effect.slowField.center.x,
+        y: effect.slowField.center.y,
+        radius: effect.slowField.radius,
+        mult: effect.slowField.mult,
+        until: performance.now() + effect.slowField.durationMs,
+      };
+    }
+    if (effect.pulls) {
+      for (const pull of effect.pulls) {
+        const target = live[pull.index];
+        if (target) {
+          target.pos.x = pull.to.x;
+          target.pos.y = pull.to.y;
+        }
+      }
+    }
+
+    顯示技能提示(effect.label + (effect.affected > 1 ? ` ×${effect.affected}` : ""));
+    設定驗收事件(`隊長主動技能｜${effect.logZh}`);
+    render();
+  }
+
+  function onCaptainCast(raw: Event): void {
+    const detail = (raw as CustomEvent<{ captainId?: CaptainId }>).detail;
+    if (detail?.captainId) 施放隊長主動技能(detail.captainId);
+  }
+
   function onDojoAcceptanceAction(raw: Event): void {
     if (!訓練道場中) return;
     const event = raw as CustomEvent<{ type?: string }>;
@@ -1209,6 +1350,7 @@ export function 建立世界地圖層(): HTMLElement {
   }
 
   window.addEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
+  window.addEventListener("captain-active-cast", onCaptainCast as EventListener);
 
   // 驗收面板：正式對局才顯示，讓經濟/養成/推圖閉環可被點擊驗收（佔位 UI）。
   if (!訓練道場中) {

@@ -137,8 +137,37 @@ export class GameSnapshotSource {
     }
   }
 
-  castActive(): void {
-    this.activeSkill.tryCast();
+  /**
+   * 嘗試施放隊長主動技能。冷卻/能量的閘門在此（activeSkill.tryCast），
+   * 成功後發出 `captain-active-cast` 事件，讓世界地圖層去套用實際效果（位移/拉近/減速/加速）。
+   * @returns 是否真的放出（供呼叫端回饋 UI）。
+   */
+  castActive(): boolean {
+    const ok = this.activeSkill.tryCast();
+    if (ok) {
+      window.dispatchEvent(
+        new CustomEvent("captain-active-cast", { detail: { captainId: this.captainId } }),
+      );
+    }
+    return ok;
+  }
+
+  /** 給驗收控制台顯示：目前隊長主動技能的能量/冷卻讀數。 */
+  活動技能讀數() {
+    const active = this.activeSkill.snapshot();
+    const energy = this.energySystem.snapshot();
+    return {
+      captainId: this.captainId,
+      label: active.label,
+      energyRatio: energy.ratio,
+      energyCurrent: energy.current,
+      energyMax: energy.max,
+      energyCost: active.energyCost,
+      energyEnough: active.energyEnough,
+      cooldownRatio: active.cooldownRatio,
+      cooldownRemaining: active.cooldownRemaining,
+      castable: active.energyEnough && active.cooldownRemaining <= 0 && !active.castLatency,
+    };
   }
 
   snapshot(mode: SnapshotMode): HudSnapshot {
