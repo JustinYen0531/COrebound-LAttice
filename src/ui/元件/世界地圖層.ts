@@ -29,7 +29,7 @@ import {
 import { 取得訓練小隊成員 } from "../訓練道場狀態";
 import { ProjectilePool, type Projectile } from "../../combat/投射物系統";
 import { detectHits, resolveProjectileHit } from "../../combat/碰撞解析";
-import { PLAYABLE_FAMILIES, FAMILY_FIRE_PERIOD } from "../../data/戰鬥原語";
+import { PLAYABLE_FAMILIES, FAMILY_FIRE_PERIOD, type EnemyTier } from "../../data/戰鬥原語";
 import { STAR_MULTIPLIER, type StarLevel } from "../../data/成員型別";
 import { computeFamilyWeaponStatus, type DeployedMember } from "../../skills/技能管理";
 import { MEMBERS } from "../../data/成員資料庫";
@@ -134,11 +134,27 @@ const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
 const PORTAL_INTERACT_RADIUS = 230;
 const PORTAL_LANDING_DISTANCE = WORLD_OBJECT_FOOTPRINT_RADIUS + 52;
 
-// 怪物 token 比場景物件小，依 Tier 微調：T2 精英最大、T0 資源怪最小。
-const MONSTER_SIZE_AT_REFERENCE_ZOOM: Record<0 | 1 | 2, number> = {
-  0: 300,
-  1: 360,
-  2: 440,
+// Tier 尺度是玩法資訊：T0/T1/T2 小幅遞增，T3/T4 Boss 則刻意跨級放大。
+const MONSTER_SIZE_AT_REFERENCE_ZOOM: Record<EnemyTier, number> = {
+  0: 220,
+  1: 300,
+  2: 430,
+  3: 1200,
+  4: 2200,
+};
+const MONSTER_COLLISION_RADIUS: Record<EnemyTier, number> = {
+  0: 55,
+  1: 75,
+  2: 108,
+  3: 300,
+  4: 550,
+};
+const BOSS_BATTLE_SPRITE: Record<"geometry" | "organic" | "fractal" | "mechanical" | "core", string> = {
+  geometry: "/images/enemies/bosses/幾何BOSS.png",
+  organic: "/images/enemies/bosses/有機BOSS.png",
+  fractal: "/images/enemies/bosses/分形BOSS.png",
+  mechanical: "/images/enemies/bosses/機械BOSS.png",
+  core: "/images/enemies/bosses/最終BOSS.png",
 };
 // 怪物 CombatStats.speed（約 200~300）換算成世界座標移動速度的比例，使其與玩家步速相當。
 const MONSTER_SPEED_SCALE = 0.16;
@@ -1071,22 +1087,19 @@ export function 建立世界地圖層(): HTMLElement {
 
   /**
    * 在玩家附近生成一隻怪物到場（守護者/COLA 召喚用）。
-   * tier 對外部渲染統一以 2 呈現（最大 token），但保留真實 def 供結算。
+   * 保留真實 T3/T4，讓尺寸、碰撞與立繪都能表達 Boss 階級。
    */
   function 生成Boss到場(def: MonsterDef, bossKind: "guardian" | "cola", bossWorld?: World): void {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 520;
+    const dist = def.tier === 4 ? 1500 : 980;
     const spawnX = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, playerPos.x + Math.cos(angle) * dist));
     const spawnY = Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, playerPos.y + Math.sin(angle) * dist));
-    const spritePath =
-      def.world === "core"
-        ? "/images/enemies/mechanical/e28_factory.png" // COLA 佔位圖（機械超級工廠）
-        : `/images/enemies/${def.world}/${def.id}.png`;
+    const spritePath = BOSS_BATTLE_SPRITE[def.world];
     const inst: MonsterInstance = {
       id: `boss_${def.id}_${Date.now()}`,
       monsterNo: def.no,
       world: (def.world === "core" ? "mechanical" : def.world) as World,
-      tier: 2, // 渲染/碰撞相容用；真實威脅由 hp/atk 體現
+      tier: def.tier,
       nameZh: def.nameZh,
       spritePath,
       x: spawnX,
@@ -1150,7 +1163,7 @@ export function 建立世界地圖層(): HTMLElement {
       node.style.setProperty("--object-optical-y", `${opticalOffset.toFixed(2)}px`);
     }
     for (const m of monsters) {
-      const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[m.inst.tier as 0 | 1 | 2] ?? 360;
+      const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[m.inst.tier];
       const size = baseSize * (cameraZoom / WORLD_OBJECT_REFERENCE_CAMERA_ZOOM);
       m.node.style.setProperty("--monster-size", `${size.toFixed(2)}px`);
     }
@@ -1475,7 +1488,7 @@ export function 建立世界地圖層(): HTMLElement {
     const monsterBodies = liveMonsters.map((m) => ({
       id: m.inst.id,
       position: m.pos,
-      radius: 訓練敵人碰撞半徑(m.inst.tier as 0 | 1 | 2),
+      radius: 訓練敵人碰撞半徑(m.inst.tier),
       hp: m.inst.hp,
       weight: m.inst.weight,
       dead: m.inst.hp <= 0,
@@ -1617,15 +1630,8 @@ export function 建立世界地圖層(): HTMLElement {
     return (PLAYER_SIZE_AT_REFERENCE_ZOOM / REFERENCE_CAMERA_ZOOM) * (ringRadius / PLAYER_TOTEM_VIEWBOX_SIZE);
   }
 
-  function 訓練敵人碰撞半徑(tier: 0 | 1 | 2): number {
-    switch (tier) {
-      case 0:
-        return 56;
-      case 1:
-        return 78;
-      case 2:
-        return 108;
-    }
+  function 訓練敵人碰撞半徑(tier: EnemyTier): number {
+    return MONSTER_COLLISION_RADIUS[tier];
   }
 
   function updateCollisions(dt: number): void {
@@ -1643,7 +1649,7 @@ export function 建立世界地圖層(): HTMLElement {
             playerPos,
             playerRadius,
             monster.pos,
-            訓練敵人碰撞半徑(monster.inst.tier as 0 | 1 | 2),
+            訓練敵人碰撞半徑(monster.inst.tier),
           ),
       );
 
@@ -1665,7 +1671,7 @@ export function 建立世界地圖層(): HTMLElement {
           contacts.map((monster) => ({
             id: monster.inst.id,
             position: monster.pos,
-            radius: 訓練敵人碰撞半徑(monster.inst.tier as 0 | 1 | 2),
+            radius: 訓練敵人碰撞半徑(monster.inst.tier),
             hp: monster.inst.hp,
             weight: monster.inst.weight,
             dead: monster.inst.hp <= 0,
@@ -1725,7 +1731,7 @@ export function 建立世界地圖層(): HTMLElement {
           playerPos,
           playerRadius,
           monster.pos,
-          訓練敵人碰撞半徑(monster.inst.tier as 0 | 1 | 2),
+          訓練敵人碰撞半徑(monster.inst.tier),
         ),
     );
 
@@ -1741,7 +1747,7 @@ export function 建立世界地圖層(): HTMLElement {
         contacts.map((monster) => ({
           id: monster.inst.id,
           position: monster.pos,
-          radius: 訓練敵人碰撞半徑(monster.inst.tier as 0 | 1 | 2),
+          radius: 訓練敵人碰撞半徑(monster.inst.tier),
           hp: monster.inst.hp,
           weight: monster.inst.weight,
           dead: monster.inst.hp <= 0,
@@ -2482,7 +2488,7 @@ function miniMarkerForEnvObject(env: EnvObjectInstance): MiniMapMarker {
 function createMonsterNode(inst: 可見怪物實例): HTMLElement {
   const node = document.createElement("div");
   node.className = `世界地圖層-怪物 世界地圖層-怪物-T${inst.tier}`;
-  const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[inst.tier as 0 | 1 | 2] ?? 360;
+  const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[inst.tier];
   node.style.setProperty("--monster-size", `${baseSize}px`);
 
   const shadow = document.createElement("img");
