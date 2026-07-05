@@ -80,6 +80,102 @@
   padding: 6px;
 }
 
+/* 底部三名上陣成員：正式頭像 + 共用小隊生命回饋。 */
+.hud-member-status-host {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  z-index: 11;
+  pointer-events: none;
+}
+.hud-member-status-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.hud-member-status-card {
+  --member-accent: #d8b46a;
+  display: grid;
+  grid-template-columns: 34px 100px;
+  gap: 6px;
+  align-items: center;
+  min-width: 142px;
+  padding: 4px 7px 4px 4px;
+  border: 1px solid color-mix(in srgb, var(--member-accent) 58%, var(--c-border));
+  border-bottom: 3px solid var(--member-accent);
+  background: rgba(6, 7, 12, 0.92);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.42);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.hud-member-status-card--inner { --member-accent: #65d9ff; }
+.hud-member-status-card--middle { --member-accent: #ffd36a; }
+.hud-member-status-card--outer { --member-accent: #ff7f9d; }
+.hud-member-avatar {
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid var(--member-accent);
+  border-radius: 50%;
+  background: #e8e4da;
+}
+.hud-member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hud-member-data {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.hud-member-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  font-size: 9px;
+  line-height: 1;
+}
+.hud-member-heading span { color: var(--member-accent); }
+.hud-member-heading strong {
+  overflow: hidden;
+  color: var(--c-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hud-member-hp {
+  position: relative;
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: #171018;
+}
+.hud-member-hp-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #d91f3d, #ff5265 65%, #ffb238);
+  transition: width 0.16s steps(10, end);
+}
+.hud-member-hp span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font: 800 8px/1 Georgia, serif;
+  text-shadow: 0 1px 2px #000;
+}
+.hud-member-status-card.is-danger { animation: hudMemberDanger 0.9s ease-in-out infinite; }
+.hud-member-status-card.is-dead { filter: grayscale(1); opacity: 0.5; }
+@keyframes hudMemberDanger {
+  50% { border-color: var(--c-hp-danger); box-shadow: 0 0 12px rgba(255, 84, 104, 0.42); }
+}
+
+@media (max-width: 720px) {
+  .hud-member-status-card { grid-template-columns: 30px 74px; min-width: 112px; }
+  .hud-member-avatar { width: 30px; height: 30px; }
+}
+
 /* 隊長頭像：雙環線稿框，取代原本純色圓底 */
 .core-trio .avatar {
   position: relative;

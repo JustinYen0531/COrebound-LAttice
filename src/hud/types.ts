@@ -252,6 +252,8 @@ export interface PotionItem {
 export interface RosterMember {
   id: string;
   label: string;
+  /** 頭像使用的成員星級。 */
+  star?: 1 | 2 | 3;
   layer: Layer;
   role: Role;
   hpRatio: number;

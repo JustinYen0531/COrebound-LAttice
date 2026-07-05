@@ -27,6 +27,7 @@ import { FormationRings } from "./formation-rings";
 import { SkillStrips } from "./skill-strips";
 import { WeaponDrawer } from "./weapon-drawer";
 import { ItemDrawer } from "./item-drawer";
+import { MemberStatusRow } from "./member-status-row";
 
 /**
  * 整個戰鬥 HUD 的根容器。
@@ -50,6 +51,7 @@ export class HudController {
   private readonly strips: SkillStrips;
   private readonly weaponDrawer: WeaponDrawer;
   private readonly itemDrawer: ItemDrawer;
+  private readonly memberStatus: MemberStatusRow;
   private readonly hintL: HTMLElement;
   private readonly hintR: HTMLElement;
   private readonly suppressToast: HTMLElement;
@@ -79,6 +81,7 @@ export class HudController {
     this.strips = new SkillStrips();
     this.weaponDrawer = new WeaponDrawer();
     this.itemDrawer = new ItemDrawer();
+    this.memberStatus = new MemberStatusRow();
 
     // 提示元素
     this.hintL = document.createElement("div");
@@ -98,6 +101,9 @@ export class HudController {
     const coreHost = document.createElement("div");
     coreHost.className = "hud-core-host";
     coreHost.appendChild(this.core.el);
+    const memberStatusHost = document.createElement("div");
+    memberStatusHost.className = "hud-member-status-host";
+    memberStatusHost.appendChild(this.memberStatus.el);
     const stripsHost = document.createElement("div");
     stripsHost.className = "hud-strips-host";
     stripsHost.appendChild(this.strips.el);
@@ -114,6 +120,7 @@ export class HudController {
       drawerRight,
       stripsHost,
       coreHost,
+      memberStatusHost,
       this.hintL,
       this.hintR,
       this.suppressToast,
@@ -132,6 +139,7 @@ export class HudController {
   update(snap: HudSnapshot): void {
     this.snapshot = snap;
     this.core.render(snap);
+    this.memberStatus.render(snap);
     this.rings.render(snap);
     this.strips.renderWeapons(snap.weapons);
     this.strips.renderPeriodics(snap.periodics);

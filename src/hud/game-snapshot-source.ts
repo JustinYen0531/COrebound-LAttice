@@ -252,6 +252,7 @@ export class GameSnapshotSource {
         return {
           id: member.id,
           label: member.nameZh,
+          star: slot.star,
           layer,
           role,
           hpRatio: summary.playerMaxHp > 0 ? summary.playerHp / summary.playerMaxHp : 0,
@@ -283,6 +284,7 @@ export class GameSnapshotSource {
         return {
           id: member.id,
           label: member.nameZh,
+          star: entry.star,
           layer: entry.layer,
           role: entry.role,
           hpRatio: summary.playerMaxHp > 0 ? summary.playerHp / summary.playerMaxHp : 0,

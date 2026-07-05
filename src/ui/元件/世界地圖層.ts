@@ -1156,9 +1156,10 @@ export function 建立世界地圖層(): HTMLElement {
         const fill = bar.querySelector<HTMLElement>(".世界地圖層-怪物-血條填充")!;
         const label = bar.querySelector<HTMLElement>(".世界地圖層-怪物-血條文字")!;
         const hpPercent = Math.max(0, Math.min(100, (m.inst.hp / m.inst.maxHp) * 100));
+        const displayPercent = hpPercent >= 100 ? 100 : Math.max(10, Math.floor(hpPercent / 10) * 10);
         bar.style.display = "block";
-        fill.style.width = `${hpPercent}%`;
-        label.textContent = `${Math.ceil(hpPercent)}%`;
+        fill.style.width = `${displayPercent}%`;
+        label.textContent = `${displayPercent}%`;
       } else {
         m.node.querySelector<HTMLElement>(".世界地圖層-怪物-血條")!.style.display = "none";
       }
