@@ -2148,6 +2148,19 @@ button.禁用:hover {
   stroke-width: 22;
   vector-effect: non-scaling-stroke;
 }
+.世界地圖層-角落核心群 {
+  pointer-events: none;
+}
+.世界地圖層-角落核心 {
+  opacity: 0.18;
+  stroke: rgba(255,255,255,0.5);
+  stroke-width: 12;
+  vector-effect: non-scaling-stroke;
+}
+.世界地圖層-角落核心-geometry { fill: rgba(111, 168, 255, 0.18); }
+.世界地圖層-角落核心-organic { fill: rgba(111, 220, 140, 0.16); }
+.世界地圖層-角落核心-fractal { fill: rgba(200, 155, 255, 0.18); }
+.世界地圖層-角落核心-mechanical { fill: rgba(255, 197, 111, 0.16); }
 .世界地圖層-輕量折皺地板 {
   pointer-events: none;
   opacity: 0.34;
@@ -2765,6 +2778,15 @@ button.禁用:hover {
   stroke-linejoin: round;
   pointer-events: none;
 }
+.世界地圖層-小地圖角落核心 {
+  opacity: 0.72;
+  stroke: rgba(255,255,255,0.72);
+  stroke-width: 1.5;
+}
+.世界地圖層-小地圖角落核心-geometry { fill: rgba(111, 168, 255, 0.36); }
+.世界地圖層-小地圖角落核心-organic { fill: rgba(111, 220, 140, 0.32); }
+.世界地圖層-小地圖角落核心-fractal { fill: rgba(200, 155, 255, 0.36); }
+.世界地圖層-小地圖角落核心-mechanical { fill: rgba(255, 197, 111, 0.32); }
 .世界地圖層-小地圖分界線 {
   fill: none;
   stroke: rgba(255, 255, 255, 0.88);

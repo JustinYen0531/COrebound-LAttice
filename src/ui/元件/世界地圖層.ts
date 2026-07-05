@@ -3249,6 +3249,48 @@ function floorZoneForWorld(
     : "outer";
 }
 
+function createCornerCoreOverlays(host: SVGSVGElement): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const polygons = buildRegionPolygons();
+  const group = document.createElementNS(svgNamespace, "g");
+  group.setAttribute("class", "世界地圖層-角落核心群");
+
+  (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
+    const bounds = boundsOf(polygons[world]);
+    const rect = coreRectForWorld(world, bounds);
+    const node = document.createElementNS(svgNamespace, "rect");
+    node.setAttribute("class", `世界地圖層-角落核心 世界地圖層-角落核心-${world}`);
+    node.setAttribute("x", String(rect.minX));
+    node.setAttribute("y", String(rect.minY));
+    node.setAttribute("width", String(rect.maxX - rect.minX));
+    node.setAttribute("height", String(rect.maxY - rect.minY));
+    group.appendChild(node);
+  });
+
+  host.appendChild(group);
+}
+
+function createMiniCornerCores(host: SVGSVGElement): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const polygons = buildRegionPolygons();
+  const width = 176;
+  const height = 176;
+  const toMiniX = (x: number) => ((x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width;
+  const toMiniY = (y: number) => ((y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY)) * height;
+
+  (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
+    const bounds = boundsOf(polygons[world]);
+    const rect = coreRectForWorld(world, bounds);
+    const node = document.createElementNS(svgNamespace, "rect");
+    node.setAttribute("class", `世界地圖層-小地圖角落核心 世界地圖層-小地圖角落核心-${world}`);
+    node.setAttribute("x", String(toMiniX(rect.minX)));
+    node.setAttribute("y", String(toMiniY(rect.minY)));
+    node.setAttribute("width", String(toMiniX(rect.maxX) - toMiniX(rect.minX)));
+    node.setAttribute("height", String(toMiniY(rect.maxY) - toMiniY(rect.minY)));
+    host.appendChild(node);
+  });
+}
+
 function applyDetailedTileFill(
   path: SVGPathElement,
   definitions: SVGDefsElement,
