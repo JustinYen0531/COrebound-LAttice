@@ -2271,49 +2271,48 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   definitions.appendChild(clipPath);
 
   if (ENABLE_DETAILED_FLOOR_TEXTURES) {
-  if (ENABLE_DETAILED_FLOOR_TEXTURES) {
-  for (const zone of ["outer", "core"] as const) {
-    for (let variant = 0; variant < 6; variant += 1) {
-      const pattern = document.createElementNS(svgNamespace, "pattern");
-      pattern.setAttribute("id", `geometry-floor-${zone}-${variant}`);
-      pattern.setAttribute("patternUnits", "objectBoundingBox");
-      pattern.setAttribute("width", "1");
-      pattern.setAttribute("height", "1");
-      const halfStart = zone === "outer" ? 0 : 887;
-      pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
-      pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    for (const zone of ["outer", "core"] as const) {
+      for (let variant = 0; variant < 6; variant += 1) {
+        const pattern = document.createElementNS(svgNamespace, "pattern");
+        pattern.setAttribute("id", `geometry-floor-${zone}-${variant}`);
+        pattern.setAttribute("patternUnits", "objectBoundingBox");
+        pattern.setAttribute("width", "1");
+        pattern.setAttribute("height", "1");
+        const halfStart = zone === "outer" ? 0 : 887;
+        pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
+        pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
-      const image = document.createElementNS(svgNamespace, "image");
-      image.setAttribute("href", "/images/maps/floors/geometry.png");
-      image.setAttribute("width", "1774");
-      image.setAttribute("height", "887");
-      image.setAttribute("x", "0");
-      image.setAttribute("y", "0");
-      // 只使用不會露出方形角落的鏡射；原先的 60 度旋轉正是藍色缺口來源。
-      const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
-      const transforms = [
-        "",
-        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
-        "translate(0 887) scale(1 -1)",
-        `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
-        "",
-        `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
-      ];
-      image.setAttribute("transform", transforms[variant]);
-      pattern.appendChild(image);
+        const image = document.createElementNS(svgNamespace, "image");
+        image.setAttribute("href", "/images/maps/floors/geometry.png");
+        image.setAttribute("width", "1774");
+        image.setAttribute("height", "887");
+        image.setAttribute("x", "0");
+        image.setAttribute("y", "0");
+        // 只使用不會露出方形角落的鏡射；原先的 60 度旋轉正是藍色缺口來源。
+        const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
+        const transforms = [
+          "",
+          `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+          "translate(0 887) scale(1 -1)",
+          `translate(${horizontalMirrorAxis} 887) scale(-1 -1)`,
+          "",
+          `translate(${horizontalMirrorAxis} 0) scale(-1 1)`,
+        ];
+        image.setAttribute("transform", transforms[variant]);
+        pattern.appendChild(image);
 
-      const tint = document.createElementNS(svgNamespace, "rect");
-      tint.setAttribute("x", String(halfStart));
-      tint.setAttribute("y", "0");
-      tint.setAttribute("width", "887");
-      tint.setAttribute("height", "887");
-      tint.setAttribute("fill", zone === "outer" ? "#315d91" : "#9bc9f2");
-      tint.setAttribute("fill-opacity", zone === "outer" ? "0.86" : "0.78");
-      tint.setAttribute("style", "mix-blend-mode: multiply");
-      pattern.appendChild(tint);
-      definitions.appendChild(pattern);
+        const tint = document.createElementNS(svgNamespace, "rect");
+        tint.setAttribute("x", String(halfStart));
+        tint.setAttribute("y", "0");
+        tint.setAttribute("width", "887");
+        tint.setAttribute("height", "887");
+        tint.setAttribute("fill", zone === "outer" ? "#315d91" : "#9bc9f2");
+        tint.setAttribute("fill-opacity", zone === "outer" ? "0.86" : "0.78");
+        tint.setAttribute("style", "mix-blend-mode: multiply");
+        pattern.appendChild(tint);
+        definitions.appendChild(pattern);
+      }
     }
-  }
   }
 
   host.appendChild(definitions);
@@ -2602,16 +2601,17 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
   clipPath.appendChild(clipShape);
   definitions.appendChild(clipPath);
 
-  for (const zone of ["outer", "core"] as const) {
-    for (let variant = 0; variant < 6; variant += 1) {
-      const pattern = document.createElementNS(svgNamespace, "pattern");
-      pattern.setAttribute("id", `organic-floor-${zone}-${variant}`);
-      pattern.setAttribute("patternUnits", "objectBoundingBox");
-      pattern.setAttribute("width", "1");
-      pattern.setAttribute("height", "1");
-      const halfStart = zone === "outer" ? 0 : 887;
-      pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
-      pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+  if (ENABLE_DETAILED_FLOOR_TEXTURES) {
+    for (const zone of ["outer", "core"] as const) {
+      for (let variant = 0; variant < 6; variant += 1) {
+        const pattern = document.createElementNS(svgNamespace, "pattern");
+        pattern.setAttribute("id", `organic-floor-${zone}-${variant}`);
+        pattern.setAttribute("patternUnits", "objectBoundingBox");
+        pattern.setAttribute("width", "1");
+        pattern.setAttribute("height", "1");
+        const halfStart = zone === "outer" ? 0 : 887;
+        pattern.setAttribute("viewBox", `${halfStart} 0 887 887`);
+        pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
         // 底層純色 bg 托底以維持顏色飽和
         const bg = document.createElementNS(svgNamespace, "rect");
@@ -2630,7 +2630,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
         image.setAttribute("height", "887");
         image.setAttribute("x", "0");
         image.setAttribute("y", "0");
-        image.setAttribute("opacity", "0.26"); // 稀釋黑線，降低存在感
+        image.setAttribute("opacity", "0.26");
         const horizontalMirrorAxis = zone === "outer" ? 887 : 2661;
         const transforms = [
           "",
@@ -2653,9 +2653,9 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
         tint.setAttribute("fill-opacity", "0.6");
         tint.setAttribute("style", "mix-blend-mode: multiply");
         pattern.appendChild(tint);
-      definitions.appendChild(pattern);
+        definitions.appendChild(pattern);
+      }
     }
-  }
   }
 
   host.appendChild(definitions);
