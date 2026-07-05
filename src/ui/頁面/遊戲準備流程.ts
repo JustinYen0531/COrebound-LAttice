@@ -84,6 +84,57 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
 
   root.appendChild(版面);
 
+  const 畫質區 = document.createElement("section");
+  畫質區.style.marginTop = "18px";
+  畫質區.style.padding = "16px";
+  畫質區.style.borderRadius = "14px";
+  畫質區.style.background = "rgba(255,255,255,0.03)";
+  畫質區.style.border = "1px solid rgba(255,255,255,0.08)";
+  畫質區.style.display = "flex";
+  畫質區.style.flexDirection = "column";
+  畫質區.style.gap = "10px";
+  畫質區.innerHTML = `
+    <div style="font-size:0.96rem;font-weight:700;color:#f2e6c9;">${雙語("世界地板載入模式", "World Floor Load Mode")}</div>
+    <div style="font-size:0.8rem;line-height:1.6;color:#c8d0ec;">
+      ${雙語("你做的磁磚地板保留著，只是改成進場前自己決定要不要載入。順暢模式適合測試，高細節模式會把四世界磁磚地板完整帶回來。", "Your crafted tile floors are kept; this just lets you decide before entering whether to load them. Smooth mode is better for testing, while High Detail restores the full tiled floors across the four worlds.")}
+    </div>
+  `;
+
+  const 模式列 = document.createElement("div");
+  模式列.className = "按鈕列";
+  模式列.style.marginTop = "0";
+  const 高細節啟用中 = 應用程式狀態.額外.高細節世界地板;
+
+  const 順暢模式 = document.createElement("button");
+  順暢模式.className = 高細節啟用中 ? "二級按鈕" : "一級按鈕";
+  順暢模式.textContent = 雙語("順暢模式", "Smooth Mode");
+  順暢模式.onclick = () => {
+    應用程式狀態.設定高細節世界地板(false);
+    渲染遊戲準備流程(容器);
+  };
+
+  const 高細節模式 = document.createElement("button");
+  高細節模式.className = 高細節啟用中 ? "一級按鈕" : "二級按鈕";
+  高細節模式.textContent = 雙語("高細節磁磚", "High Detail Tiles");
+  高細節模式.onclick = () => {
+    應用程式狀態.設定高細節世界地板(true);
+    渲染遊戲準備流程(容器);
+  };
+
+  模式列.append(順暢模式, 高細節模式);
+  畫質區.appendChild(模式列);
+
+  const 提示 = document.createElement("div");
+  提示.style.fontSize = "0.75rem";
+  提示.style.lineHeight = "1.6";
+  提示.style.color = "#8d93ad";
+  提示.textContent = 高細節啟用中
+    ? 雙語("目前會載入高細節磁磚。若裝置又開始發白或卡頓，回到這裡切回順暢模式即可。", "High Detail tiles will load for this run. If the screen starts whitening or stuttering again, come back here and switch to Smooth Mode.")
+    : 雙語("目前使用順暢模式，只保留輕量世界地板。需要看完整磁磚時，再切到高細節模式進場。", "Smooth Mode is active right now and keeps only the lightweight world floors. Switch to High Detail when you want to inspect the full tile work.");
+  畫質區.appendChild(提示);
+
+  root.appendChild(畫質區);
+
   const 底部按鈕列 = document.createElement("div");
   底部按鈕列.className = "按鈕列";
   const 取消 = document.createElement("button");

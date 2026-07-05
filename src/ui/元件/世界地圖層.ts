@@ -146,7 +146,6 @@ const DEFAULT_CAMERA_ZOOM = 3.7;
 const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
 const MIN_CAMERA_ZOOM = 0.85;
 const MAX_CAMERA_ZOOM = 4.0;
-const ENABLE_DETAILED_WORLD_FLOORS = false;
 const ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS = true;
 const ENABLE_DETAILED_FLOOR_TEXTURES = false;
 let cameraZoom = DEFAULT_CAMERA_ZOOM;
@@ -288,6 +287,7 @@ export function 建立世界地圖層(): HTMLElement {
   const 訓練道場中 =
     應用程式狀態.畫面.層 === "操作頁面" && 應用程式狀態.畫面.訓練道場;
   const 進度模式 = 訓練道場中 ? "dojo" : "formal";
+  const 啟用高細節地板 = 應用程式狀態.額外.高細節世界地板;
   let 目前訓練世界: World | null = 訓練道場中 ? 取得訓練道場摘要().selectedWorld : null;
   const 套用訓練場景 = (forceCenter = false) => {
     if (!訓練道場中 || !目前訓練世界) {
@@ -337,10 +337,10 @@ export function 建立世界地圖層(): HTMLElement {
 
   const regionPaths = createRegionPaths(zoneSvg);
   if (ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS) createLightweightWrinkleFloors(zoneSvg);
-  const geometryCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createGeometryEinsteinFloor(zoneSvg) : [];
-  const fractalCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createFractalPenroseFloor(zoneSvg) : [];
-  const organicCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createOrganicBirdFloor(zoneSvg) : [];
-  const mechanicalCoreBoundaries = ENABLE_DETAILED_WORLD_FLOORS ? createMechanicalCairoFloor(zoneSvg) : [];
+  const geometryCoreBoundaries = 啟用高細節地板 ? createGeometryEinsteinFloor(zoneSvg) : [];
+  const fractalCoreBoundaries = 啟用高細節地板 ? createFractalPenroseFloor(zoneSvg) : [];
+  const organicCoreBoundaries = 啟用高細節地板 ? createOrganicBirdFloor(zoneSvg) : [];
+  const mechanicalCoreBoundaries = 啟用高細節地板 ? createMechanicalCairoFloor(zoneSvg) : [];
   const dividerPaths = createDividerPaths(zoneSvg);
   // 區域外框、分界線、地板花紋都是「世界座標固定」的靜態幾何，
   // 不會隨玩家移動改變；只在建圖時設定一次 d 屬性即可，
