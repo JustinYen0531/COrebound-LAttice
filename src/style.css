@@ -2129,24 +2129,20 @@ button.禁用:hover {
   pointer-events: none;
 }
 .世界地圖層-高細節底板 {
-  opacity: 0.72;
+  opacity: 0.94;
   mix-blend-mode: multiply;
 }
 .世界地圖層-高細節底板-geometry {
-  opacity: 0.76;
-  filter: saturate(1.02) contrast(1.08) brightness(0.86);
+  opacity: 0.96;
 }
 .世界地圖層-高細節底板-organic {
-  opacity: 0.74;
-  filter: saturate(1.04) contrast(1.05) brightness(0.82);
+  opacity: 0.95;
 }
 .世界地圖層-高細節底板-fractal {
-  opacity: 0.92;
-  filter: saturate(1.18) contrast(1.18) brightness(0.72);
+  opacity: 0.97;
 }
 .世界地圖層-高細節底板-mechanical {
-  opacity: 0.78;
-  filter: saturate(1.08) contrast(1.12) brightness(0.8);
+  opacity: 0.96;
 }
 .世界地圖層-分界線 {
   fill: none;

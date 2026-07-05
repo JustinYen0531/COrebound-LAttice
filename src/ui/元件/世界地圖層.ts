@@ -345,10 +345,10 @@ export function 建立世界地圖層(): HTMLElement {
   const regionPaths = createRegionPaths(zoneSvg);
   if (啟用高細節地板) createHighDetailBaseFloors(zoneSvg);
   else if (ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS) createLightweightWrinkleFloors(zoneSvg);
-  const geometryCoreBoundaries = 啟用高細節地板 ? createGeometryEinsteinFloor(zoneSvg) : [];
-  const fractalCoreBoundaries = 啟用高細節地板 ? createFractalPenroseFloor(zoneSvg) : [];
-  const organicCoreBoundaries = 啟用高細節地板 ? createOrganicBirdFloor(zoneSvg) : [];
-  const mechanicalCoreBoundaries = 啟用高細節地板 ? createMechanicalCairoFloor(zoneSvg) : [];
+  const geometryCoreBoundaries: EinsteinPoint[][] = [];
+  const fractalCoreBoundaries: PenrosePoint[][] = [];
+  const organicCoreBoundaries: EscherPoint[][] = [];
+  const mechanicalCoreBoundaries: CairoPoint[][] = [];
   const dividerPaths = createDividerPaths(zoneSvg);
   // 區域外框、分界線、地板花紋都是「世界座標固定」的靜態幾何，
   // 不會隨玩家移動改變；只在建圖時設定一次 d 屬性即可，
@@ -2280,14 +2280,19 @@ function createHighDetailBaseFloors(host: SVGSVGElement): void {
     defs.appendChild(clipPath);
 
     const bounds = boundsOf(polygons[world]);
+    const width = bounds.maxX - bounds.minX;
+    const height = bounds.maxY - bounds.minY;
+    const side = Math.max(width, height);
+    const imageX = bounds.minX + width / 2 - side / 2;
+    const imageY = bounds.minY + height / 2 - side / 2;
     const image = document.createElementNS(svgNamespace, "image");
     image.setAttribute("class", `世界地圖層-高細節底板 世界地圖層-高細節底板-${world}`);
     image.setAttribute("href", HIGH_DETAIL_FLOOR_IMAGE[world]);
-    image.setAttribute("x", String(bounds.minX));
-    image.setAttribute("y", String(bounds.minY));
-    image.setAttribute("width", String(bounds.maxX - bounds.minX));
-    image.setAttribute("height", String(bounds.maxY - bounds.minY));
-    image.setAttribute("preserveAspectRatio", "none");
+    image.setAttribute("x", String(imageX));
+    image.setAttribute("y", String(imageY));
+    image.setAttribute("width", String(side));
+    image.setAttribute("height", String(side));
+    image.setAttribute("preserveAspectRatio", "xMidYMid slice");
     image.setAttribute("clip-path", `url(#${clipId})`);
     group.appendChild(image);
   });
