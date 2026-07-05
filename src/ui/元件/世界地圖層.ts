@@ -2116,6 +2116,14 @@ function createObjectNode(object: MapObject): HTMLElement {
   node.style.setProperty("--world-object-size", `${WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM}px`);
   const imagePath = facilityImagePath(object);
 
+  const beacon = document.createElement("div");
+  beacon.className = "世界地圖層-物件-信標";
+
+  const beaconCore = document.createElement("div");
+  beaconCore.className = "世界地圖層-物件-信標核心";
+  beaconCore.textContent = FACILITY_GLYPH[object.kind];
+  beacon.appendChild(beaconCore);
+
   const visualLayer = document.createElement("div");
   visualLayer.className = "世界地圖層-物件-視覺層";
   if (imagePath) visualLayer.classList.add("世界地圖層-視覺層-禁走地板");
@@ -2156,7 +2164,7 @@ function createObjectNode(object: MapObject): HTMLElement {
   label.className = "世界地圖層-物件-label";
   label.textContent = object.label;
 
-  node.append(visualLayer, label);
+  node.append(beacon, visualLayer, label);
   node.title = object.detail ?? object.label;
   return node;
 }

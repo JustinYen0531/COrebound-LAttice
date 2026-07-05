@@ -2284,6 +2284,62 @@ button.禁用:hover {
   transform-origin: center bottom;
   isolation: isolate;
 }
+.世界地圖層-物件-信標 {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--world-object-size, 720px) * 0.22);
+  width: calc(var(--world-object-size, 720px) * 0.20);
+  height: calc(var(--world-object-size, 720px) * 0.20);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 4;
+}
+.世界地圖層-物件-信標::before {
+  content: "";
+  position: absolute;
+  inset: -26%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 248, 236, 0.98) 0 28%, rgba(255, 191, 109, 0.72) 29% 54%, rgba(255, 191, 109, 0) 78%);
+  opacity: 0.94;
+  filter: blur(5px);
+  animation: 物件信標脈衝 1.45s ease-in-out infinite;
+}
+.世界地圖層-物件-信標核心 {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 251, 243, 0.98);
+  background: rgba(37, 41, 52, 0.86);
+  color: #fff6df;
+  font-size: calc(var(--world-object-size, 240px) * 0.068);
+  line-height: 1;
+  box-shadow:
+    0 0 0 4px rgba(255, 208, 138, 0.18),
+    0 0 22px rgba(255, 208, 138, 0.5);
+}
+.世界地圖層-物件-信標::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: calc(var(--world-object-size, 720px) * 0.36);
+  transform: translate(-50%, -92%);
+  background: linear-gradient(180deg, rgba(255, 225, 172, 0.94), rgba(255, 225, 172, 0));
+  opacity: 0.88;
+}
+@keyframes 物件信標脈衝 {
+  0%, 100% { transform: scale(0.92); opacity: 0.72; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
 .世界地圖層-物件-視覺層,
 .世界地圖層-環境物件-視覺層 {
   --world-anchor-x: calc(var(--world-object-size, 720px) * 0.018);
@@ -2424,13 +2480,17 @@ button.禁用:hover {
   font-weight: 800;
   color: rgba(255, 255, 255, 0.98);
   white-space: nowrap;
-  margin-top: -14px;
+  margin-top: -6px;
+  padding: 4px 10px;
+  border-radius: 999px;
   max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+  background: rgba(9, 13, 22, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   position: relative;
-  z-index: 3;
+  z-index: 5;
 }
 .世界地圖層-物件:hover {
   transform: translate(var(--x, 0px), var(--y, 0px)) translate(-50%, -100%) translateY(var(--object-optical-y, -18px)) scale(1.08);
