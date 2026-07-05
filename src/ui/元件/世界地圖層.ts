@@ -144,6 +144,8 @@ const VIEW_PADDING = 140;
 const GROUND_DEPTH_SCALE = 0.6;
 const PLAYER_SIZE_AT_REFERENCE_ZOOM = 700;
 const PLAYER_TOTEM_RENDER_SIZE = 660;
+const PLAYER_TOTEM_VIEWBOX_SIZE = 320;
+const PLAYER_RING_OUTER_RADIUS: Record<1 | 2 | 3, number> = { 1: 140, 2: 220, 3: 300 };
 const REFERENCE_CAMERA_ZOOM = 2.43;
 const DEFAULT_CAMERA_ZOOM = 2.0;
 const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
@@ -502,6 +504,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   const playerNode = document.createElement("div");
   playerNode.className = "世界地圖層-玩家";
+  let 玩家最大展開層級: 1 | 2 | 3 = 3;
   if (訓練道場中) {
     playerNode.appendChild(建立玩家標記圖騰({ size: PLAYER_TOTEM_RENDER_SIZE, 旋轉: true }));
   } else {
@@ -509,6 +512,7 @@ export function 建立世界地圖層(): HTMLElement {
     const squad = 小隊屬性摘要();
     const captainStar = 當前隊長星級();
     const { 小隊, 最大展開層級 } = 由正式成員陣容建立圖騰小隊(roster);
+    玩家最大展開層級 = 最大展開層級;
     playerNode.appendChild(
       建立玩家標記圖騰({
         size: PLAYER_TOTEM_RENDER_SIZE,
@@ -1146,14 +1150,17 @@ export function 建立世界地圖層(): HTMLElement {
       const visible = isVisible(screenPos, viewport);
       setProjectedNodePosition(m.node, m.pos);
       m.node.style.display = visible ? "block" : "none";
-      // 血條：只在可見且已受傷時顯示。
-      if (visible && m.inst.hp > 0 && m.inst.hp < m.inst.maxHp) {
-        const bar = m.node.lastElementChild as HTMLElement;
-        const fill = bar.firstElementChild as HTMLElement;
+      // 存活怪物常駐血條，接觸傷害與遠程傷害都能立即看出生命變化。
+      if (visible && m.inst.hp > 0) {
+        const bar = m.node.querySelector<HTMLElement>(".世界地圖層-怪物-血條")!;
+        const fill = bar.querySelector<HTMLElement>(".世界地圖層-怪物-血條填充")!;
+        const label = bar.querySelector<HTMLElement>(".世界地圖層-怪物-血條文字")!;
+        const hpPercent = Math.max(0, Math.min(100, (m.inst.hp / m.inst.maxHp) * 100));
         bar.style.display = "block";
-        fill.style.width = `${Math.max(0, Math.min(100, (m.inst.hp / m.inst.maxHp) * 100))}%`;
+        fill.style.width = `${hpPercent}%`;
+        label.textContent = `${Math.ceil(hpPercent)}%`;
       } else {
-        (m.node.lastElementChild as HTMLElement).style.display = "none";
+        m.node.querySelector<HTMLElement>(".世界地圖層-怪物-血條")!.style.display = "none";
       }
     }
 
@@ -1507,6 +1514,12 @@ export function 建立世界地圖層(): HTMLElement {
     return Math.max(96, Math.min(210, 82 + Math.sqrt(Math.max(0, weight)) * 9));
   }
 
+  /** 讓接觸判定貼合畫面上真正展開的最外圈，而不是用重量猜一個較小的中心圓。 */
+  function 玩家圖騰碰撞半徑(): number {
+    const ringRadius = PLAYER_RING_OUTER_RADIUS[玩家最大展開層級];
+    return (PLAYER_SIZE_AT_REFERENCE_ZOOM / REFERENCE_CAMERA_ZOOM) * (ringRadius / PLAYER_TOTEM_VIEWBOX_SIZE);
+  }
+
   function 訓練敵人碰撞半徑(tier: 0 | 1 | 2): number {
     switch (tier) {
       case 0:
@@ -1525,7 +1538,7 @@ export function 建立世界地圖層(): HTMLElement {
     //   正式遊玩 → 正式對局小隊狀態（隊長 + 預設編隊）
     if (訓練道場中) {
       const summary = 取得訓練道場摘要();
-      const playerRadius = 訓練玩家碰撞半徑(summary.totalWeight);
+      const playerRadius = Math.max(訓練玩家碰撞半徑(summary.totalWeight), 玩家圖騰碰撞半徑());
       const contacts = monsters.filter(
         (monster) =>
           monster.inst.hp > 0 &&
@@ -1606,7 +1619,7 @@ export function 建立世界地圖層(): HTMLElement {
     // —— 正式遊玩碰撞結算 ——
     if (performance.now() < 復活保護到) return;
     const summary = 取得正式小隊摘要();
-    const playerRadius = 訓練玩家碰撞半徑(summary.totalWeight);
+    const playerRadius = 玩家圖騰碰撞半徑();
     const contacts = monsters.filter(
       (monster) =>
         monster.inst.hp > 0 &&
@@ -2381,13 +2394,15 @@ function createMonsterNode(inst: 可見怪物實例): HTMLElement {
   img.alt = inst.nameZh;
   img.draggable = false;
 
-  // 血條（佔位美術）：受傷後才顯示，讓子彈傷害在畫面上可見。
+  // 血條常駐顯示，讓玩家在接觸前就能辨識目標生命與威脅。
   const hpBar = document.createElement("div");
   hpBar.className = "世界地圖層-怪物-血條";
-  hpBar.style.display = "none";
   const hpFill = document.createElement("div");
   hpFill.className = "世界地圖層-怪物-血條填充";
-  hpBar.appendChild(hpFill);
+  const hpLabel = document.createElement("span");
+  hpLabel.className = "世界地圖層-怪物-血條文字";
+  hpLabel.textContent = "100%";
+  hpBar.append(hpFill, hpLabel);
 
   node.title = `${inst.nameZh}（T${inst.tier}）`;
   node.append(shadow, img, hpBar);
