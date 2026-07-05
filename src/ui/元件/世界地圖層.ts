@@ -34,7 +34,7 @@ import { STAR_MULTIPLIER, type StarLevel } from "../../data/成員型別";
 import { computeFamilyWeaponStatus, type DeployedMember } from "../../skills/技能管理";
 import { MEMBERS } from "../../data/成員資料庫";
 import { findMonster } from "../../data/怪物資料庫";
-import { materialImagePath } from "../../data/素材資料庫";
+import { findMaterial, materialImagePath, type MaterialUse } from "../../data/素材資料庫";
 import { rollMonsterDrop } from "../../economy/資源掉落系統";
 import * as 背包 from "../../economy/背包狀態";
 import {
@@ -2590,6 +2590,8 @@ function createResourceDropNode(drop: 資源掉落物): HTMLElement {
   const materialCount = drop.materials.reduce((sum, item) => sum + item.count, 0);
   const totalCount = materialCount + drop.gems;
   const leadMaterial = drop.materials[0];
+  const leadMaterialDef = leadMaterial ? findMaterial(leadMaterial.no) : undefined;
+  const accent = 掉落素材色彩(leadMaterialDef?.use);
   const titleParts: string[] = [];
   if (materialCount > 0) titleParts.push(雙語(`材料 ×${materialCount}`, `Materials x${materialCount}`));
   if (drop.gems > 0) titleParts.push(雙語(`原石 ×${drop.gems}`, `Gems x${drop.gems}`));
@@ -2599,66 +2601,87 @@ function createResourceDropNode(drop: 資源掉落物): HTMLElement {
     position: "absolute",
     left: "0",
     top: "0",
-    width: "68px",
-    height: "68px",
-    transform: "translate(var(--x, 0px), var(--y, 0px)) translate(-50%, -72%) rotate(-3deg)",
-    display: "grid",
-    placeItems: "center",
-    border: "1px solid rgba(255, 244, 212, 0.9)",
-    borderRadius: "22px",
-    background: "radial-gradient(circle at 50% 40%, rgba(255,255,255,0.22), rgba(16,19,29,0.92) 72%)",
-    boxShadow: "0 10px 18px rgba(0,0,0,0.42), 0 0 18px rgba(255, 223, 146, 0.28)",
+    width: "124px",
+    height: "104px",
+    transform: "translate(var(--x, 0px), var(--y, 0px)) translate(-50%, -74%)",
+    display: "block",
+    border: "none",
+    borderRadius: "0",
+    background: "transparent",
+    boxShadow: "none",
     cursor: "pointer",
     zIndex: "4",
-    overflow: "hidden",
+    overflow: "visible",
     padding: "0",
   });
   node.innerHTML = `
-    <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-      ${leadMaterial ? `<img src="${materialImagePath(leadMaterial.no)}" alt="" draggable="false" style="width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.28));" />` : `<span style="font:700 20px Georgia, serif;color:#ffe7aa;">✦</span>`}
-    </span>
     <span style="position:absolute;inset:0;pointer-events:none;">
       ${建立原石粒子HTML(drop.gems)}
     </span>
-    <span style="position:absolute;right:4px;bottom:4px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:rgba(9,11,18,0.88);border:1px solid rgba(255,230,168,0.45);color:#ffe8a8;font:700 12px Georgia, serif;display:flex;align-items:center;justify-content:center;">${totalCount}</span>
+    <span style="position:absolute;left:50%;top:52%;transform:translate(-50%,-50%) rotate(-5deg);display:flex;align-items:center;justify-content:center;min-width:72px;min-height:72px;pointer-events:none;">
+      ${leadMaterial ? `<img src="${materialImagePath(leadMaterial.no)}" alt="" draggable="false" style="width:82px;height:82px;object-fit:contain;filter:drop-shadow(0 10px 12px rgba(0,0,0,0.18)) drop-shadow(0 0 12px ${accent.glow});" />` : ""}
+    </span>
+    <span style="position:absolute;right:${leadMaterial ? "12px" : "24px"};bottom:${leadMaterial ? "12px" : "16px"};min-width:28px;height:28px;padding:0 8px;border-radius:999px;background:rgba(252,248,238,0.96);border:1px solid ${accent.ring};color:${accent.ink};font:800 14px Segoe UI, Microsoft JhengHei, sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 10px rgba(0,0,0,0.16);pointer-events:none;">${totalCount}</span>
   `;
   return node;
 }
 
 function 建立原石粒子HTML(gems: number): string {
   if (gems <= 0) return "";
-  const units: Array<10 | 5 | 1> = [];
-  let remaining = gems;
-  while (remaining >= 10) {
-    units.push(10);
-    remaining -= 10;
-  }
-  while (remaining >= 5) {
-    units.push(5);
-    remaining -= 5;
-  }
-  while (remaining >= 1) {
-    units.push(1);
-    remaining -= 1;
-  }
-  const capped = units.slice(0, 8);
+  const particleCount = Math.max(3, Math.min(22, Math.ceil(gems / 2)));
   const anchors = [
-    { x: "8%", y: "18%" },
-    { x: "71%", y: "12%" },
-    { x: "79%", y: "45%" },
-    { x: "16%", y: "66%" },
-    { x: "56%", y: "77%" },
-    { x: "35%", y: "8%" },
-    { x: "88%", y: "75%" },
-    { x: "6%", y: "44%" },
+    { x: "12%", y: "36%" },
+    { x: "24%", y: "72%" },
+    { x: "38%", y: "26%" },
+    { x: "52%", y: "64%" },
+    { x: "68%", y: "22%" },
+    { x: "82%", y: "58%" },
+    { x: "16%", y: "18%" },
+    { x: "30%", y: "52%" },
+    { x: "46%", y: "82%" },
+    { x: "60%", y: "42%" },
+    { x: "76%", y: "78%" },
+    { x: "90%", y: "34%" },
   ];
-  return capped.map((unit, index) => {
+  return Array.from({ length: particleCount }, (_, index) => {
     const anchor = anchors[index % anchors.length];
-    const size = unit === 10 ? 24 : unit === 5 ? 19 : 14;
-    const glow = unit === 10 ? "rgba(255,230,136,0.92)" : unit === 5 ? "rgba(154,226,255,0.88)" : "rgba(255,248,201,0.82)";
-    const label = unit === 10 ? "10E" : unit === 5 ? "5E" : "E";
-    return `<span style="position:absolute;left:${anchor.x};top:${anchor.y};width:${size}px;height:${size}px;transform:translate(-50%,-50%) rotate(${(index % 2 === 0 ? -12 : 11)}deg);border-radius:999px;background:radial-gradient(circle at 35% 30%, #fff, ${glow} 56%, rgba(255,210,88,0.28) 100%);box-shadow:0 0 10px ${glow}, 0 0 18px rgba(255,211,97,0.4);display:flex;align-items:center;justify-content:center;color:#2f2411;font:800 ${unit === 10 ? 8 : 7}px Georgia, serif;letter-spacing:0.02em;">${label}</span>`;
+    const size = index % 5 === 0 ? 10 : index % 3 === 0 ? 8 : 6;
+    const glow = index % 4 === 0 ? "rgba(74, 219, 255, 0.82)" : "rgba(255, 215, 96, 0.9)";
+    return `<span style="position:absolute;left:${anchor.x};top:${anchor.y};width:${size}px;height:${size}px;transform:translate(-50%,-50%);border-radius:999px;background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), ${glow} 62%, rgba(255,215,96,0.16) 100%);box-shadow:0 0 8px ${glow}, 0 0 14px rgba(255,223,132,0.24);"></span>`;
   }).join("");
+}
+
+function 掉落素材色彩(use: MaterialUse | undefined): {
+  glow: string;
+  ring: string;
+  ink: string;
+} {
+  switch (use) {
+    case "unlock_0to1":
+      return {
+        glow: "rgba(100, 227, 139, 0.7)",
+        ring: "rgba(78, 175, 102, 0.9)",
+        ink: "#295233",
+      };
+    case "upgrade_1to2":
+      return {
+        glow: "rgba(88, 146, 255, 0.72)",
+        ring: "rgba(68, 112, 214, 0.92)",
+        ink: "#243f78",
+      };
+    case "upgrade_2to3":
+      return {
+        glow: "rgba(176, 103, 255, 0.72)",
+        ring: "rgba(136, 79, 212, 0.92)",
+        ink: "#4d2779",
+      };
+    default:
+      return {
+        glow: "rgba(255, 214, 125, 0.68)",
+        ring: "rgba(190, 151, 70, 0.92)",
+        ink: "#5c4618",
+      };
+  }
 }
 
 function createDeathDropNode(drop: 死亡遺落物): HTMLElement {
