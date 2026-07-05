@@ -2153,15 +2153,12 @@ button.禁用:hover {
   pointer-events: none;
 }
 .世界地圖層-角落核心 {
-  opacity: 0.18;
-  stroke: rgba(255,255,255,0.5);
-  stroke-width: 12;
-  vector-effect: non-scaling-stroke;
+  opacity: 0.9;
 }
-.世界地圖層-角落核心-geometry { fill: rgba(111, 168, 255, 0.18); }
-.世界地圖層-角落核心-organic { fill: rgba(111, 220, 140, 0.16); }
-.世界地圖層-角落核心-fractal { fill: rgba(200, 155, 255, 0.18); }
-.世界地圖層-角落核心-mechanical { fill: rgba(255, 197, 111, 0.16); }
+.世界地圖層-角落核心-geometry { fill-opacity: 0.92; }
+.世界地圖層-角落核心-organic { fill-opacity: 0.92; }
+.世界地圖層-角落核心-fractal { fill-opacity: 0.92; }
+.世界地圖層-角落核心-mechanical { fill-opacity: 0.92; }
 .世界地圖層-輕量折皺地板 {
   pointer-events: none;
   opacity: 0.34;

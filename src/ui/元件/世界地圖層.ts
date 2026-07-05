@@ -176,10 +176,16 @@ const LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE: Record<World, string> = {
   mechanical: "/images/maps/wrinkles/mechanical.png",
 };
 
+const WORLD_FLOOR_IMAGE: Record<World, string> = {
+  geometry: "/images/maps/floors/geometry.png",
+  organic: "/images/maps/floors/organic.png",
+  fractal: "/images/maps/floors/fractal.png",
+  mechanical: "/images/maps/floors/mechanical.png",
+};
 const HIGH_DETAIL_FLOOR_IMAGE = "/images/maps/floors/chatgpt-stripes.png";
-const PLAZA_SURFACE_SIZE = (MAP_BOUNDS.maxX - MAP_BOUNDS.minX) * 0.32;
+const PLAZA_SURFACE_SIZE = (MAP_BOUNDS.maxX - MAP_BOUNDS.minX) * (0.32 / 1.5);
 const PLAZA_SURFACE_HALF = PLAZA_SURFACE_SIZE / 2;
-const PLAZA_WRINKLE_IMAGE = LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE.mechanical;
+const PLAZA_WRINKLE_IMAGE = "/images/maps/wrinkles/plaza-wrinkle.png";
 
 const SIMPLE_TILE_PALETTE: Record<World | "plaza", {
   base: string;
@@ -2392,6 +2398,31 @@ function defineSquareTilePattern(
   defs.appendChild(pattern);
 }
 
+function defineWorldCorePattern(
+  defs: SVGDefsElement,
+  patternId: string,
+  world: World,
+): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const pattern = document.createElementNS(svgNamespace, "pattern");
+  pattern.setAttribute("id", patternId);
+  pattern.setAttribute("patternUnits", "userSpaceOnUse");
+  pattern.setAttribute("width", "420");
+  pattern.setAttribute("height", "420");
+  pattern.setAttribute("viewBox", "887 0 887 887");
+  pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+  const image = document.createElementNS(svgNamespace, "image");
+  image.setAttribute("href", WORLD_FLOOR_IMAGE[world]);
+  image.setAttribute("width", "1774");
+  image.setAttribute("height", "887");
+  image.setAttribute("x", "0");
+  image.setAttribute("y", "0");
+  pattern.appendChild(image);
+
+  defs.appendChild(pattern);
+}
+
 function createWorldSquareTileFloors(host: SVGSVGElement, includeStripeOverlay: boolean): void {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const polygons = buildRegionPolygons();
@@ -3250,10 +3281,10 @@ function coreCornerForWorld(world: World, bounds: ReturnType<typeof boundsOf>): 
 function coreRectForWorld(world: World, bounds: ReturnType<typeof boundsOf>) {
   const width = bounds.maxX - bounds.minX;
   const height = bounds.maxY - bounds.minY;
-  const coreWidth = width * 0.5;
-  const coreHeight = height * 0.5;
-  const insetX = width * 0.08;
-  const insetY = height * 0.08;
+  const coreWidth = width * 0.34;
+  const coreHeight = height * 0.34;
+  const insetX = width * 0.015;
+  const insetY = height * 0.015;
   const anchor = coreCornerForWorld(world, bounds);
 
   const minX = anchor.xSide === "min" ? bounds.minX + insetX : bounds.maxX - insetX - coreWidth;
@@ -3280,10 +3311,13 @@ function floorZoneForWorld(
 function createCornerCoreOverlays(host: SVGSVGElement): void {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const polygons = buildRegionPolygons();
+  const defs = document.createElementNS(svgNamespace, "defs");
   const group = document.createElementNS(svgNamespace, "g");
   group.setAttribute("class", "世界地圖層-角落核心群");
 
   (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
+    const patternId = `corner-core-${world}`;
+    defineWorldCorePattern(defs, patternId, world);
     const bounds = boundsOf(polygons[world]);
     const rect = coreRectForWorld(world, bounds);
     const node = document.createElementNS(svgNamespace, "rect");
@@ -3292,10 +3326,11 @@ function createCornerCoreOverlays(host: SVGSVGElement): void {
     node.setAttribute("y", String(rect.minY));
     node.setAttribute("width", String(rect.maxX - rect.minX));
     node.setAttribute("height", String(rect.maxY - rect.minY));
+    node.setAttribute("fill", `url(#${patternId})`);
     group.appendChild(node);
   });
 
-  host.appendChild(group);
+  host.append(defs, group);
 }
 
 function createMiniCornerCores(host: SVGSVGElement): void {
