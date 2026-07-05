@@ -131,9 +131,24 @@ const FAMILY_LABEL_ZH: Record<Family, string> = {
   laser: "激光",
 };
 
-const WORLD_OBJECT_GRID_X = [1480, 2460, 3440, 4420] as const;
-const WORLD_OBJECT_GRID_Y = [1480, 2460, 3440, 4420] as const;
-const WORLD_OBJECT_GRID_ORDER = [0, 5, 10, 15, 3, 12, 6, 9, 1, 14, 4, 11, 2, 13, 7, 8] as const;
+const WORLD_OBJECT_LOCAL_ANCHORS = [
+  { x: 860, y: 820 },
+  { x: 1360, y: 1120 },
+  { x: 1980, y: 920 },
+  { x: 2520, y: 1280 },
+  { x: 980, y: 1820 },
+  { x: 1640, y: 2120 },
+  { x: 2360, y: 1960 },
+  { x: 3040, y: 1480 },
+  { x: 1220, y: 2640 },
+  { x: 2040, y: 2820 },
+  { x: 2860, y: 2580 },
+  { x: 3440, y: 2160 },
+  { x: 900, y: 3320 },
+  { x: 1740, y: 3440 },
+  { x: 2620, y: 3280 },
+  { x: 3380, y: 3060 },
+] as const;
 
 function worldSigns(world: World): { x: -1 | 1; y: -1 | 1 } {
   switch (world) {
@@ -150,12 +165,10 @@ function worldSigns(world: World): { x: -1 | 1; y: -1 | 1 } {
 
 function buildWorldObjectAnchors(world: World): Array<{ x: number; y: number }> {
   const signs = worldSigns(world);
-  return WORLD_OBJECT_GRID_ORDER.map((index) => {
-    const col = index % 4;
-    const row = Math.floor(index / 4);
+  return WORLD_OBJECT_LOCAL_ANCHORS.map((point) => {
     return {
-      x: WORLD_OBJECT_GRID_X[col] * signs.x,
-      y: WORLD_OBJECT_GRID_Y[row] * signs.y,
+      x: point.x * signs.x,
+      y: point.y * signs.y,
     };
   });
 }
