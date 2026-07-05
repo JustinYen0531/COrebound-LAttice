@@ -38,6 +38,10 @@ export interface EnvObjectInstance {
   destructible: boolean;
   weight?: number;
   mechanicText: string;
+  portalGroup: string;
+  portalTargetId: string;
+  portalTargetNameZh: string;
+  portalLabel: string;
 }
 
 // ============================================================
@@ -271,6 +275,12 @@ function buildEnvObjects(): EnvObjectInstance[] {
     fractal: 0,
     mechanical: 0,
   };
+  const worldPortalCount: Record<World, number> = {
+    geometry: 0,
+    organic: 0,
+    fractal: 0,
+    mechanical: 0,
+  };
 
   const takeAnchor = (world: World): { x: number; y: number } | null => {
     const anchors = ENV_WORLD_ANCHORS[world];
@@ -286,8 +296,10 @@ function buildEnvObjects(): EnvObjectInstance[] {
   };
 
   for (const catalog of 環境物件圖鑑) {
+    if (worldPortalCount[catalog.world] >= 3) continue;
     const point = takeAnchor(catalog.world);
     if (!point) continue;
+    worldPortalCount[catalog.world] += 1;
     instances.push({
       id: `${catalog.id}_1`,
       catalogId: catalog.id,
@@ -300,7 +312,49 @@ function buildEnvObjects(): EnvObjectInstance[] {
       destructible: catalog.destructible,
       weight: catalog.weight,
       mechanicText: catalog.mechanicText,
+      portalGroup: "",
+      portalTargetId: "",
+      portalTargetNameZh: "",
+      portalLabel: "",
     });
+  }
+
+  const 依世界索引取得實例 = (world: World, index: number): EnvObjectInstance | undefined =>
+    instances.filter((entry) => entry.world === world)[index];
+
+  const 跨世界配對組: Array<[World, number, World, number]> = [
+    ["geometry", 0, "organic", 0],
+    ["geometry", 1, "fractal", 0],
+    ["geometry", 2, "mechanical", 0],
+    ["organic", 1, "fractal", 1],
+    ["organic", 2, "mechanical", 1],
+    ["fractal", 2, "mechanical", 2],
+  ];
+
+  const 世界名稱: Record<World, string> = {
+    geometry: "幾何",
+    organic: "有機",
+    fractal: "分形",
+    mechanical: "機械",
+  };
+
+  for (const [worldA, indexA, worldB, indexB] of 跨世界配對組) {
+    const a = 依世界索引取得實例(worldA, indexA);
+    const b = 依世界索引取得實例(worldB, indexB);
+    if (!a || !b) continue;
+    const group = `${worldA}_${indexA + 1}_to_${worldB}_${indexB + 1}`;
+    a.nameZh = `${世界名稱[worldA]}通${世界名稱[worldB]}門`;
+    b.nameZh = `${世界名稱[worldB]}通${世界名稱[worldA]}門`;
+    a.portalGroup = group;
+    a.portalTargetId = b.id;
+    a.portalTargetNameZh = b.nameZh;
+    a.portalLabel = `傳送到 ${b.nameZh}`;
+    a.mechanicText = `靠近後按 E，傳送到 ${b.nameZh} 的對應傳送門。`;
+    b.portalGroup = group;
+    b.portalTargetId = a.id;
+    b.portalTargetNameZh = a.nameZh;
+    b.portalLabel = `傳送到 ${a.nameZh}`;
+    b.mechanicText = `靠近後按 E，傳送到 ${a.nameZh} 的對應傳送門。`;
   }
 
   return instances;

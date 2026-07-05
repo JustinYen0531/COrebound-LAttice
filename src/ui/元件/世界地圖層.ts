@@ -122,6 +122,8 @@ import { 取出Boss召喚 } from "../Boss召喚佇列";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
+const PORTAL_INTERACT_RADIUS = 230;
+const PORTAL_LANDING_DISTANCE = WORLD_OBJECT_FOOTPRINT_RADIUS + 52;
 
 // 怪物 token 比場景物件小，依 Tier 微調：T2 精英最大、T0 資源怪最小。
 const MONSTER_SIZE_AT_REFERENCE_ZOOM: Record<0 | 1 | 2, number> = {
@@ -334,6 +336,14 @@ function keepOutsideBlockingGround(next: { x: number; y: number }, current: { x:
 
 function clampTraversablePlayerPosition(next: { x: number; y: number }, current: { x: number; y: number }): { x: number; y: number } {
   return keepOutsideBlockingGround(clampPlayerPosition(next), current);
+}
+
+function 最近傳送門(player: { x: number; y: number }): EnvObjectInstance | null {
+  return ENV_OBJECTS
+    .filter((env) => env.portalTargetId)
+    .map((env) => ({ env, distance: Math.hypot(env.x - player.x, env.y - player.y) }))
+    .filter((entry) => entry.distance <= PORTAL_INTERACT_RADIUS)
+    .sort((a, b) => a.distance - b.distance)[0]?.env ?? null;
 }
 
 function syncNearbyToState(): void {
@@ -1165,6 +1175,15 @@ export function 建立世界地圖層(): HTMLElement {
       node.classList.toggle("靠近中", nearIds.has(object.id));
     }
 
+    const nearestPortal = 最近傳送門(playerPos);
+    for (const env of ENV_OBJECTS) {
+      const node = envNodes.get(env.id);
+      if (!node) continue;
+      const screenPos = worldToScreen(env, playerPos, viewport);
+      node.style.display = isVisible(screenPos, viewport) ? "flex" : "none";
+      node.classList.toggle("靠近中", nearestPortal?.id === env.id);
+    }
+
     for (const chest of worldChests) {
       const node = chestNodes.get(chest.id);
       if (!node) continue;
@@ -1187,6 +1206,11 @@ export function 建立世界地圖層(): HTMLElement {
       exclaim.style.setProperty("--x", `${playerScreen.x + 26}px`);
       exclaim.style.setProperty("--y", `${playerScreen.y - 36}px`);
       exclaim.title = `點擊開啟「${nearest.label}」互動`;
+    } else if (nearestPortal) {
+      exclaim.style.display = "flex";
+      exclaim.style.setProperty("--x", `${playerScreen.x + 26}px`);
+      exclaim.style.setProperty("--y", `${playerScreen.y - 36}px`);
+      exclaim.title = `靠近後按 E 傳送到「${nearestPortal.portalTargetNameZh}」`;
     } else {
       exclaim.style.display = "none";
     }
@@ -1750,6 +1774,11 @@ export function 建立世界地圖層(): HTMLElement {
           應用程式狀態.點擊驚嘆號提示();
           return;
         }
+        const portal = 最近傳送門(playerPos);
+        if (portal) {
+          傳送到對應門(portal);
+          return;
+        }
       }
       if (!event.repeat && !訓練道場中) {
         const nearestChest = worldChests
@@ -1764,6 +1793,8 @@ export function 建立世界地圖層(): HTMLElement {
           嘗試拾取死亡遺落(nearestDrop.drop);
         } else if (nearestChest) {
           嘗試開啟寶箱(nearestChest.chest);
+        } else {
+          顯示技能提示("靠近傳送門、寶箱或遺落材料後按 E");
         }
       }
       return;
@@ -1880,6 +1911,30 @@ export function 建立世界地圖層(): HTMLElement {
     skillToastTimer = window.setTimeout(() => {
       skillToast.style.opacity = "0";
     }, 1100);
+  }
+
+  function 傳送到對應門(portal: EnvObjectInstance): void {
+    const target = ENV_OBJECTS.find((entry) => entry.id === portal.portalTargetId);
+    if (!target) {
+      顯示技能提示("這座傳送門暫時沒有對應出口");
+      return;
+    }
+
+    const dx = target.x - portal.x;
+    const dy = target.y - portal.y;
+    const length = Math.hypot(dx, dy) || 1;
+    const offsetX = (dx / length) * PORTAL_LANDING_DISTANCE;
+    const offsetY = (dy / length) * PORTAL_LANDING_DISTANCE;
+    playerVelocity = { x: 0, y: 0 };
+    playerMoving = false;
+    playerPos = clampTraversablePlayerPosition({
+      x: target.x - offsetX,
+      y: target.y - offsetY,
+    }, playerPos);
+    if (!訓練道場中) 設定正式玩家位置(playerPos);
+    syncNearbyToState();
+    顯示技能提示(`已傳送到 ${target.nameZh}`);
+    render();
   }
 
   /**
@@ -2222,10 +2277,18 @@ function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
   img.width = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM;
   img.height = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM;
   img.draggable = false;
-  const 重量描述 = env.destructible ? `碰撞重量 ${env.weight ?? "?"}` : "不可破壞";
-  node.title = `${env.nameZh}（${env.category}・${重量描述}）\n${env.mechanicText}`;
+
+  const centerLabel = document.createElement("div");
+  centerLabel.className = "世界地圖層-環境物件-傳送目的";
+  centerLabel.textContent = env.portalTargetNameZh;
+
+  const interactHint = document.createElement("div");
+  interactHint.className = "世界地圖層-環境物件-互動提示";
+  interactHint.textContent = "按 E 傳送";
+
+  node.title = `${env.nameZh}\n${env.portalLabel}\n${env.mechanicText}`;
   shadowLayer.appendChild(shadowMask);
-  visualLayer.append(shadowLayer, img);
+  visualLayer.append(shadowLayer, img, centerLabel, interactHint);
   node.appendChild(visualLayer);
   return node;
 }
@@ -2287,11 +2350,7 @@ function miniMarkerForObject(object: MapObject): MiniMapMarker {
 }
 
 function miniMarkerForEnvObject(env: EnvObjectInstance): MiniMapMarker {
-  const icon = env.category === "障礙物"
-    ? "🪨"
-    : env.category === "資源礦物"
-      ? "💎"
-      : "⚙️";
+  const icon = "🌀";
 
   return {
     id: env.id,
@@ -2299,7 +2358,7 @@ function miniMarkerForEnvObject(env: EnvObjectInstance): MiniMapMarker {
     y: env.y,
     icon,
     label: env.nameZh,
-    title: `${env.nameZh}｜${env.category}`,
+    title: `${env.nameZh}｜${env.portalLabel}`,
   };
 }
 

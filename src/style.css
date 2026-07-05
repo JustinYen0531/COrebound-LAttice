@@ -2519,7 +2519,7 @@ button.禁用:hover {
   50% { transform: scale(1.15); }
 }
 
-/* 環境物件圖層：障礙物/資源礦物/環境機關，純場景裝飾，不可互動、不擋點擊 */
+/* 環境物件圖層：已改為跨世界傳送門，互動靠鍵盤處理，因此仍不接滑鼠點擊 */
 .世界地圖層-環境物件圖層 {
   position: absolute;
   inset: 0;
@@ -2541,6 +2541,7 @@ button.禁用:hover {
   opacity: 0.94;
   user-select: none;
   isolation: isolate;
+  transition: filter 140ms ease, opacity 140ms ease, transform 140ms ease;
 }
 .世界地圖層-環境物件-image {
   width: var(--world-object-size, 240px);
@@ -2564,6 +2565,61 @@ button.禁用:hover {
 }
 .世界地圖層-環境物件-障礙物 {
   opacity: 0.98;
+}
+.世界地圖層-環境物件.靠近中 {
+  filter: brightness(1.08);
+}
+.世界地圖層-環境物件.靠近中 .世界地圖層-環境物件-image {
+  filter:
+    drop-shadow(1px 0 0 #ffffff)
+    drop-shadow(-1px 0 0 #ffffff)
+    drop-shadow(0 1px 0 #ffffff)
+    drop-shadow(0 -1px 0 #ffffff)
+    drop-shadow(2px 0 0 rgba(128, 132, 140, 0.9))
+    drop-shadow(-2px 0 0 rgba(128, 132, 140, 0.9))
+    drop-shadow(0 2px 0 rgba(128, 132, 140, 0.9))
+    drop-shadow(0 -2px 0 rgba(128, 132, 140, 0.9))
+    drop-shadow(0 0 14px rgba(244, 234, 176, 0.92));
+}
+.世界地圖層-環境物件-傳送目的 {
+  position: absolute;
+  left: 50%;
+  top: 49%;
+  transform: translate(-50%, -50%);
+  min-width: 112px;
+  max-width: 190px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 246, 211, 0.9);
+  background: rgba(15, 17, 22, 0.82);
+  color: #fff5d0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  z-index: 3;
+}
+.世界地圖層-環境物件-互動提示 {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 248, 220, 0.95);
+  color: #18140b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  z-index: 3;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+.世界地圖層-環境物件.靠近中 .世界地圖層-環境物件-互動提示 {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
 }
 
 /* 怪物圖層：疊在環境物件之上、玩家之下的俯視 token */
