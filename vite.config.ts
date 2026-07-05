@@ -17,7 +17,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: "index.html",
-        totem: "totem-preview.html",
         weaving: "totem-weaving.html",
       },
     },

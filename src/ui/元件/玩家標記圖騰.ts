@@ -53,6 +53,26 @@ interface 插槽 {
   等級: number;
 }
 
+const 全部圖騰角色 = [
+  ...幾何世界圖騰清單,
+  ...有機世界圖騰清單,
+  ...分形世界圖騰清單,
+  ...機械世界圖騰清單,
+];
+
+const 圖騰角色索引 = new Map(全部圖騰角色.map((entry) => [entry.名稱, entry]));
+
+const 正式小隊環位配置: Array<{ 大環: 大環類型; 職責: 職責類型 }> = [
+  { 大環: "內", 職責: "紅" },
+  { 大環: "內", 職責: "黃" },
+  { 大環: "內", 職責: "藍" },
+  { 大環: "中", 職責: "紅" },
+  { 大環: "中", 職責: "黃" },
+  { 大環: "中", 職責: "藍" },
+  { 大環: "外", 職責: "紅" },
+  { 大環: "外", 職責: "黃" },
+];
+
 // ============================================================
 // 數學(與 weaving.ts 同一套九層座標轉換)
 // ============================================================
@@ -226,6 +246,38 @@ export interface 玩家標記選項 {
   小隊?: 插槽[];
   /** 是否啟動差速旋轉(預設 true) */
   旋轉?: boolean;
+  /** 最多顯示到哪一圈。1=內圈、2=中圈、3=外圈 */
+  最大展開層級?: 1 | 2 | 3;
+}
+
+export function 由正式成員陣容建立圖騰小隊(
+  roster: Array<{ nameZh: string; star: number }>,
+): { 小隊: 插槽[]; 最大展開層級: 1 | 2 | 3 } {
+  const 小隊: 插槽[] = roster
+    .map((member, index) => {
+      const layout = 正式小隊環位配置[index];
+      const 角色 = 圖騰角色索引.get(member.nameZh);
+      if (!layout || !角色) return null;
+      return {
+        角色,
+        大環: layout.大環,
+        職責: layout.職責,
+        等級: Math.max(1, Math.min(3, Math.round(member.star))),
+      };
+    })
+    .filter((entry): entry is 插槽 => entry !== null);
+
+  const 最大展開層級: 1 | 2 | 3 = roster.some((member) => member.star >= 3)
+    ? 3
+    : roster.some((member) => member.star >= 2)
+      ? 2
+      : 1;
+
+  return { 小隊, 最大展開層級 };
+}
+
+export function 取得隊長圖騰資料(id: string): 隊長圖騰資料 {
+  return 隊長圖騰清單.find((entry) => entry.id === id) ?? 隊長圖騰清單[0];
 }
 
 /**
@@ -238,6 +290,8 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
   const 隊長等級 = opts.隊長等級 ?? 4;
   const 小隊 = opts.小隊 ?? 預設Demo小隊();
   const 旋轉 = opts.旋轉 ?? true;
+  const 最大展開層級 = opts.最大展開層級 ?? 3;
+  const 大環列表 = (["內", "中", "外"] as const).slice(0, 最大展開層級);
 
   const svg = 建立元素("svg", {
     viewBox: `0 0 ${畫布尺寸} ${畫布尺寸}`,
@@ -253,7 +307,8 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
     { 名稱: "中圈", 內徑: 140, 外徑: 220, 顏色: "#ffd36a" },
     { 名稱: "外圈", 內徑: 220, 外徑: 300, 顏色: "#ff7f9d" },
   ];
-  for (const hitbox of hitbox配置) {
+  for (const [index, hitbox] of hitbox配置.entries()) {
+    if (index >= 最大展開層級) break;
     const 半徑 = (hitbox.內徑 + hitbox.外徑) / 2;
     const 寬度 = hitbox.外徑 - hitbox.內徑;
     const ring = 建立元素("circle", {
@@ -287,13 +342,18 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
   // 1. 背景圈
   const bg = 建立元素("g", { opacity: 0.22 });
   bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 55, fill: "none", stroke: "#fff", "stroke-width": 1.5 }));
-  bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 140, fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-dasharray": "6,6" }));
-  bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 220, fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-dasharray": "6,6" }));
-  bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 300, fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-dasharray": "6,6" }));
+  if (最大展開層級 >= 1) {
+    bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 140, fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-dasharray": "6,6" }));
+  }
+  if (最大展開層級 >= 2) {
+    bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 220, fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-dasharray": "6,6" }));
+  }
+  if (最大展開層級 >= 3) {
+    bg.appendChild(建立元素("circle", { cx: 中心, cy: 中心, r: 300, fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-dasharray": "6,6" }));
+  }
   svg.appendChild(bg);
 
   // 2-4. 三層成員線條(差速互旋)
-  const 大環列表: 大環類型[] = ["內", "中", "外"];
   const 環角度: Record<大環類型, number> = { 內: 0, 中: 0, 外: 0 };
   const 環速度: Record<大環類型, number> = { 內: 0.16, 中: -0.10, 外: 0.05 };
   const 大環線條節點 = {} as Record<大環類型, SVGElement>;

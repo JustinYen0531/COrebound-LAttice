@@ -79,7 +79,7 @@ import { circlesOverlap, settleContactTick } from "../../combat/碰撞解析";
 import { TICK_SECONDS } from "../../data/戰鬥原語";
 import type { Family, World } from "../../data/成員型別";
 import { buildEinsteinHatSupertile, type EinsteinPoint } from "../../world/愛因斯坦地板";
-import { 建立玩家標記圖騰 } from "./玩家標記圖騰";
+import { 建立玩家標記圖騰, 取得隊長圖騰資料, 由正式成員陣容建立圖騰小隊 } from "./玩家標記圖騰";
 import { buildPenroseSupertile, type PenrosePoint } from "../../world/彭羅斯地板";
 import { buildEscherBirdField, type EscherPoint } from "../../world/艾雪鳥地板";
 import { buildCairoField, type CairoPoint } from "../../world/開羅五邊形地板";
@@ -134,9 +134,9 @@ const MONSTER_SPEED_SCALE = 0.16;
 // 只有距離玩家這麼近的怪物才跑 AI／移動，遠處待命，避免全圖 200 隻同時朝玩家聚集。
 const MONSTER_ACTIVE_RADIUS = 2600;
 
-const MOVE_SPEED = 42;
-const MOVE_ACCELERATION = 860;
-const MOVE_DECELERATION = 1280;
+const MOVE_SPEED = 84;
+const MOVE_ACCELERATION = 1720;
+const MOVE_DECELERATION = 2560;
 const VIEW_PADDING = 140;
 // 正交斜俯視：只壓縮地面縱深，場景物件與 HUD 仍保持直立比例。
 const GROUND_DEPTH_SCALE = 0.6;
@@ -463,7 +463,24 @@ export function 建立世界地圖層(): HTMLElement {
 
   const playerNode = document.createElement("div");
   playerNode.className = "世界地圖層-玩家";
-  playerNode.appendChild(建立玩家標記圖騰({ size: 132, 旋轉: true }));
+  if (訓練道場中) {
+    playerNode.appendChild(建立玩家標記圖騰({ size: 132, 旋轉: true }));
+  } else {
+    const roster = 取得上陣養成();
+    const squad = 小隊屬性摘要();
+    const captainStar = 當前隊長星級();
+    const { 小隊, 最大展開層級 } = 由正式成員陣容建立圖騰小隊(roster);
+    playerNode.appendChild(
+      建立玩家標記圖騰({
+        size: 132,
+        旋轉: true,
+        隊長: 取得隊長圖騰資料(squad.captainId),
+        隊長等級: captainStar,
+        小隊,
+        最大展開層級,
+      }),
+    );
+  }
   playerNode.title = "小隊(玩家)· 中央隊長核心與外圍三環圖騰";
   canvas.appendChild(playerNode);
 
