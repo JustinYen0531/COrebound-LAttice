@@ -2463,16 +2463,6 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
     tileGroup.appendChild(path);
 
-    // 障礙物與設施所在的整塊磁磚必須是純白，不混入底圖顏色。
-    if (occupiedIndices.has(index)) {
-      const mask = document.createElementNS(svgNamespace, "path");
-      mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "#ffffff");
-      mask.setAttribute("stroke-width", "2");
-      mask.setAttribute("style", "pointer-events: none;");
-      tileGroup.appendChild(mask);
-    }
   }
 
   const coreDivider = document.createElementNS(svgNamespace, "path");
@@ -2634,16 +2624,6 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
     );
     tileGroup.appendChild(path);
 
-    // 障礙物與設施瓷磚疊加白色半透明遮罩
-    if (occupiedIndices.has(index)) {
-      const mask = document.createElementNS(svgNamespace, "path");
-      mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "#ffffff");
-      mask.setAttribute("stroke-width", "2");
-      mask.setAttribute("style", "pointer-events: none;");
-      tileGroup.appendChild(mask);
-    }
   }
 
   host.appendChild(tileGroup);
@@ -2777,16 +2757,6 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     path.setAttribute("class", `世界地圖層-艾雪鳥磁磚 世界地圖層-艾雪鳥磁磚-${floorZone}`);
     tileGroup.appendChild(path);
 
-    // 障礙物與設施瓷磚疊加白色半透明遮罩
-    if (occupiedIndices.has(index)) {
-      const mask = document.createElementNS(svgNamespace, "path");
-      mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "#ffffff");
-      mask.setAttribute("stroke-width", "2");
-      mask.setAttribute("style", "pointer-events: none;");
-      tileGroup.appendChild(mask);
-    }
   }
 
   host.appendChild(tileGroup);
@@ -2943,16 +2913,6 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     path.setAttribute("class", `世界地圖層-開羅磁磚 世界地圖層-開羅磁磚-${floorZone}`);
     tileGroup.appendChild(path);
 
-    // 障礙物與設施瓷磚疊加白色半透明遮罩
-    if (occupiedIndices.has(index)) {
-      const mask = document.createElementNS(svgNamespace, "path");
-      mask.setAttribute("d", tilePath);
-      mask.setAttribute("fill", "#ffffff");
-      mask.setAttribute("stroke", "#ffffff");
-      mask.setAttribute("stroke-width", "2");
-      mask.setAttribute("style", "pointer-events: none;");
-      tileGroup.appendChild(mask);
-    }
   }
 
   host.appendChild(tileGroup);
