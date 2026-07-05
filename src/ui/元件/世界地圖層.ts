@@ -3492,10 +3492,19 @@ function createWorldStripeOverlays(host: SVGSVGElement): void {
     const height = bounds.maxY - bounds.minY;
     defineWorldFloorPattern(defs, patternId, world, "left", width, height);
     const clipId = `world-stripe-clip-${world}`;
+    const coreRect = coreRectForWorld(world, bounds);
     const clipPath = document.createElementNS(svgNamespace, "clipPath");
     clipPath.setAttribute("id", clipId);
     const clipShape = document.createElementNS(svgNamespace, "path");
-    clipShape.setAttribute("d", polygonToPath(polygons[world], (point) => point));
+    const coreRectPath = [
+      `M ${coreRect.minX} ${coreRect.minY}`,
+      `L ${coreRect.maxX} ${coreRect.minY}`,
+      `L ${coreRect.maxX} ${coreRect.maxY}`,
+      `L ${coreRect.minX} ${coreRect.maxY}`,
+      "Z",
+    ].join(" ");
+    clipShape.setAttribute("d", `${polygonToPath(polygons[world], (point) => point)} ${coreRectPath}`);
+    clipShape.setAttribute("clip-rule", "evenodd");
     clipPath.appendChild(clipShape);
     defs.appendChild(clipPath);
     const node = document.createElementNS(svgNamespace, "rect");
