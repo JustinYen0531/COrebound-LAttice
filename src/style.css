@@ -2124,48 +2124,51 @@ button.禁用:hover {
 .世界地圖層-輕量折皺地板 {
   pointer-events: none;
   opacity: 0.34;
+  isolation: isolate;
 }
 .世界地圖層-高細節底板群 {
   pointer-events: none;
+  isolation: isolate;
 }
 .世界地圖層-高細節底板 {
   opacity: 0.72;
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
+  filter: none;
+  image-rendering: auto;
 }
 .世界地圖層-高細節底板-geometry {
   opacity: 0.76;
-  filter: saturate(1.02) contrast(1.08) brightness(0.86);
 }
 .世界地圖層-高細節底板-organic {
   opacity: 0.74;
-  filter: saturate(1.04) contrast(1.05) brightness(0.82);
 }
 .世界地圖層-高細節底板-fractal {
   opacity: 0.92;
-  filter: saturate(1.18) contrast(1.18) brightness(0.72);
 }
 .世界地圖層-高細節底板-mechanical {
   opacity: 0.78;
-  filter: saturate(1.08) contrast(1.12) brightness(0.8);
 }
 .世界地圖層-高細節條紋群 {
   pointer-events: none;
+  isolation: isolate;
 }
 .世界地圖層-高細節條紋 {
-  opacity: 0.18;
-  mix-blend-mode: multiply;
+  opacity: 0.12;
+  mix-blend-mode: normal;
+  filter: none;
+  image-rendering: auto;
 }
 .世界地圖層-高細節條紋-geometry {
-  opacity: 0.12;
+  opacity: 0.09;
 }
 .世界地圖層-高細節條紋-organic {
-  opacity: 0.14;
+  opacity: 0.1;
 }
 .世界地圖層-高細節條紋-fractal {
-  opacity: 0.16;
+  opacity: 0.11;
 }
 .世界地圖層-高細節條紋-mechanical {
-  opacity: 0.2;
+  opacity: 0.14;
 }
 .世界地圖層-分界線 {
   fill: none;
