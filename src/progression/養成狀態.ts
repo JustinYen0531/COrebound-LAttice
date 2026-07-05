@@ -132,6 +132,16 @@ export function 設定起始成員(layer: 初始成員層級, memberNo: number):
   target.memberNo = memberNo;
 }
 
+export function 設定正式小隊成員(layer: 初始成員層級, memberNo: number): void {
+  設定起始成員(layer, memberNo);
+  const target = 上陣.find((entry) => entry.layer === layer);
+  if (!target) return;
+  target.memberNo = memberNo;
+  target.star = 1 as StarLevel;
+  unlockMember(持有狀態表, memberNo);
+  setMemberStar(持有狀態表, memberNo, target.star);
+}
+
 export function 套用起始成員配置(): void {
   上陣.length = 0;
   for (const entry of 起始成員配置) {
