@@ -417,8 +417,8 @@ export function 建立世界地圖層(): HTMLElement {
   // 不會隨玩家移動改變；只在建圖時設定一次 d 屬性即可，
   // 之後每幀只靠 viewBox 平移鏡頭，避免反覆 setAttribute 觸發瀏覽器重算路徑幾何。
   initRegionPaths(regionPaths, dividerPaths);
-  createCentralPlaza(zoneSvg, 啟用中細節地板, 啟用高細節條紋);
   if (啟用中細節地板) createWorldStripeOverlays(zoneSvg);
+  createCentralPlaza(zoneSvg, 啟用中細節地板, 啟用高細節條紋);
   createCornerCoreOverlays(zoneSvg);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
@@ -2540,6 +2540,7 @@ function createCentralPlaza(host: SVGSVGElement, useSquareTiles: boolean, includ
   wrinkle.setAttribute("height", String(PLAZA_SURFACE_SIZE));
   wrinkle.setAttribute("preserveAspectRatio", "none");
   wrinkle.setAttribute("clip-path", "url(#plaza-square-clip)");
+  wrinkle.setAttribute("opacity", "0.96");
   group.appendChild(wrinkle);
 
   if (includeStripeOverlay) {
@@ -2552,6 +2553,7 @@ function createCentralPlaza(host: SVGSVGElement, useSquareTiles: boolean, includ
     stripes.setAttribute("height", String(PLAZA_SURFACE_SIZE));
     stripes.setAttribute("preserveAspectRatio", "none");
     stripes.setAttribute("clip-path", "url(#plaza-square-clip)");
+    stripes.setAttribute("opacity", "0.82");
     group.appendChild(stripes);
   }
 
