@@ -140,9 +140,10 @@ const MOVE_DECELERATION = 2560;
 const VIEW_PADDING = 140;
 // 正交斜俯視：只壓縮地面縱深，場景物件與 HUD 仍保持直立比例。
 const GROUND_DEPTH_SCALE = 0.6;
-const PLAYER_SIZE_AT_REFERENCE_ZOOM = 140;
+const PLAYER_SIZE_AT_REFERENCE_ZOOM = 700;
+const PLAYER_TOTEM_RENDER_SIZE = 660;
 const REFERENCE_CAMERA_ZOOM = 2.43;
-const DEFAULT_CAMERA_ZOOM = 3.7;
+const DEFAULT_CAMERA_ZOOM = 2.0;
 const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
 const MIN_CAMERA_ZOOM = 0.85;
 const MAX_CAMERA_ZOOM = 4.0;
@@ -471,7 +472,7 @@ export function 建立世界地圖層(): HTMLElement {
   const playerNode = document.createElement("div");
   playerNode.className = "世界地圖層-玩家";
   if (訓練道場中) {
-    playerNode.appendChild(建立玩家標記圖騰({ size: 132, 旋轉: true }));
+    playerNode.appendChild(建立玩家標記圖騰({ size: PLAYER_TOTEM_RENDER_SIZE, 旋轉: true }));
   } else {
     const roster = 取得上陣養成();
     const squad = 小隊屬性摘要();
@@ -479,7 +480,7 @@ export function 建立世界地圖層(): HTMLElement {
     const { 小隊, 最大展開層級 } = 由正式成員陣容建立圖騰小隊(roster);
     playerNode.appendChild(
       建立玩家標記圖騰({
-        size: 132,
+        size: PLAYER_TOTEM_RENDER_SIZE,
         旋轉: true,
         隊長: 取得隊長圖騰資料(squad.captainId),
         隊長等級: captainStar,
