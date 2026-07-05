@@ -4,7 +4,6 @@
  * 對應統一版文件 1.1 裁定：「編排小隊」不設獨立主按鈕，改在此流程與管理介面／小隊共用元件。
  */
 import { 應用程式狀態 } from "../應用程式狀態";
-import { 建立小隊圓盤 } from "../元件/小隊圓盤";
 import { 隊長清單 } from "../資料/隊長清單";
 import { 選文 } from "../語系";
 import { MEMBERS } from "../../data/成員資料庫";
@@ -17,6 +16,13 @@ import {
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
 }
+
+const 隊長立繪來源: Record<string, string> = {
+  conductor: "/assets/images/characters/captains/Conductor立繪與頭像.png",
+  operator: "/assets/images/characters/captains/Operator立繪與頭像.png",
+  launcher: "/assets/images/characters/captains/Launcher立繪與頭像.png",
+  architect: "/assets/images/characters/captains/Architect立繪與頭像.png",
+};
 
 export function 渲染遊戲準備流程(容器: HTMLElement) {
   容器.innerHTML = "";
@@ -32,6 +38,9 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   const 版面 = document.createElement("div");
   版面.className = "準備流程-版面";
 
+  const 隊伍設定區 = document.createElement("div");
+  隊伍設定區.className = "準備流程-隊伍設定區";
+
   const 隊長區 = document.createElement("div");
   隊長區.className = "準備流程-隊長區";
   隊長區.innerHTML = `<h4>${雙語("選擇隊長", "Choose a Captain")}</h4>`;
@@ -40,14 +49,44 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
 
   let 選中隊長id = 應用程式狀態.額外.選中隊長 ?? 隊長清單[0].id;
 
-  const 圓盤容器 = document.createElement("div");
+  const 預覽容器 = document.createElement("div");
 
-  function 重繪圓盤() {
-    圓盤容器.innerHTML = "";
+  function 重繪隊伍預覽() {
+    預覽容器.innerHTML = "";
     const 隊長 = 隊長清單.find((c) => c.id === 選中隊長id)!;
-    圓盤容器.appendChild(
-      建立小隊圓盤({ 隊長名稱: 隊長.名稱, 隊長代表色: 隊長.代表色, 可互動: true })
-    );
+    const 當前配置 = 取得起始成員配置();
+    const 隊伍立繪 = document.createElement("div");
+    隊伍立繪.className = "準備流程-隊伍立繪";
+
+    const 隊長立繪 = document.createElement("article");
+    隊長立繪.className = "準備流程-立繪卡 準備流程-立繪卡--隊長";
+    隊長立繪.style.setProperty("--角色色", 隊長.代表色);
+    隊長立繪.innerHTML = `
+      <div class="準備流程-立繪角色標籤">${雙語("隊長", "Captain")}</div>
+      <div class="準備流程-隊長立繪裁切"><img src="${隊長立繪來源[隊長.id]}" alt="${隊長.名稱}" /></div>
+      <div class="準備流程-立繪名稱"><strong>${隊長.名稱}</strong><span>${隊長.代號}</span></div>
+    `;
+    隊伍立繪.appendChild(隊長立繪);
+
+    const 層級標籤: Record<初始成員層級, string> = {
+      inner: 雙語("最內層", "Inner"),
+      middle: 雙語("中層", "Middle"),
+      outer: 雙語("外層", "Outer"),
+    };
+    當前配置.forEach((entry) => {
+      const member = MEMBERS.find((item) => item.no === entry.memberNo);
+      if (!member) return;
+      const 立繪卡 = document.createElement("article");
+      立繪卡.className = `準備流程-立繪卡 準備流程-立繪卡--${entry.layer}`;
+      立繪卡.innerHTML = `
+        <div class="準備流程-立繪角色標籤">${層級標籤[entry.layer]}</div>
+        <img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${member.nameZh}" />
+        <div class="準備流程-立繪名稱"><strong>${member.nameZh}</strong><span>${member.nameEn}</span></div>
+      `;
+      隊伍立繪.appendChild(立繪卡);
+    });
+    預覽容器.appendChild(隊伍立繪);
+
     const 說明 = document.createElement("div");
     說明.className = "隊長說明卡";
     說明.innerHTML = `
@@ -59,7 +98,7 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
         <li>${雙語("週期技能", "Periodic Skill")}: ${隊長.週期技能}</li>
       </ul>
     `;
-    圓盤容器.appendChild(說明);
+    預覽容器.appendChild(說明);
   }
 
   for (const 隊長 of 隊長清單) {
@@ -73,46 +112,27 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
       應用程式狀態.額外.選中隊長 = 隊長.id;
       隊長列表.querySelectorAll("button").forEach((b) => b.classList.remove("作用中"));
       btn.classList.add("作用中");
-      重繪圓盤();
+      重繪隊伍預覽();
     };
     隊長列表.appendChild(btn);
   }
 
   隊長區.appendChild(隊長列表);
-  版面.appendChild(隊長區);
-
-  const 預覽區 = document.createElement("div");
-  預覽區.className = "準備流程-預覽區";
-  預覽區.innerHTML = `<h4>${雙語("小隊圓盤預覽（共用元件 B）", "Squad Disc Preview (Shared Component B)")}</h4>`;
-  預覽區.appendChild(圓盤容器);
-  重繪圓盤();
-  版面.appendChild(預覽區);
-
-  root.appendChild(版面);
+  隊伍設定區.appendChild(隊長區);
 
   const 顯示起始成員選擇 = state.來源 !== "Continue Game";
   if (顯示起始成員選擇) {
     const 選角區 = document.createElement("section");
-    選角區.style.marginTop = "18px";
-    選角區.style.padding = "16px";
-    選角區.style.borderRadius = "14px";
-    選角區.style.background = "rgba(255,255,255,0.03)";
-    選角區.style.border = "1px solid rgba(255,255,255,0.08)";
-    選角區.style.display = "flex";
-    選角區.style.flexDirection = "column";
-    選角區.style.gap = "12px";
+    選角區.className = "準備流程-選角區";
     選角區.innerHTML = `
-      <div style="font-size:0.96rem;font-weight:700;color:#f2e6c9;">${雙語("選擇 3 名初始成員", "Choose 3 Starting Members")}</div>
-      <div style="font-size:0.8rem;line-height:1.6;color:#c8d0ec;">
-        ${雙語("開局時直接帶 3 名成員進場，分別鎖定在最內層、中層與外層。三個位置不能重複選同一名角色。", "Start the run with 3 members already assigned to the inner, middle, and outer rings. The same member cannot be chosen twice.")}
+      <div class="準備流程-區塊標題">${雙語("選擇 3 名初始成員", "Choose 3 Starting Members")}</div>
+      <div class="準備流程-區塊說明">
+        ${雙語("由內而外安排三名初始成員；每一位只能加入一次。", "Assign three starting members from the inner ring outward. Each member can only be chosen once.")}
       </div>
     `;
 
     const 選擇列 = document.createElement("div");
-    選擇列.style.display = "grid";
-    選擇列.style.gridTemplateColumns = "repeat(auto-fit, minmax(220px, 1fr))";
-    選擇列.style.gap = "12px";
-
+    選擇列.className = "準備流程-選擇列";
     const 當前配置 = 取得起始成員配置();
     const 層級標籤: Record<初始成員層級, string> = {
       inner: 雙語("最內層", "Inner Ring"),
@@ -123,40 +143,21 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
     (["inner", "middle", "outer"] as 初始成員層級[]).forEach((layer) => {
       const current = 當前配置.find((entry) => entry.layer === layer);
       if (!current) return;
-      const 其他已選 = new Set(
-        當前配置.filter((entry) => entry.layer !== layer).map((entry) => entry.memberNo),
-      );
-
+      const 其他已選 = new Set(當前配置.filter((entry) => entry.layer !== layer).map((entry) => entry.memberNo));
+      const member = MEMBERS.find((entry) => entry.no === current.memberNo);
       const 卡片 = document.createElement("label");
-      卡片.style.display = "flex";
-      卡片.style.flexDirection = "column";
-      卡片.style.gap = "8px";
-      卡片.style.padding = "12px";
-      卡片.style.borderRadius = "12px";
-      卡片.style.background = "rgba(11,15,24,0.48)";
-      卡片.style.border = "1px solid rgba(255,255,255,0.08)";
-
-      const 標題 = document.createElement("div");
-      標題.style.fontSize = "0.82rem";
-      標題.style.fontWeight = "700";
-      標題.style.color = "#f2e6c9";
-      標題.textContent = 層級標籤[layer];
-      卡片.appendChild(標題);
+      卡片.className = `準備流程-選角卡 準備流程-選角卡--${layer}`;
+      卡片.innerHTML = `<div class="準備流程-選角卡標題"><span>${層級標籤[layer]}</span><strong>${member?.nameZh ?? ""}</strong></div>`;
 
       const 下拉 = document.createElement("select");
       下拉.className = "二級按鈕";
-      下拉.style.width = "100%";
-      下拉.style.textAlign = "left";
-      下拉.style.padding = "10px 12px";
-
-      MEMBERS.filter((member) => !其他已選.has(member.no) || member.no === current.memberNo).forEach((member) => {
+      MEMBERS.filter((candidate) => !其他已選.has(candidate.no) || candidate.no === current.memberNo).forEach((candidate) => {
         const option = document.createElement("option");
-        option.value = String(member.no);
-        option.selected = member.no === current.memberNo;
-        option.textContent = `${String(member.no).padStart(2, "0")}. ${member.nameZh} (${member.nameEn})`;
+        option.value = String(candidate.no);
+        option.selected = candidate.no === current.memberNo;
+        option.textContent = `${String(candidate.no).padStart(2, "0")}. ${candidate.nameZh} (${candidate.nameEn})`;
         下拉.appendChild(option);
       });
-
       下拉.onchange = () => {
         設定起始成員(layer, Number(下拉.value));
         渲染遊戲準備流程(容器);
@@ -164,20 +165,25 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
       卡片.appendChild(下拉);
 
       const 補充 = document.createElement("div");
-      補充.style.fontSize = "0.74rem";
-      補充.style.color = "#8d93ad";
-      const member = MEMBERS.find((entry) => entry.no === current.memberNo);
-      補充.textContent = member
-        ? `${雙語("目前選擇", "Current")}: ${member.nameZh} ｜ ${雙語("世界", "World")}: ${member.world}`
-        : "";
+      補充.className = "準備流程-選角補充";
+      補充.textContent = member ? `${member.nameEn} ｜ ${雙語("世界", "World")}: ${member.world}` : "";
       卡片.appendChild(補充);
-
       選擇列.appendChild(卡片);
     });
-
     選角區.appendChild(選擇列);
-    root.appendChild(選角區);
+    隊伍設定區.appendChild(選角區);
   }
+
+  版面.appendChild(隊伍設定區);
+
+  const 預覽區 = document.createElement("div");
+  預覽區.className = "準備流程-預覽區";
+  預覽區.innerHTML = `<h4>${雙語("出戰隊伍立繪", "Starting Squad Portraits")}</h4>`;
+  預覽區.appendChild(預覽容器);
+  重繪隊伍預覽();
+  版面.appendChild(預覽區);
+
+  root.appendChild(版面);
 
   const 畫質區 = document.createElement("section");
   畫質區.style.marginTop = "18px";

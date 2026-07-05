@@ -745,14 +745,17 @@ button.禁用:hover {
 
 /* ---------- 隊長卡片 / 準備流程 ---------- */
 .準備流程-版面 {
-  display: flex;
-  gap: 22px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(380px, 0.9fr) minmax(520px, 1.35fr);
+  gap: 28px;
+  align-items: start;
 }
-.準備流程-隊長區,
+.準備流程-隊伍設定區 {
+  display: grid;
+  gap: 24px;
+}
 .準備流程-預覽區 {
-  flex: 1;
-  min-width: 280px;
+  min-width: 0;
 }
 .隊長卡片列 {
   display: grid;
@@ -781,6 +784,164 @@ button.禁用:hover {
 .淡字 {
   color: var(--ink-dim);
   font-size: 0.8em;
+}
+.準備流程-選角區 {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  min-height: 300px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.32), transparent 44%),
+    color-mix(in srgb, var(--bg-panel) 90%, transparent);
+  box-shadow: 0 12px 28px rgba(62, 48, 29, 0.1);
+}
+.準備流程-區塊標題 {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+.準備流程-區塊說明 {
+  max-width: 52ch;
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.準備流程-選擇列 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-self: end;
+}
+.準備流程-選角卡 {
+  --ring-color: #d4aa45;
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 12px;
+  border-top: 4px solid var(--ring-color);
+  background: color-mix(in srgb, var(--bg-panel) 92%, var(--ring-color) 8%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ring-color) 28%, var(--line));
+}
+.準備流程-選角卡--inner { --ring-color: #d8b84a; }
+.準備流程-選角卡--middle { --ring-color: #e96755; }
+.準備流程-選角卡--outer { --ring-color: #4a8ee8; }
+.準備流程-選角卡標題 {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.76rem;
+}
+.準備流程-選角卡標題 strong { color: var(--ring-color); }
+.準備流程-選角卡 select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  text-align: left;
+}
+.準備流程-選角補充 {
+  overflow: hidden;
+  color: var(--ink-dim);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.準備流程-隊伍立繪 {
+  display: grid;
+  grid-template-columns: 1.16fr repeat(3, 1fr);
+  gap: 7px;
+  min-height: 430px;
+  padding: 14px 14px 0;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 30%),
+    repeating-linear-gradient(90deg, transparent 0 24%, rgba(104, 83, 48, 0.08) 24% 24.3%),
+    color-mix(in srgb, var(--bg-panel) 88%, #d6c69e 12%);
+  box-shadow: 0 16px 34px rgba(62, 48, 29, 0.14);
+  overflow: hidden;
+}
+.準備流程-立繪卡 {
+  --角色色: #4a8ee8;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  min-height: 390px;
+  border-bottom: 5px solid var(--角色色);
+  background: linear-gradient(180deg, transparent 16%, color-mix(in srgb, var(--角色色) 10%, transparent));
+  overflow: hidden;
+}
+.準備流程-立繪卡--inner { --角色色: #d8b84a; }
+.準備流程-立繪卡--middle { --角色色: #e96755; }
+.準備流程-立繪卡--outer { --角色色: #4a8ee8; }
+.準備流程-立繪卡 img {
+  align-self: end;
+  justify-self: center;
+  width: 145%;
+  height: 325px;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 10px 5px rgba(38, 31, 23, 0.24));
+}
+.準備流程-隊長立繪裁切 {
+  position: relative;
+  align-self: end;
+  justify-self: stretch;
+  width: 100%;
+  height: 340px;
+  overflow: hidden;
+}
+.準備流程-立繪卡 .準備流程-隊長立繪裁切 img {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: auto;
+  max-width: none;
+  height: 200%;
+  object-fit: unset;
+  transform: translateX(-12.5%);
+  filter: drop-shadow(0 10px 5px rgba(38, 31, 23, 0.24));
+}
+.準備流程-立繪角色標籤 {
+  position: relative;
+  z-index: 1;
+  justify-self: start;
+  margin: 8px;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--角色色) 60%, var(--line));
+  background: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+  color: var(--角色色);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+.準備流程-立繪名稱 {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 2px;
+  padding: 10px 8px 12px;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-panel) 96%, transparent) 28%);
+  text-align: center;
+}
+.準備流程-立繪名稱 strong { font-size: 0.86rem; }
+.準備流程-立繪名稱 span { color: var(--ink-dim); font-size: 0.66rem; }
+
+@media (max-width: 980px) {
+  .準備流程-版面 { grid-template-columns: 1fr; }
+  .準備流程-隊伍立繪 { min-height: 380px; }
+  .準備流程-立繪卡 { min-height: 340px; }
+  .準備流程-立繪卡 img { height: 280px; }
+}
+
+@media (max-width: 620px) {
+  .準備流程-選擇列 { grid-template-columns: 1fr; }
+  .準備流程-選角區 { min-height: auto; }
+  .準備流程-隊伍立繪 {
+    grid-template-columns: repeat(2, 1fr);
+    min-height: 0;
+  }
+  .準備流程-立繪卡 { min-height: 300px; }
+  .準備流程-立繪卡 img,
+  .準備流程-隊長立繪裁切 { height: 240px; }
 }
 
 /* =========================================================
