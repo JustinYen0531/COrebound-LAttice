@@ -10,6 +10,18 @@
 
 ---
 
+## 0. 目前實作中的資產同步重點
+
+這份總覽除了講「應該放什麼」，現在也要同步記錄**目前已經真的被遊戲畫面吃進去的資產形態**：
+
+1. **地圖地板不是單圖，而是三層**：`鑲嵌底板`、`wrinkle 折皺覆層`、`高細節條紋覆層`。
+2. **中央廣場有獨立素材**：目前另外有 `plaza-wrinkle.png`，而且中央廣場的條紋與折皺都只用在這唯一一塊中樞廣場。
+3. **立繪不是只存完整圖**：目前實作已經用到 `完整立繪`、`透明去背立繪`、`黑白 icon 切片` 三層資產。
+4. **主畫面真的有世界舞台影片**：目前四個世界已有對應影片檔可供輪播舞台使用。
+5. **圖鑑真的有專用立繪展示舞台背景**：不是只有 UI 框線，而是有專門的舞台底圖。
+
+---
+
 ## 1. images
 
 放所有靜態圖像資產。
@@ -51,6 +63,22 @@
   - 放隊長與成員頭像、裁切肖像、小卡面
   - 來源通常由完整立繪二次裁切而來
 
+- `transparent-portraits/captains`
+  - 放隊長透明去背立繪與形態頭像
+  - 目前圖鑑、隊長形態切換、展示舞台會直接使用
+
+- `transparent-portraits/members`
+  - 放成員透明去背立繪
+  - 目前圖鑑星級切換與展示舞台會直接使用
+
+- `transparent-portraits/icons`
+  - 放黑白去背成員 icon
+  - 目前 HUD、小頭像、圓盤、迷你頭像等快速辨識元件會直接使用
+
+- `transparent-portraits/avatars`
+  - 放角色裁切後的頭像或局部肖像版本
+  - 適合拿來接局內、清單、小卡面等縮圖需求
+
 - `images/enemies/geometry`
 - `images/enemies/organic`
 - `images/enemies/fractal`
@@ -87,6 +115,24 @@
 - `images/props/floor_textures`
   - 放地板材質、圖騰紋樣、地面花紋
 
+- `images/maps/floors`
+  - 放四世界的主地板圖、共同條紋圖
+  - 目前已實際使用：
+    - `geometry.png`
+    - `organic.png`
+    - `fractal.png`
+    - `mechanical.png`
+    - `chatgpt-stripes.png`
+
+- `images/maps/wrinkles`
+  - 放四世界與中央廣場的折皺覆層
+  - 目前已實際使用：
+    - `geometry.png`
+    - `organic.png`
+    - `fractal.png`
+    - `mechanical.png`
+    - `plaza-wrinkle.png`
+
 - `images/ui/main_menu`
   - 放主畫面主按鈕、右側彈出子按鈕、背景視覺零件
   - 參考：[玩家介面_UserFlow方案.md](C:/Users/閻星澄/Desktop/COrebound-LAttence-main/doc/介面流程/玩家介面_UserFlow方案.md)
@@ -96,6 +142,10 @@
 
 - `images/ui/management`
   - 放管理介面資料夾、書籤、內頁卡片、圖鑑頁零件
+
+- `images/立繪展示舞台.png`
+  - 目前圖鑑立繪舞台直接使用的背景圖
+  - 性質上屬於 UI 展示台資產，不是角色圖本體
 
 - `images/ui/icons_buttons`
   - 放通用 icon、功能按鈕、狀態圖示、互動提示符號
@@ -138,6 +188,12 @@
 
 - `video/title_sequences`
   - 主畫面動態背景、標題進場、品牌視覺
+
+- `video/幾何世界.mp4`
+- `video/有機世界.mp4`
+- `video/分形世界.mp4`
+- `video/機械世界.mp4`
+  - 目前主畫面世界輪播舞台直接使用的四支世界影片
 
 - `video/ui_motion`
   - 主按鈕展開、圓盤展圈、管理頁開啟等動態示範
