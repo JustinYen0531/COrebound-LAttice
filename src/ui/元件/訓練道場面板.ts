@@ -84,6 +84,12 @@ function 取得層級標籤(layer: "外" | "中" | "內"): string {
   return "最外層";
 }
 
+function 取得正式層級短標(layer: 初始成員層級): string {
+  if (layer === "inner") return "最內層";
+  if (layer === "middle") return "中層";
+  return "最外層";
+}
+
 function 建立標題(文字: string, 副標?: string): HTMLElement {
   const wrap = document.createElement("div");
   wrap.style.display = "flex";
@@ -142,6 +148,10 @@ function 轉換圖騰職責(role: 職責色): "藍" | "紅" | "黃" {
   if (role === "保護") return "藍";
   if (role === "火力") return "紅";
   return "黃";
+}
+
+function 取得正式隊長立繪路徑(captainId: string, form = 1): string {
+  return `/assets/transparent-portraits/captains/${captainId}_form${form}.png`;
 }
 
 function 由正式職責轉換(role: "protect" | "firepower" | "supply"): 職責色 {
@@ -1065,14 +1075,16 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   rightPane.style.gap = "14px";
 
   const captainRow = document.createElement("div");
-  captainRow.style.display = "grid";
-  captainRow.style.gridTemplateColumns = "repeat(4, minmax(0, 1fr))";
-  captainRow.style.gap = "8px";
+  captainRow.className = "正式隊長列";
   隊長清單.forEach((entry) => {
     const btn = document.createElement("button");
-    btn.className = captain.id === entry.id ? "一級按鈕" : "二級按鈕";
-    btn.textContent = entry.名稱;
+    btn.className = `正式隊長卡${captain.id === entry.id ? " 作用中" : ""}`;
     btn.style.setProperty("--隊長色", entry.代表色);
+    btn.innerHTML = `
+      <span class="正式隊長卡-立繪"><img src="${取得正式隊長立繪路徑(entry.id, 1)}" alt="${entry.名稱}" /></span>
+      <span class="正式隊長卡-名稱">${entry.名稱}</span>
+      <span class="正式隊長卡-代號">${entry.代號}</span>
+    `;
     btn.onclick = () => {
       應用程式狀態.額外.選中隊長 = entry.id;
       刷新正式最大生命();
@@ -1081,6 +1093,32 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
     captainRow.appendChild(btn);
   });
   rightPane.appendChild(captainRow);
+
+  const squadSummaryRow = document.createElement("div");
+  squadSummaryRow.className = "正式小隊摘要列";
+  squad.forEach((slot, index) => {
+    const role = 槽位職責色票[slot.role];
+    const member = slot.member ? MEMBERS.find((entry) => entry.no === slot.member?.memberNo) ?? null : null;
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = `正式小隊摘要卡${selectedSlotId === slot.slotId ? " 作用中" : ""}`;
+    card.style.setProperty("--slot-color", role.color);
+    card.onclick = () => {
+      應用程式狀態.額外.選中的小隊成員展示位 = slot.slotId;
+      刷新();
+    };
+    card.innerHTML = `
+      <div class="正式小隊摘要卡-編號">${index + 1}</div>
+      <div class="正式小隊摘要卡-標頭">
+        <span>${role.label}</span>
+        <span>${取得正式層級短標(slot.layer)}</span>
+      </div>
+      <div class="正式小隊摘要卡-名稱">${member ? `${member.no.toString().padStart(2, "0")} ${member.nameZh}` : "未配置"}</div>
+      <div class="正式小隊摘要卡-副文">${member ? `${FAMILY_LABEL[member.family]} ｜ ${member.starNodes[1].name}` : "請從下方成員庫指派"}</div>
+    `;
+    squadSummaryRow.appendChild(card);
+  });
+  rightPane.appendChild(squadSummaryRow);
 
   const summaryGrid = document.createElement("div");
   summaryGrid.style.display = "grid";
