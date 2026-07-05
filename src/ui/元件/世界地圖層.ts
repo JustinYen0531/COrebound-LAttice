@@ -176,11 +176,57 @@ const LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE: Record<World, string> = {
   mechanical: "/images/maps/wrinkles/mechanical.png",
 };
 
-const HIGH_DETAIL_FLOOR_IMAGE: Record<World, string> = {
-  geometry: "/images/maps/floors/geometry.png",
-  organic: "/images/maps/floors/organic.png",
-  fractal: "/images/maps/floors/fractal.png",
-  mechanical: "/images/maps/floors/mechanical.png",
+const HIGH_DETAIL_FLOOR_IMAGE = "/images/maps/floors/chatgpt-stripes.png";
+const PLAZA_SURFACE_RADIUS = PLAZA_RADIUS + 140;
+
+const SIMPLE_TILE_PALETTE: Record<World | "plaza", {
+  base: string;
+  a: string;
+  b: string;
+  c: string;
+  line: string;
+  accent: string;
+}> = {
+  geometry: {
+    base: "#d8e4fb",
+    a: "#dfe9ff",
+    b: "#cddcf7",
+    c: "#e9f0ff",
+    line: "rgba(97, 121, 164, 0.52)",
+    accent: "rgba(72, 106, 160, 0.24)",
+  },
+  organic: {
+    base: "#c9e3cf",
+    a: "#d7eedb",
+    b: "#bdd9c3",
+    c: "#e4f4e6",
+    line: "rgba(90, 132, 95, 0.5)",
+    accent: "rgba(66, 115, 74, 0.24)",
+  },
+  fractal: {
+    base: "#dfd5f2",
+    a: "#ebe2fb",
+    b: "#d2c4ea",
+    c: "#f2ebff",
+    line: "rgba(124, 101, 156, 0.48)",
+    accent: "rgba(115, 82, 153, 0.22)",
+  },
+  mechanical: {
+    base: "#e6dcc8",
+    a: "#f0e7d5",
+    b: "#d8ccb5",
+    c: "#f5ecdc",
+    line: "rgba(128, 111, 86, 0.48)",
+    accent: "rgba(112, 93, 64, 0.2)",
+  },
+  plaza: {
+    base: "#e8e1d5",
+    a: "#f3ede3",
+    b: "#dcd2c5",
+    c: "#fbf6ed",
+    line: "rgba(132, 120, 101, 0.5)",
+    accent: "rgba(126, 108, 78, 0.18)",
+  },
 };
 
 let playerPos = { x: 0, y: 0 };
@@ -345,18 +391,18 @@ export function 建立世界地圖層(): HTMLElement {
   canvas.appendChild(objectLayer);
 
   const regionPaths = createRegionPaths(zoneSvg);
-  if (啟用中細節地板) createHighDetailBaseFloors(zoneSvg);
+  if (啟用中細節地板) createWorldSquareTileFloors(zoneSvg, 啟用高細節條紋);
   else if (ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS) createLightweightWrinkleFloors(zoneSvg);
-  const geometryCoreBoundaries = 啟用中細節地板 ? createGeometryEinsteinFloor(zoneSvg) : [];
-  const fractalCoreBoundaries = 啟用中細節地板 ? createFractalPenroseFloor(zoneSvg) : [];
-  const organicCoreBoundaries = 啟用中細節地板 ? createOrganicBirdFloor(zoneSvg) : [];
-  const mechanicalCoreBoundaries = 啟用中細節地板 ? createMechanicalCairoFloor(zoneSvg) : [];
-  if (啟用高細節條紋) createHighDetailStripeFloors(zoneSvg);
+  const geometryCoreBoundaries: EinsteinPoint[][] = [];
+  const fractalCoreBoundaries: PenrosePoint[][] = [];
+  const organicCoreBoundaries: EscherPoint[][] = [];
+  const mechanicalCoreBoundaries: CairoPoint[][] = [];
   const dividerPaths = createDividerPaths(zoneSvg);
   // 區域外框、分界線、地板花紋都是「世界座標固定」的靜態幾何，
   // 不會隨玩家移動改變；只在建圖時設定一次 d 屬性即可，
   // 之後每幀只靠 viewBox 平移鏡頭，避免反覆 setAttribute 觸發瀏覽器重算路徑幾何。
   initRegionPaths(regionPaths, dividerPaths);
+  createCentralPlaza(zoneSvg, 啟用中細節地板);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
@@ -427,6 +473,7 @@ export function 建立世界地圖層(): HTMLElement {
   miniMapInner.appendChild(miniSvg);
 
   const miniRegionPaths = createMiniRegionPaths(miniSvg);
+  const miniPlaza = createMiniPlaza(miniSvg);
   const miniGeometryCore = createMiniGeometryCore(miniSvg);
   const miniFractalCore = createMiniFractalCore(miniSvg);
   const miniOrganicCore = createMiniOrganicCore(miniSvg);
@@ -446,6 +493,7 @@ export function 建立世界地圖層(): HTMLElement {
     mechanicalCoreBoundaries,
     miniDividerPaths,
   );
+  initMiniPlaza(miniPlaza);
   const miniObjectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
     const node = document.createElement("div");
@@ -2148,46 +2196,31 @@ function initMiniStaticPaths(
   (Object.keys(regions) as World[]).forEach((world) => {
     regions[world].setAttribute("d", polygonToPath(polygons[world], toMini));
   });
-  geometryCore.path.setAttribute(
-    "d",
-    geometryCoreBoundaries.map((boundary) => polygonToPath(boundary, toMini)).join(" "),
-  );
-  const geometryZone = MAP_ZONES.find((zone) => zone.region === "geometry");
-  if (geometryZone) {
-    const coreCenter = toMini({ x: geometryZone.centerX, y: geometryZone.centerY });
-    geometryCore.label.setAttribute("x", String(coreCenter.x));
-    geometryCore.label.setAttribute("y", String(coreCenter.y));
-  }
-  fractalCore.path.setAttribute(
-    "d",
-    fractalCoreBoundaries.map((boundary) => polygonToPath(boundary, toMini)).join(" "),
-  );
-  const fractalZone = MAP_ZONES.find((zone) => zone.region === "fractal");
-  if (fractalZone) {
-    const coreCenter = toMini({ x: fractalZone.centerX, y: fractalZone.centerY });
-    fractalCore.label.setAttribute("x", String(coreCenter.x));
-    fractalCore.label.setAttribute("y", String(coreCenter.y));
-  }
-  organicCore.path.setAttribute(
-    "d",
-    organicCoreBoundaries.map((boundary) => polygonToPath(boundary, toMini)).join(" "),
-  );
-  const organicZone = MAP_ZONES.find((zone) => zone.region === "organic");
-  if (organicZone) {
-    const coreCenter = toMini({ x: organicZone.centerX, y: organicZone.centerY });
-    organicCore.label.setAttribute("x", String(coreCenter.x));
-    organicCore.label.setAttribute("y", String(coreCenter.y));
-  }
-  mechanicalCore.path.setAttribute(
-    "d",
-    mechanicalCoreBoundaries.map((boundary) => polygonToPath(boundary, toMini)).join(" "),
-  );
-  const mechanicalZone = MAP_ZONES.find((zone) => zone.region === "mechanical");
-  if (mechanicalZone) {
-    const coreCenter = toMini({ x: mechanicalZone.centerX, y: mechanicalZone.centerY });
-    mechanicalCore.label.setAttribute("x", String(coreCenter.x));
-    mechanicalCore.label.setAttribute("y", String(coreCenter.y));
-  }
+  const setCore = (
+    core: { path: SVGPathElement; label: SVGTextElement },
+    boundaries: EinsteinPoint[][],
+    world: World,
+  ) => {
+    if (boundaries.length === 0) {
+      core.path.setAttribute("d", "");
+      core.path.style.display = "none";
+      core.label.style.display = "none";
+      return;
+    }
+    core.path.style.display = "";
+    core.label.style.display = "";
+    core.path.setAttribute("d", boundaries.map((boundary) => polygonToPath(boundary, toMini)).join(" "));
+    const zone = MAP_ZONES.find((entry) => entry.region === world);
+    if (!zone) return;
+    const coreCenter = toMini({ x: zone.centerX, y: zone.centerY });
+    core.label.setAttribute("x", String(coreCenter.x));
+    core.label.setAttribute("y", String(coreCenter.y));
+  };
+
+  setCore(geometryCore, geometryCoreBoundaries, "geometry");
+  setCore(fractalCore, fractalCoreBoundaries as EinsteinPoint[][], "fractal");
+  setCore(organicCore, organicCoreBoundaries as EinsteinPoint[][], "organic");
+  setCore(mechanicalCore, mechanicalCoreBoundaries as EinsteinPoint[][], "mechanical");
   dividers.vertical.setAttribute("d", polylineToPath(MAP_VERTICAL_DIVIDER, toMini));
   dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, toMini));
 }
@@ -2266,47 +2299,81 @@ function createLightweightWrinkleFloors(host: SVGSVGElement): void {
   host.append(defs, group);
 }
 
-function createHighDetailBaseFloors(host: SVGSVGElement): void {
+function defineSquareTilePattern(
+  defs: SVGDefsElement,
+  patternId: string,
+  palette: typeof SIMPLE_TILE_PALETTE.plaza,
+): void {
   const svgNamespace = "http://www.w3.org/2000/svg";
-  const polygons = buildRegionPolygons();
-  const defs = document.createElementNS(svgNamespace, "defs");
-  const group = document.createElementNS(svgNamespace, "g");
-  group.setAttribute("class", "世界地圖層-高細節底板群");
+  const pattern = document.createElementNS(svgNamespace, "pattern");
+  pattern.setAttribute("id", patternId);
+  pattern.setAttribute("patternUnits", "userSpaceOnUse");
+  pattern.setAttribute("width", "420");
+  pattern.setAttribute("height", "420");
 
-  (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
-    const clipId = `high-detail-floor-clip-${world}`;
-    const clipPath = document.createElementNS(svgNamespace, "clipPath");
-    clipPath.setAttribute("id", clipId);
-    const clipShape = document.createElementNS(svgNamespace, "path");
-    clipShape.setAttribute("d", polygonToPath(polygons[world], (point) => point));
-    clipPath.appendChild(clipShape);
-    defs.appendChild(clipPath);
+  const base = document.createElementNS(svgNamespace, "rect");
+  base.setAttribute("x", "0");
+  base.setAttribute("y", "0");
+  base.setAttribute("width", "420");
+  base.setAttribute("height", "420");
+  base.setAttribute("fill", palette.base);
+  pattern.appendChild(base);
 
-    const bounds = boundsOf(polygons[world]);
-    const image = document.createElementNS(svgNamespace, "image");
-    image.setAttribute("class", `世界地圖層-高細節底板 世界地圖層-高細節底板-${world}`);
-    image.setAttribute("href", HIGH_DETAIL_FLOOR_IMAGE[world]);
-    image.setAttribute("x", String(bounds.minX));
-    image.setAttribute("y", String(bounds.minY));
-    image.setAttribute("width", String(bounds.maxX - bounds.minX));
-    image.setAttribute("height", String(bounds.maxY - bounds.minY));
-    image.setAttribute("preserveAspectRatio", "none");
-    image.setAttribute("clip-path", `url(#${clipId})`);
-    group.appendChild(image);
-  });
+  const tiles = [
+    { x: 0, y: 0, fill: palette.a },
+    { x: 210, y: 0, fill: palette.b },
+    { x: 0, y: 210, fill: palette.c },
+    { x: 210, y: 210, fill: palette.a },
+  ];
+  for (const tile of tiles) {
+    const rect = document.createElementNS(svgNamespace, "rect");
+    rect.setAttribute("x", String(tile.x));
+    rect.setAttribute("y", String(tile.y));
+    rect.setAttribute("width", "210");
+    rect.setAttribute("height", "210");
+    rect.setAttribute("fill", tile.fill);
+    pattern.appendChild(rect);
+  }
 
-  host.append(defs, group);
+  const vertical = document.createElementNS(svgNamespace, "path");
+  vertical.setAttribute("d", "M 210 0 L 210 420");
+  vertical.setAttribute("stroke", palette.line);
+  vertical.setAttribute("stroke-width", "10");
+  vertical.setAttribute("vector-effect", "non-scaling-stroke");
+  pattern.appendChild(vertical);
+
+  const horizontal = document.createElementNS(svgNamespace, "path");
+  horizontal.setAttribute("d", "M 0 210 L 420 210");
+  horizontal.setAttribute("stroke", palette.line);
+  horizontal.setAttribute("stroke-width", "10");
+  horizontal.setAttribute("vector-effect", "non-scaling-stroke");
+  pattern.appendChild(horizontal);
+
+  const accent = document.createElementNS(svgNamespace, "path");
+  accent.setAttribute("d", "M 0 0 L 420 0 L 420 420 L 0 420 Z");
+  accent.setAttribute("fill", "none");
+  accent.setAttribute("stroke", palette.accent);
+  accent.setAttribute("stroke-width", "16");
+  accent.setAttribute("vector-effect", "non-scaling-stroke");
+  pattern.appendChild(accent);
+
+  defs.appendChild(pattern);
 }
 
-function createHighDetailStripeFloors(host: SVGSVGElement): void {
+function createWorldSquareTileFloors(host: SVGSVGElement, includeStripeOverlay: boolean): void {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const polygons = buildRegionPolygons();
   const defs = document.createElementNS(svgNamespace, "defs");
-  const group = document.createElementNS(svgNamespace, "g");
-  group.setAttribute("class", "世界地圖層-高細節條紋群");
+  const baseGroup = document.createElementNS(svgNamespace, "g");
+  baseGroup.setAttribute("class", "世界地圖層-方格地板群");
+  const overlayGroup = document.createElementNS(svgNamespace, "g");
+  overlayGroup.setAttribute("class", "世界地圖層-高細節條紋群");
 
   (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
-    const clipId = `high-detail-stripe-clip-${world}`;
+    const patternId = `square-floor-${world}`;
+    defineSquareTilePattern(defs, patternId, SIMPLE_TILE_PALETTE[world]);
+
+    const clipId = `square-floor-clip-${world}`;
     const clipPath = document.createElementNS(svgNamespace, "clipPath");
     clipPath.setAttribute("id", clipId);
     const clipShape = document.createElementNS(svgNamespace, "path");
@@ -2315,17 +2382,59 @@ function createHighDetailStripeFloors(host: SVGSVGElement): void {
     defs.appendChild(clipPath);
 
     const bounds = boundsOf(polygons[world]);
-    const image = document.createElementNS(svgNamespace, "image");
-    image.setAttribute("class", `世界地圖層-高細節條紋 世界地圖層-高細節條紋-${world}`);
-    image.setAttribute("href", HIGH_DETAIL_FLOOR_IMAGE[world]);
-    image.setAttribute("x", String(bounds.minX));
-    image.setAttribute("y", String(bounds.minY));
-    image.setAttribute("width", String(bounds.maxX - bounds.minX));
-    image.setAttribute("height", String(bounds.maxY - bounds.minY));
-    image.setAttribute("preserveAspectRatio", "none");
-    image.setAttribute("clip-path", `url(#${clipId})`);
-    group.appendChild(image);
+    const rect = document.createElementNS(svgNamespace, "rect");
+    rect.setAttribute("class", `世界地圖層-方格地板 世界地圖層-方格地板-${world}`);
+    rect.setAttribute("x", String(bounds.minX));
+    rect.setAttribute("y", String(bounds.minY));
+    rect.setAttribute("width", String(bounds.maxX - bounds.minX));
+    rect.setAttribute("height", String(bounds.maxY - bounds.minY));
+    rect.setAttribute("fill", `url(#${patternId})`);
+    rect.setAttribute("clip-path", `url(#${clipId})`);
+    baseGroup.appendChild(rect);
+
+    if (includeStripeOverlay) {
+      const image = document.createElementNS(svgNamespace, "image");
+      image.setAttribute("class", `世界地圖層-高細節條紋 世界地圖層-高細節條紋-${world}`);
+      image.setAttribute("href", HIGH_DETAIL_FLOOR_IMAGE);
+      image.setAttribute("x", String(bounds.minX));
+      image.setAttribute("y", String(bounds.minY));
+      image.setAttribute("width", String(bounds.maxX - bounds.minX));
+      image.setAttribute("height", String(bounds.maxY - bounds.minY));
+      image.setAttribute("preserveAspectRatio", "none");
+      image.setAttribute("clip-path", `url(#${clipId})`);
+      overlayGroup.appendChild(image);
+    }
   });
+
+  host.append(defs, baseGroup);
+  if (includeStripeOverlay) host.append(overlayGroup);
+}
+
+function createCentralPlaza(host: SVGSVGElement, useSquareTiles: boolean): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const defs = document.createElementNS(svgNamespace, "defs");
+  const group = document.createElementNS(svgNamespace, "g");
+  group.setAttribute("class", "世界地圖層-中央廣場群");
+
+  const surface = document.createElementNS(svgNamespace, "circle");
+  surface.setAttribute("class", "世界地圖層-中央廣場底");
+  surface.setAttribute("cx", "0");
+  surface.setAttribute("cy", "0");
+  surface.setAttribute("r", String(PLAZA_SURFACE_RADIUS));
+  if (useSquareTiles) {
+    defineSquareTilePattern(defs, "plaza-square-floor", SIMPLE_TILE_PALETTE.plaza);
+    surface.setAttribute("fill", "url(#plaza-square-floor)");
+  } else {
+    surface.setAttribute("fill", SIMPLE_TILE_PALETTE.plaza.base);
+  }
+  group.appendChild(surface);
+
+  const ring = document.createElementNS(svgNamespace, "circle");
+  ring.setAttribute("class", "世界地圖層-中央廣場外框");
+  ring.setAttribute("cx", "0");
+  ring.setAttribute("cy", "0");
+  ring.setAttribute("r", String(PLAZA_SURFACE_RADIUS));
+  group.appendChild(ring);
 
   host.append(defs, group);
 }
@@ -3226,6 +3335,34 @@ function createMiniRegionPaths(host: SVGSVGElement): Record<World, SVGPathElemen
     regions[world] = path;
   });
   return regions;
+}
+
+function createMiniPlaza(host: SVGSVGElement): { circle: SVGCircleElement; label: SVGTextElement } {
+  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  circle.setAttribute("class", "世界地圖層-小地圖中央廣場");
+  host.appendChild(circle);
+
+  const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  label.setAttribute("class", "世界地圖層-小地圖中央廣場標籤");
+  label.setAttribute("text-anchor", "middle");
+  label.setAttribute("dominant-baseline", "middle");
+  label.textContent = "中央廣場";
+  host.appendChild(label);
+  return { circle, label };
+}
+
+function initMiniPlaza(plaza: { circle: SVGCircleElement; label: SVGTextElement }): void {
+  const width = 176;
+  const height = 176;
+  const centerX = ((0 - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width;
+  const centerY = ((0 - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY)) * height;
+  const radius = (PLAZA_SURFACE_RADIUS / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width;
+
+  plaza.circle.setAttribute("cx", String(centerX));
+  plaza.circle.setAttribute("cy", String(centerY));
+  plaza.circle.setAttribute("r", String(radius));
+  plaza.label.setAttribute("x", String(centerX));
+  plaza.label.setAttribute("y", String(centerY));
 }
 
 function createMiniGeometryCore(host: SVGSVGElement): { path: SVGPathElement; label: SVGTextElement } {

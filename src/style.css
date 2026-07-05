@@ -2121,6 +2121,25 @@ button.禁用:hover {
 .世界地圖層-區域片-mechanical {
   fill: rgba(255, 197, 111, 0.14);
 }
+.世界地圖層-方格地板群 {
+  pointer-events: none;
+}
+.世界地圖層-方格地板 {
+  opacity: 1;
+  shape-rendering: geometricPrecision;
+}
+.世界地圖層-中央廣場群 {
+  pointer-events: none;
+}
+.世界地圖層-中央廣場底 {
+  opacity: 0.98;
+}
+.世界地圖層-中央廣場外框 {
+  fill: none;
+  stroke: rgba(255, 248, 232, 0.96);
+  stroke-width: 22;
+  vector-effect: non-scaling-stroke;
+}
 .世界地圖層-輕量折皺地板 {
   pointer-events: none;
   opacity: 0.34;
@@ -2722,6 +2741,21 @@ button.禁用:hover {
 .世界地圖層-小地圖中央區-mechanical {
   fill: rgba(201, 162, 39, 0.42);
   stroke: #f0d27a;
+}
+.世界地圖層-小地圖中央廣場 {
+  fill: rgba(237, 228, 212, 0.92);
+  stroke: rgba(255, 249, 240, 0.95);
+  stroke-width: 2.8;
+}
+.世界地圖層-小地圖中央廣場標籤 {
+  fill: #473f33;
+  font-size: 8px;
+  font-weight: 700;
+  paint-order: stroke fill;
+  stroke: rgba(255,255,255,0.88);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  pointer-events: none;
 }
 .世界地圖層-小地圖分界線 {
   fill: none;
