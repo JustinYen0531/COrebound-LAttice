@@ -276,16 +276,15 @@ export class GameSnapshotSource {
     );
     const formalSquad = 取得上陣養成();
     const roster = formalSquad
-      .map((entry, slotId) => {
+      .map((entry) => {
         const member = MEMBERS.find((candidate) => candidate.no === entry.memberNo);
         if (!member) return null;
-        const { layer, role } = slotToLayerRole(slotId);
         familyStars[member.family].push(entry.star);
         return {
           id: member.id,
           label: member.nameZh,
-          layer,
-          role,
+          layer: entry.layer,
+          role: entry.role,
           hpRatio: summary.playerMaxHp > 0 ? summary.playerHp / summary.playerMaxHp : 0,
           shielded: member.family === "shield",
           dead: summary.playerHp <= 0,

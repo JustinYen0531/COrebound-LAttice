@@ -134,9 +134,9 @@ const MONSTER_SPEED_SCALE = 0.16;
 // 只有距離玩家這麼近的怪物才跑 AI／移動，遠處待命，避免全圖 200 隻同時朝玩家聚集。
 const MONSTER_ACTIVE_RADIUS = 2600;
 
-const MOVE_SPEED = 84;
-const MOVE_ACCELERATION = 1720;
-const MOVE_DECELERATION = 2560;
+const MOVE_SPEED = 168;
+const MOVE_ACCELERATION = 3440;
+const MOVE_DECELERATION = 5120;
 const VIEW_PADDING = 140;
 // 正交斜俯視：只壓縮地面縱深，場景物件與 HUD 仍保持直立比例。
 const GROUND_DEPTH_SCALE = 0.6;
@@ -1022,8 +1022,7 @@ export function 建立世界地圖層(): HTMLElement {
         star: entry.slot.star,
       }));
     }
-    // 正式對局預設編隊 = 前 8 名成員 @3★（與 正式對局小隊狀態 一致）。
-    return MEMBERS.slice(0, 8).map((m) => ({ family: m.family, star: 3 as StarLevel }));
+    return 取得上陣養成().map((entry) => ({ family: entry.family, star: entry.star }));
   }
 
   /** 找最近的存活怪物（限 FIRE_RANGE 內）。 */

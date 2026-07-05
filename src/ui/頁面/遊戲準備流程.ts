@@ -7,6 +7,12 @@ import { 應用程式狀態 } from "../應用程式狀態";
 import { 建立小隊圓盤 } from "../元件/小隊圓盤";
 import { 隊長清單 } from "../資料/隊長清單";
 import { 選文 } from "../語系";
+import { MEMBERS } from "../../data/成員資料庫";
+import {
+  取得起始成員配置,
+  設定起始成員,
+  type 初始成員層級,
+} from "../../progression/養成狀態";
 
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
@@ -83,6 +89,95 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   版面.appendChild(預覽區);
 
   root.appendChild(版面);
+
+  const 顯示起始成員選擇 = state.來源 !== "Continue Game";
+  if (顯示起始成員選擇) {
+    const 選角區 = document.createElement("section");
+    選角區.style.marginTop = "18px";
+    選角區.style.padding = "16px";
+    選角區.style.borderRadius = "14px";
+    選角區.style.background = "rgba(255,255,255,0.03)";
+    選角區.style.border = "1px solid rgba(255,255,255,0.08)";
+    選角區.style.display = "flex";
+    選角區.style.flexDirection = "column";
+    選角區.style.gap = "12px";
+    選角區.innerHTML = `
+      <div style="font-size:0.96rem;font-weight:700;color:#f2e6c9;">${雙語("選擇 3 名初始成員", "Choose 3 Starting Members")}</div>
+      <div style="font-size:0.8rem;line-height:1.6;color:#c8d0ec;">
+        ${雙語("開局時直接帶 3 名成員進場，分別鎖定在最內層、中層與外層。三個位置不能重複選同一名角色。", "Start the run with 3 members already assigned to the inner, middle, and outer rings. The same member cannot be chosen twice.")}
+      </div>
+    `;
+
+    const 選擇列 = document.createElement("div");
+    選擇列.style.display = "grid";
+    選擇列.style.gridTemplateColumns = "repeat(auto-fit, minmax(220px, 1fr))";
+    選擇列.style.gap = "12px";
+
+    const 當前配置 = 取得起始成員配置();
+    const 層級標籤: Record<初始成員層級, string> = {
+      inner: 雙語("最內層", "Inner Ring"),
+      middle: 雙語("中層", "Middle Ring"),
+      outer: 雙語("外層", "Outer Ring"),
+    };
+
+    (["inner", "middle", "outer"] as 初始成員層級[]).forEach((layer) => {
+      const current = 當前配置.find((entry) => entry.layer === layer);
+      if (!current) return;
+      const 其他已選 = new Set(
+        當前配置.filter((entry) => entry.layer !== layer).map((entry) => entry.memberNo),
+      );
+
+      const 卡片 = document.createElement("label");
+      卡片.style.display = "flex";
+      卡片.style.flexDirection = "column";
+      卡片.style.gap = "8px";
+      卡片.style.padding = "12px";
+      卡片.style.borderRadius = "12px";
+      卡片.style.background = "rgba(11,15,24,0.48)";
+      卡片.style.border = "1px solid rgba(255,255,255,0.08)";
+
+      const 標題 = document.createElement("div");
+      標題.style.fontSize = "0.82rem";
+      標題.style.fontWeight = "700";
+      標題.style.color = "#f2e6c9";
+      標題.textContent = 層級標籤[layer];
+      卡片.appendChild(標題);
+
+      const 下拉 = document.createElement("select");
+      下拉.className = "二級按鈕";
+      下拉.style.width = "100%";
+      下拉.style.textAlign = "left";
+      下拉.style.padding = "10px 12px";
+
+      MEMBERS.filter((member) => !其他已選.has(member.no) || member.no === current.memberNo).forEach((member) => {
+        const option = document.createElement("option");
+        option.value = String(member.no);
+        option.selected = member.no === current.memberNo;
+        option.textContent = `${String(member.no).padStart(2, "0")}. ${member.nameZh} (${member.nameEn})`;
+        下拉.appendChild(option);
+      });
+
+      下拉.onchange = () => {
+        設定起始成員(layer, Number(下拉.value));
+        渲染遊戲準備流程(容器);
+      };
+      卡片.appendChild(下拉);
+
+      const 補充 = document.createElement("div");
+      補充.style.fontSize = "0.74rem";
+      補充.style.color = "#8d93ad";
+      const member = MEMBERS.find((entry) => entry.no === current.memberNo);
+      補充.textContent = member
+        ? `${雙語("目前選擇", "Current")}: ${member.nameZh} ｜ ${雙語("世界", "World")}: ${member.world}`
+        : "";
+      卡片.appendChild(補充);
+
+      選擇列.appendChild(卡片);
+    });
+
+    選角區.appendChild(選擇列);
+    root.appendChild(選角區);
+  }
 
   const 畫質區 = document.createElement("section");
   畫質區.style.marginTop = "18px";

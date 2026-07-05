@@ -19,13 +19,31 @@ import * as 背包 from "../economy/背包狀態";
 import { 應用程式狀態 } from "../ui/應用程式狀態";
 import type { CaptainId, ControlStar } from "../data/戰鬥原語";
 
+export type 初始成員層級 = "inner" | "middle" | "outer";
+export type 初始成員職責 = "protect" | "firepower" | "supply";
+
 interface 隊員養成 {
   memberNo: number;
   star: StarLevel;
+  layer: 初始成員層級;
+  role: 初始成員職責;
 }
 
-// 預設上陣 = 前 8 名成員，各從 1★ 起步（留升星空間，形成養成閉環）。
-const 上陣: 隊員養成[] = MEMBERS.slice(0, 8).map((m) => ({ memberNo: m.no, star: 1 as StarLevel }));
+const 預設起始成員配置: Array<{ memberNo: number; layer: 初始成員層級; role: 初始成員職責 }> = [
+  { memberNo: 1, layer: "inner", role: "protect" },
+  { memberNo: 2, layer: "middle", role: "firepower" },
+  { memberNo: 3, layer: "outer", role: "supply" },
+];
+
+let 起始成員配置 = 預設起始成員配置.map((entry) => ({ ...entry }));
+
+// 正式上陣 = 開局選中的 3 名初始成員，各從 1★ 起步。
+const 上陣: 隊員養成[] = 起始成員配置.map((entry) => ({
+  memberNo: entry.memberNo,
+  star: 1 as StarLevel,
+  layer: entry.layer,
+  role: entry.role,
+}));
 
 const 預設隊長: CaptainId = "conductor";
 
@@ -46,11 +64,51 @@ export function 當前隊長星級(): ControlStar {
 }
 
 /** 供 HUD/名單顯示的上陣清單。 */
-export function 取得上陣養成(): Array<{ memberNo: number; nameZh: string; family: string; star: StarLevel }> {
+export function 取得上陣養成(): Array<{
+  memberNo: number;
+  nameZh: string;
+  family: string;
+  star: StarLevel;
+  layer: 初始成員層級;
+  role: 初始成員職責;
+}> {
   return 上陣.map((e) => {
     const def = MEMBERS.find((m) => m.no === e.memberNo)!;
-    return { memberNo: e.memberNo, nameZh: def.nameZh, family: def.family, star: e.star };
+    return {
+      memberNo: e.memberNo,
+      nameZh: def.nameZh,
+      family: def.family,
+      star: e.star,
+      layer: e.layer,
+      role: e.role,
+    };
   });
+}
+
+export function 取得起始成員配置(): Array<{
+  memberNo: number;
+  layer: 初始成員層級;
+  role: 初始成員職責;
+}> {
+  return 起始成員配置.map((entry) => ({ ...entry }));
+}
+
+export function 設定起始成員(layer: 初始成員層級, memberNo: number): void {
+  const target = 起始成員配置.find((entry) => entry.layer === layer);
+  if (!target) return;
+  target.memberNo = memberNo;
+}
+
+export function 套用起始成員配置(): void {
+  上陣.length = 0;
+  for (const entry of 起始成員配置) {
+    上陣.push({
+      memberNo: entry.memberNo,
+      star: 1 as StarLevel,
+      layer: entry.layer,
+      role: entry.role,
+    });
+  }
 }
 
 /** 全隊屬性摘要（隊長@進化星級 + 8 隊員@各自星級）。 */
@@ -114,5 +172,5 @@ export function 升星上陣隊員(index: number): 升星回報 {
 
 /** 除錯/驗收：把全隊重置回 1★。 */
 export function 重置養成(): void {
-  for (const e of 上陣) e.star = 1;
+  套用起始成員配置();
 }

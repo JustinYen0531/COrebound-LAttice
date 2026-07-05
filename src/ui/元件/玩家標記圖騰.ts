@@ -251,11 +251,26 @@ export interface 玩家標記選項 {
 }
 
 export function 由正式成員陣容建立圖騰小隊(
-  roster: Array<{ nameZh: string; star: number }>,
+  roster: Array<{
+    nameZh: string;
+    star: number;
+    layer?: "inner" | "middle" | "outer";
+    role?: "protect" | "firepower" | "supply";
+  }>,
 ): { 小隊: 插槽[]; 最大展開層級: 1 | 2 | 3 } {
   const 小隊: 插槽[] = roster
     .map((member, index) => {
-      const layout = 正式小隊環位配置[index];
+      const layout = member.layer
+        ? {
+            大環: member.layer === "inner" ? "內" : member.layer === "middle" ? "中" : "外",
+            職責:
+              member.role === "protect"
+                ? "藍"
+                : member.role === "supply"
+                  ? "黃"
+                  : "紅",
+          }
+        : 正式小隊環位配置[index];
       const 角色 = 圖騰角色索引.get(member.nameZh);
       if (!layout || !角色) return null;
       return {

@@ -12,6 +12,7 @@ import { 重置正式戰場 } from "./正式戰場狀態";
 import { 重置死亡遺落物 } from "./死亡遺落狀態";
 import { 重置Boss召喚佇列 } from "./Boss召喚佇列";
 import { 確保初始補給 } from "../economy/背包狀態";
+import { 套用起始成員配置 } from "../progression/養成狀態";
 import type { 語言代碼 } from "./語系";
 
 type 滑動面板 = "無" | "左" | "右";
@@ -171,12 +172,14 @@ class 應用程式狀態機 {
   }
 
   確認進場(訓練道場 = false) {
+    const 進場來源 = this.畫面.層 === "遊戲準備流程" ? this.畫面.來源 : null;
     this.額外.世界時鐘秒數 = 0;
     this.額外.縮圈警戒 = false;
     this.額外.滑動面板 = "無";
     this.額外.圓盤展開階段 = 0;
     // 正式遊玩進場時把玩家生命補滿（訓練道場另由其狀態自行管理）。
     if (!訓練道場) {
+      if (進場來源 !== "Continue Game") 套用起始成員配置();
       確保初始補給();
       初始化正式玩家生命();
       開始新對局();
