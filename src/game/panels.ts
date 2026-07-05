@@ -64,6 +64,9 @@ export class Panels {
   close(): void {
     this.current = null;
     this.overlay.classList.remove("legacy-management-overlay");
+    this.overlay.style.position = "";
+    this.overlay.style.inset = "";
+    this.overlay.style.zIndex = "";
     this.overlay.style.display = "";
     this.overlay.style.overflow = "";
     this.overlay.style.background = "";
@@ -136,9 +139,12 @@ export class Panels {
 
   private renderManagement(sim: Sim, state: RunState): void {
     this.overlay.classList.add("legacy-management-overlay");
+    this.overlay.style.position = "fixed";
+    this.overlay.style.inset = "0";
+    this.overlay.style.zIndex = "30000";
     this.overlay.style.display = "block";
     this.overlay.style.overflow = "auto";
-    this.overlay.style.background = "rgba(5, 6, 10, 0.72)";
+    this.overlay.style.background = "#d3d0c7";
     this.overlay.innerHTML = `<div class="legacy-management-host"></div>`;
     const host = this.overlay.querySelector<HTMLElement>(".legacy-management-host");
     if (!host) return;
