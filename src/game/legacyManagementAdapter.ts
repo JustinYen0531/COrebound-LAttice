@@ -92,9 +92,13 @@ export function 掛載舊管理介面(host: HTMLElement, sim: Sim, state: RunSta
   }
 
   host.innerHTML = "";
+  const page = document.createElement("div");
+  page.className = "頁面容器 legacy-management-page-shell";
+  page.style.width = "100%";
   const root = document.createElement("div");
   root.className = "legacy-management-root-host";
-  host.appendChild(root);
+  page.appendChild(root);
+  host.appendChild(page);
 
   if (!已訂閱) {
     舊應用程式狀態.訂閱(() => {

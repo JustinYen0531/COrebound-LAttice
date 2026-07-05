@@ -63,6 +63,10 @@ export class Panels {
 
   close(): void {
     this.current = null;
+    this.overlay.classList.remove("legacy-management-overlay");
+    this.overlay.style.display = "";
+    this.overlay.style.overflow = "";
+    this.overlay.style.background = "";
     this.overlay.classList.add("hidden");
     this.overlay.innerHTML = "";
     this.onCloseCb?.();
@@ -131,11 +135,17 @@ export class Panels {
   }
 
   private renderManagement(sim: Sim, state: RunState): void {
+    this.overlay.classList.add("legacy-management-overlay");
+    this.overlay.style.display = "block";
+    this.overlay.style.overflow = "auto";
+    this.overlay.style.background = "rgba(5, 6, 10, 0.72)";
     this.overlay.innerHTML = `<div class="legacy-management-host"></div>`;
     const host = this.overlay.querySelector<HTMLElement>(".legacy-management-host");
     if (!host) return;
     host.style.width = "100%";
-    host.style.height = "100%";
+    host.style.minHeight = "100%";
+    host.style.display = "flex";
+    host.style.justifyContent = "center";
     掛載舊管理介面(host, sim, state, () => this.close());
   }
 
