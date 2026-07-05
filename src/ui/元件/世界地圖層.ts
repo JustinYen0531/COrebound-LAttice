@@ -3356,14 +3356,40 @@ function createCornerCoreOverlays(host: SVGSVGElement): void {
     const rect = coreRectForWorld(world, bounds);
     const patternId = `corner-core-${world}`;
     defineWorldFloorPattern(defs, patternId, world, "right", rect.maxX - rect.minX, rect.maxY - rect.minY);
-    const node = document.createElementNS(svgNamespace, "rect");
-    node.setAttribute("class", `世界地圖層-角落核心 世界地圖層-角落核心-${world}`);
-    node.setAttribute("x", String(rect.minX));
-    node.setAttribute("y", String(rect.minY));
-    node.setAttribute("width", String(rect.maxX - rect.minX));
-    node.setAttribute("height", String(rect.maxY - rect.minY));
-    node.setAttribute("fill", `url(#${patternId})`);
-    group.appendChild(node);
+    const width = rect.maxX - rect.minX;
+    const height = rect.maxY - rect.minY;
+
+    const base = document.createElementNS(svgNamespace, "rect");
+    base.setAttribute("class", `世界地圖層-角落核心底 世界地圖層-角落核心底-${world}`);
+    base.setAttribute("x", String(rect.minX));
+    base.setAttribute("y", String(rect.minY));
+    base.setAttribute("width", String(width));
+    base.setAttribute("height", String(height));
+    base.setAttribute("fill", detailedTileFlatFill(world, "core"));
+    base.setAttribute("opacity", "0.2");
+    group.appendChild(base);
+
+    const surface = document.createElementNS(svgNamespace, "rect");
+    surface.setAttribute("class", `世界地圖層-角落核心 世界地圖層-角落核心-${world}`);
+    surface.setAttribute("x", String(rect.minX));
+    surface.setAttribute("y", String(rect.minY));
+    surface.setAttribute("width", String(width));
+    surface.setAttribute("height", String(height));
+    surface.setAttribute("fill", `url(#${patternId})`);
+    surface.setAttribute("opacity", "0.72");
+    group.appendChild(surface);
+
+    const ring = document.createElementNS(svgNamespace, "rect");
+    ring.setAttribute("class", `世界地圖層-角落核心外框 世界地圖層-角落核心外框-${world}`);
+    ring.setAttribute("x", String(rect.minX));
+    ring.setAttribute("y", String(rect.minY));
+    ring.setAttribute("width", String(width));
+    ring.setAttribute("height", String(height));
+    ring.setAttribute("fill", "none");
+    ring.setAttribute("stroke", "rgba(255,255,255,0.28)");
+    ring.setAttribute("stroke-width", "18");
+    ring.setAttribute("vector-effect", "non-scaling-stroke");
+    group.appendChild(ring);
   });
 
   host.append(defs, group);
