@@ -417,6 +417,7 @@ export function 建立世界地圖層(): HTMLElement {
   // 之後每幀只靠 viewBox 平移鏡頭，避免反覆 setAttribute 觸發瀏覽器重算路徑幾何。
   initRegionPaths(regionPaths, dividerPaths);
   createCentralPlaza(zoneSvg, 啟用中細節地板, 啟用高細節條紋);
+  if (啟用中細節地板) createInnerSignatureOverlays(zoneSvg);
   createCornerCoreOverlays(zoneSvg);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
@@ -2421,10 +2422,11 @@ function defineSquareTilePattern(
   defs.appendChild(pattern);
 }
 
-function defineWorldCorePattern(
+function defineWorldFloorPattern(
   defs: SVGDefsElement,
   patternId: string,
   world: World,
+  half: "left" | "right",
 ): void {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const pattern = document.createElementNS(svgNamespace, "pattern");
@@ -2432,7 +2434,7 @@ function defineWorldCorePattern(
   pattern.setAttribute("patternUnits", "userSpaceOnUse");
   pattern.setAttribute("width", "420");
   pattern.setAttribute("height", "420");
-  pattern.setAttribute("viewBox", "887 0 887 887");
+  pattern.setAttribute("viewBox", `${half === "left" ? 0 : 887} 0 887 887`);
   pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
   const image = document.createElementNS(svgNamespace, "image");
@@ -3340,7 +3342,7 @@ function createCornerCoreOverlays(host: SVGSVGElement): void {
 
   (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
     const patternId = `corner-core-${world}`;
-    defineWorldCorePattern(defs, patternId, world);
+    defineWorldFloorPattern(defs, patternId, world, "right");
     const bounds = boundsOf(polygons[world]);
     const rect = coreRectForWorld(world, bounds);
     const node = document.createElementNS(svgNamespace, "rect");
@@ -3350,6 +3352,37 @@ function createCornerCoreOverlays(host: SVGSVGElement): void {
     node.setAttribute("width", String(rect.maxX - rect.minX));
     node.setAttribute("height", String(rect.maxY - rect.minY));
     node.setAttribute("fill", `url(#${patternId})`);
+    group.appendChild(node);
+  });
+
+  host.append(defs, group);
+}
+
+function createInnerSignatureOverlays(host: SVGSVGElement): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const polygons = buildRegionPolygons();
+  const defs = document.createElementNS(svgNamespace, "defs");
+  const group = document.createElementNS(svgNamespace, "g");
+  group.setAttribute("class", "世界地圖層-內側紋章群");
+
+  (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
+    const patternId = `inner-signature-${world}`;
+    defineWorldFloorPattern(defs, patternId, world, "left");
+    const bounds = boundsOf(polygons[world]);
+    const zone = MAP_ZONES.find((entry) => entry.region === world);
+    if (!zone) return;
+    const width = (bounds.maxX - bounds.minX) * 0.28;
+    const height = (bounds.maxY - bounds.minY) * 0.28;
+    const anchorX = zone.centerX * 0.74;
+    const anchorY = zone.centerY * 0.74;
+    const node = document.createElementNS(svgNamespace, "rect");
+    node.setAttribute("class", `世界地圖層-內側紋章 世界地圖層-內側紋章-${world}`);
+    node.setAttribute("x", String(anchorX - width / 2));
+    node.setAttribute("y", String(anchorY - height / 2));
+    node.setAttribute("width", String(width));
+    node.setAttribute("height", String(height));
+    node.setAttribute("fill", `url(#${patternId})`);
+    node.setAttribute("opacity", "0.78");
     group.appendChild(node);
   });
 
