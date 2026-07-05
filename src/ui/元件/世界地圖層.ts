@@ -3276,17 +3276,23 @@ function stableTileVariant(center: EinsteinPoint, index: number): number {
   return hash % 6;
 }
 
+function 固定磁磚階位(center: EinsteinPoint, index: number, buckets: number): number {
+  const x = Math.round(center.x);
+  const y = Math.round(center.y);
+  const hash = Math.abs((x * 73856093) ^ (y * 19349663) ^ (index * 83492791));
+  return hash % buckets;
+}
+
 function stableTileOpacity(center: EinsteinPoint, index: number, floorZone: "outer" | "core"): number {
-  const hash = Math.sin(center.x * 41.731 + center.y * 17.117 + index * 13.37) * 91827.645;
-  const random = hash - Math.floor(hash);
-  const mean = floorZone === "core" ? 0.94 : 0.84;
-  const spread = floorZone === "core" ? 0.04 : 0.08;
-  return mean + (random - 0.5) * spread;
+  const outerOpacitySteps = [0.8, 0.84, 0.88, 0.92];
+  const coreOpacitySteps = [0.9, 0.93, 0.96, 0.99];
+  const steps = floorZone === "core" ? coreOpacitySteps : outerOpacitySteps;
+  return steps[固定磁磚階位(center, index, steps.length)];
 }
 
 function stableTileShade(center: EinsteinPoint, index: number): number {
-  const hash = Math.sin(center.x * 19.913 + center.y * 7.731 + index * 3.17) * 43758.5453;
-  return hash - Math.floor(hash);
+  const shadeSteps = [0.08, 0.26, 0.44, 0.62, 0.8];
+  return shadeSteps[固定磁磚階位(center, index, shadeSteps.length)];
 }
 
 function coreCornerForWorld(world: World, bounds: ReturnType<typeof boundsOf>): { x: number; y: number; xSide: "min" | "max"; ySide: "min" | "max" } {
