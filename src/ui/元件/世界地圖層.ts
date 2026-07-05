@@ -128,6 +128,7 @@ import {
 } from "../資源掉落狀態";
 import { 取出Boss召喚 } from "../Boss召喚佇列";
 import { currentSafeRadius } from "../../world/網格侵蝕";
+import { 更新戰場音樂情境 } from "../../audio/音樂管理";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -1861,6 +1862,12 @@ export function 建立世界地圖層(): HTMLElement {
     }
 
     render();
+
+    const activeBoss = monsters.find((monster) => monster.inst.hp > 0 && monster.bossKind);
+    更新戰場音樂情境({
+      elapsedSeconds: 應用程式狀態.額外.世界時鐘秒數 ?? 0,
+      boss: activeBoss?.bossKind === "cola" ? "cola" : activeBoss?.bossWorld ?? null,
+    });
 
     // 局部更新頂端世界時鐘，不重建地圖 DOM
     const clockEl = document.querySelector(".世界時鐘");

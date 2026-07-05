@@ -15,6 +15,7 @@ import { MATERIAL_RARITY_LABEL } from "../../data/戰鬥原語";
 import * as 背包 from "../../economy/背包狀態";
 import { POTIONS } from "../../economy/流浪商店";
 import { 選文 } from "../語系";
+import { 取得音樂狀態, 切換音樂靜音, 設定音樂音量 } from "../../audio/音樂管理";
 
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
@@ -547,6 +548,7 @@ export function 渲染管理介面(容器: HTMLElement) {
     額外.縮圈警戒 ? " ⚠" : ""
   }</span>
   `;
+  頂部.appendChild(建立管理音量控制());
   root.appendChild(頂部);
 
   const 分頁列 = document.createElement("div");
@@ -603,4 +605,49 @@ export function 渲染管理介面(容器: HTMLElement) {
 
   root.appendChild(底部按鈕列);
   容器.appendChild(root);
+}
+
+function 建立管理音量控制(): HTMLElement {
+  const wrap = document.createElement("div");
+  wrap.style.display = "flex";
+  wrap.style.alignItems = "center";
+  wrap.style.gap = "8px";
+  wrap.style.marginLeft = "auto";
+
+  const label = document.createElement("span");
+  label.textContent = 雙語("音量", "Volume");
+  label.style.fontSize = "0.76rem";
+  label.style.color = "#8d93ad";
+
+  const muteBtn = document.createElement("button");
+  muteBtn.className = "二級按鈕";
+  muteBtn.style.padding = "6px 10px";
+  muteBtn.style.fontSize = "0.72rem";
+
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = "0";
+  slider.max = "100";
+  slider.step = "1";
+  slider.style.width = "120px";
+  slider.style.accentColor = "#4d8dff";
+
+  const render = () => {
+    const state = 取得音樂狀態();
+    slider.value = String(Math.round(state.volume * 100));
+    muteBtn.textContent = state.muted ? 雙語("取消靜音", "Unmute") : 雙語("靜音", "Mute");
+  };
+
+  muteBtn.onclick = () => {
+    切換音樂靜音();
+    render();
+  };
+  slider.oninput = () => {
+    設定音樂音量(Number(slider.value) / 100);
+    render();
+  };
+
+  wrap.append(label, muteBtn, slider);
+  render();
+  return wrap;
 }

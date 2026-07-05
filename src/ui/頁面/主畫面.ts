@@ -6,6 +6,7 @@ import { 應用程式狀態 } from "../應用程式狀態";
 import { 建立圖鑑瀏覽器 } from "../元件/圖鑑瀏覽器";
 import type { 主畫面分頁 } from "../共用型別";
 import { 選文 } from "../語系";
+import { 取得音樂狀態, 切換音樂靜音, 訂閱音樂狀態, 設定音樂音量 } from "../../audio/音樂管理";
 
 const 主按鈕清單: 主畫面分頁[] = ["開始遊玩", "圖鑑", "遊玩記錄", "新手入門", "設定"];
 type 世界鍵 = "geometry" | "organic" | "fractal" | "mechanical";
@@ -389,7 +390,85 @@ function 設定子頁(): HTMLElement {
 
   語言區.append(中文按鈕, 英文按鈕);
   el.appendChild(語言區);
+  el.appendChild(建立音樂控制卡());
   return el;
+}
+
+function 建立音樂控制卡(): HTMLElement {
+  const box = document.createElement("div");
+  box.className = "占位卡片";
+  box.style.marginTop = "16px";
+  box.style.display = "grid";
+  box.style.gap = "12px";
+  box.style.padding = "16px";
+  box.style.textAlign = "left";
+
+  const title = document.createElement("div");
+  title.style.display = "grid";
+  title.style.gap = "4px";
+  title.innerHTML = `
+    <strong>${雙語("音樂音量", "Music Volume")}</strong>
+    <span style="font-size:0.76rem;color:#8d93ad;">${雙語("主畫面、大廳、戰場與 Boss 音樂都走這裡。", "This controls the lobby, battlefield, and boss music.")}</span>
+  `;
+
+  const row = document.createElement("div");
+  row.style.display = "grid";
+  row.style.gridTemplateColumns = "auto 1fr auto";
+  row.style.alignItems = "center";
+  row.style.gap = "10px";
+
+  const muteBtn = document.createElement("button");
+  muteBtn.className = "二級按鈕";
+  muteBtn.style.minWidth = "78px";
+
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = "0";
+  slider.max = "100";
+  slider.step = "1";
+  slider.style.width = "100%";
+  slider.style.accentColor = "#4d8dff";
+
+  const value = document.createElement("span");
+  value.style.minWidth = "92px";
+  value.style.textAlign = "right";
+  value.style.fontSize = "0.78rem";
+  value.style.color = "#8d93ad";
+
+  const track = document.createElement("div");
+  track.style.fontSize = "0.74rem";
+  track.style.color = "#c8d0ec";
+
+  const render = () => {
+    const state = 取得音樂狀態();
+    slider.value = String(Math.round(state.volume * 100));
+    muteBtn.textContent = state.muted ? 雙語("取消靜音", "Unmute") : 雙語("靜音", "Mute");
+    value.textContent = state.muted ? 雙語("已靜音", "Muted") : `${Math.round(state.volume * 100)}%`;
+    track.textContent = `${雙語("目前音軌", "Current Track")}：${state.trackLabel}`;
+  };
+
+  muteBtn.onclick = () => {
+    切換音樂靜音();
+    render();
+  };
+  slider.oninput = () => {
+    設定音樂音量(Number(slider.value) / 100);
+    render();
+  };
+
+  const unsubscribe = 訂閱音樂狀態(render);
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(box)) {
+      unsubscribe();
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  row.append(muteBtn, slider, value);
+  box.append(title, row, track);
+  render();
+  return box;
 }
 
 export function 渲染主畫面(容器: HTMLElement) {
