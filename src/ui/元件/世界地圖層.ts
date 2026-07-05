@@ -12,6 +12,8 @@ import { 應用程式狀態 } from "../應用程式狀態";
 import {
   取得訓練召喚敵群,
   取得訓練道場摘要,
+  取得訓練場景中心,
+  取得訓練場景邊界,
   手動設定訓練玩家生命,
   覆蓋訓練敵群,
   記錄訓練碰撞,
@@ -177,6 +179,7 @@ const LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE: Record<World, string> = {
 
 let playerPos = { x: 0, y: 0 };
 let playerMoving = false;
+let activePlayableBounds = MAP_BOUNDS;
 
 type 可見怪物實例 = MonsterInstance | 訓練召喚敵人;
 
@@ -209,8 +212,8 @@ export function 讀取玩家移動狀態(): boolean {
 
 function clampPlayerPosition(next: { x: number; y: number }): { x: number; y: number } {
   return {
-    x: Math.max(MAP_BOUNDS.minX, Math.min(MAP_BOUNDS.maxX, next.x)),
-    y: Math.max(MAP_BOUNDS.minY, Math.min(MAP_BOUNDS.maxY, next.y)),
+    x: Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, next.x)),
+    y: Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, next.y)),
   };
 }
 
@@ -285,9 +288,27 @@ export function 建立世界地圖層(): HTMLElement {
   const 訓練道場中 =
     應用程式狀態.畫面.層 === "操作頁面" && 應用程式狀態.畫面.訓練道場;
   const 進度模式 = 訓練道場中 ? "dojo" : "formal";
+  let 目前訓練世界: World | null = 訓練道場中 ? 取得訓練道場摘要().selectedWorld : null;
+  const 套用訓練場景 = (forceCenter = false) => {
+    if (!訓練道場中 || !目前訓練世界) {
+      activePlayableBounds = MAP_BOUNDS;
+      return;
+    }
+    activePlayableBounds = 取得訓練場景邊界(目前訓練世界);
+    if (forceCenter) {
+      playerPos = 取得訓練場景中心(目前訓練世界);
+      return;
+    }
+    playerPos = clampTraversablePlayerPosition(playerPos, playerPos);
+  };
   const root = document.createElement("div");
   root.className = "世界地圖層";
-  if (!訓練道場中) playerPos = 取得正式玩家位置();
+  if (!訓練道場中) {
+    activePlayableBounds = MAP_BOUNDS;
+    playerPos = 取得正式玩家位置();
+  } else {
+    套用訓練場景(true);
+  }
 
   const canvas = document.createElement("div");
   canvas.className = "世界地圖層-畫布";
@@ -729,8 +750,8 @@ export function 建立世界地圖層(): HTMLElement {
   function 生成Boss到場(def: MonsterDef, bossKind: "guardian" | "cola", bossWorld?: World): void {
     const angle = Math.random() * Math.PI * 2;
     const dist = 520;
-    const spawnX = Math.max(MAP_BOUNDS.minX, Math.min(MAP_BOUNDS.maxX, playerPos.x + Math.cos(angle) * dist));
-    const spawnY = Math.max(MAP_BOUNDS.minY, Math.min(MAP_BOUNDS.maxY, playerPos.y + Math.sin(angle) * dist));
+    const spawnX = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, playerPos.x + Math.cos(angle) * dist));
+    const spawnY = Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, playerPos.y + Math.sin(angle) * dist));
     const spritePath =
       def.world === "core"
         ? "/images/enemies/mechanical/e28_factory.png" // COLA 佔位圖（機械超級工廠）
@@ -1011,8 +1032,8 @@ export function 建立世界地圖層(): HTMLElement {
       if (moveX !== 0 || moveY !== 0) {
         const len = Math.hypot(moveX, moveY) || 1;
         const speed = worldSpeed * (active ? 1 : 0.35);
-        m.pos.x = Math.max(MAP_BOUNDS.minX, Math.min(MAP_BOUNDS.maxX, m.pos.x + (moveX / len) * speed * dt));
-        m.pos.y = Math.max(MAP_BOUNDS.minY, Math.min(MAP_BOUNDS.maxY, m.pos.y + (moveY / len) * speed * dt));
+        m.pos.x = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, m.pos.x + (moveX / len) * speed * dt));
+        m.pos.y = Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, m.pos.y + (moveY / len) * speed * dt));
         if (m.persistent) {
           m.persistent.x = m.pos.x;
           m.persistent.y = m.pos.y;
@@ -1386,6 +1407,15 @@ export function 建立世界地圖層(): HTMLElement {
   }
 
   function tick(now: number): void {
+    if (訓練道場中) {
+      const nextWorld = 取得訓練道場摘要().selectedWorld;
+      if (nextWorld !== 目前訓練世界) {
+        目前訓練世界 = nextWorld;
+        套用訓練場景(true);
+      } else {
+        套用訓練場景(false);
+      }
+    }
     // 管理介面切換會直接移除整個操作頁。舊版依賴已淘汰的 DOM 移除事件，
     // 導致舊 RAF 與鍵盤監聽殘留；每次返回戰場就再疊一套更新迴圈。
     if (!root.isConnected) {

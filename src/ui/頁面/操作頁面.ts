@@ -20,6 +20,7 @@ import {
   套用訓練編隊預設,
   設定訓練移動倍率,
   設定訓練預選怪物,
+  設定訓練世界場景,
   召喚訓練敵人,
 } from "../訓練道場狀態";
 import * as 背包 from "../../economy/背包狀態";
@@ -241,6 +242,25 @@ function 建立訓練道場快捷面板(): HTMLElement {
     summonBlock.style.border = "1px solid rgba(255,255,255,0.06)";
     summonBlock.innerHTML = `<div style="font-size:0.78rem;color:#f2e6c9;font-weight:700;">就地召敵</div>`;
 
+    const worldSelect = document.createElement("select");
+    worldSelect.style.width = "100%";
+    worldSelect.style.padding = "9px 10px";
+    worldSelect.style.background = "rgba(17,21,33,0.92)";
+    worldSelect.style.color = "#e9ecf8";
+    worldSelect.style.border = "1px solid rgba(111,140,255,0.28)";
+    (["geometry", "organic", "fractal", "mechanical"] as const).forEach((world) => {
+      const option = document.createElement("option");
+      option.value = world;
+      option.textContent = `${{ geometry: "幾何", organic: "有機", fractal: "分形", mechanical: "機械" }[world]}世界場景`;
+      option.selected = world === summary.selectedWorld;
+      worldSelect.appendChild(option);
+    });
+    worldSelect.onchange = () => {
+      設定訓練世界場景(worldSelect.value as World);
+      render();
+    };
+    summonBlock.appendChild(worldSelect);
+
     const select = document.createElement("select");
     select.style.width = "100%";
     select.style.padding = "9px 10px";
@@ -248,28 +268,12 @@ function 建立訓練道場快捷面板(): HTMLElement {
     select.style.color = "#e9ecf8";
     select.style.border = "1px solid rgba(111,140,255,0.28)";
     const selectedEnemyId = summary.selectedEnemyMonsterId;
-    const groups = new Map<string, HTMLOptGroupElement>();
     catalog.forEach((monster) => {
-      const worldLabelMap: Record<World | "core", string> = {
-        geometry: "幾何",
-        organic: "有機",
-        fractal: "分形",
-        mechanical: "機械",
-        core: "核心",
-      };
-      const worldLabel = worldLabelMap[monster.world];
-      let group = groups.get(worldLabel);
-      if (!group) {
-        group = document.createElement("optgroup");
-        group.label = `${worldLabel}世界`;
-        groups.set(worldLabel, group);
-        select.appendChild(group);
-      }
       const option = document.createElement("option");
       option.value = monster.id;
       option.textContent = `T${monster.tier}｜${monster.no.toString().padStart(2, "0")} ${monster.nameZh}`;
       option.selected = monster.id === selectedEnemyId;
-      group.appendChild(option);
+      select.appendChild(option);
     });
     select.onchange = () => {
       設定訓練預選怪物(select.value);

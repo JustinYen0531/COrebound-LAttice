@@ -15,6 +15,7 @@ import { statsAtStar } from "../data/成員型別";
 import { monstersByWorld, type MonsterDef } from "../data/怪物資料庫";
 import { captainStatsAtStar } from "../data/控制引擎";
 import type { CaptainId } from "../data/戰鬥原語";
+import { MAP_BOUNDS, MAP_ZONES } from "../data/地圖物件資料";
 
 export interface 訓練小隊槽位 {
   slotId: number;
@@ -74,6 +75,7 @@ interface 訓練道場內部狀態 {
   captainStar: 4;
   slots: 訓練小隊槽位[];
   selectedSlotId: number;
+  selectedWorld: World;
   selectedEnemyMonsterId: string;
   moveSpeedScale: number;
   activeEnemies: 訓練召喚敵人[];
@@ -89,6 +91,39 @@ const 訓練世界清單: World[] = ["geometry", "organic", "fractal", "mechanic
 const 全部可召喚怪物: MonsterDef[] = 訓練世界清單.flatMap((world) =>
   monstersByWorld(world).filter((monster) => monster.tier <= 2),
 );
+const 訓練場景半徑 = 1120;
+
+function 該世界可召喚怪物(world: World): MonsterDef[] {
+  return monstersByWorld(world).filter((monster) => monster.tier <= 2);
+}
+
+function 找到怪物所屬世界(monsterId: string): World | null {
+  const world = 全部可召喚怪物.find((monster) => monster.id === monsterId)?.world;
+  return 訓練世界清單.includes(world as World) ? (world as World) : null;
+}
+
+function 預設怪物Id(world: World): string {
+  return 該世界可召喚怪物(world)[0]?.id ?? "";
+}
+
+function 正規化訓練世界(world: World | string): World {
+  return 訓練世界清單.includes(world as World) ? (world as World) : "geometry";
+}
+
+export function 取得訓練場景中心(world: World): { x: number; y: number } {
+  const zone = MAP_ZONES.find((entry) => entry.region === world);
+  return zone ? { x: zone.centerX, y: zone.centerY } : { x: 0, y: 0 };
+}
+
+export function 取得訓練場景邊界(world: World): typeof MAP_BOUNDS {
+  const center = 取得訓練場景中心(world);
+  return {
+    minX: Math.max(MAP_BOUNDS.minX, center.x - 訓練場景半徑),
+    maxX: Math.min(MAP_BOUNDS.maxX, center.x + 訓練場景半徑),
+    minY: Math.max(MAP_BOUNDS.minY, center.y - 訓練場景半徑),
+    maxY: Math.min(MAP_BOUNDS.maxY, center.y + 訓練場景半徑),
+  };
+}
 
 const 初始槽位: 訓練小隊槽位[] = Array.from({ length: 9 }, (_, slotId) => ({
   slotId,
@@ -147,7 +182,8 @@ const 狀態: 訓練道場內部狀態 = {
   captainStar: 4,
   slots: 初始槽位.map((slot) => ({ ...slot })),
   selectedSlotId: 0,
-  selectedEnemyMonsterId: 全部可召喚怪物[0]?.id ?? "",
+  selectedWorld: "geometry",
+  selectedEnemyMonsterId: 預設怪物Id("geometry"),
   moveSpeedScale: 2,
   activeEnemies: [],
   playerHp: 0,
@@ -227,6 +263,7 @@ export function 取得訓練道場摘要() {
     playerHp: 狀態.playerHp,
     playerMaxHp: 狀態.playerMaxHp,
     aliveEnemies,
+    selectedWorld: 狀態.selectedWorld,
     selectedSlotId: 狀態.selectedSlotId,
     selectedEnemyMonsterId: 狀態.selectedEnemyMonsterId,
     lastCollision: 狀態.lastCollision,
@@ -337,10 +374,28 @@ export function 保存目前為訓練編隊預設(presetId: string): void {
 }
 
 export function 取得可召喚怪物圖鑑(): MonsterDef[] {
-  return 全部可召喚怪物;
+  return 該世界可召喚怪物(狀態.selectedWorld);
+}
+
+export function 設定訓練世界場景(world: World): void {
+  const nextWorld = 正規化訓練世界(world);
+  狀態.selectedWorld = nextWorld;
+  const currentMonsterWorld = 找到怪物所屬世界(狀態.selectedEnemyMonsterId);
+  if (currentMonsterWorld !== nextWorld) {
+    狀態.selectedEnemyMonsterId = 預設怪物Id(nextWorld);
+  }
+  狀態.activeEnemies = 狀態.activeEnemies.filter((enemy) => enemy.world === nextWorld);
+  狀態.lastCollision = null;
+  狀態.collisionMonitor.activeEnemyIds = [];
+  狀態.collisionMonitor.activeEnemyNames = [];
 }
 
 export function 設定訓練預選怪物(monsterId: string): void {
+  const monsterWorld = 找到怪物所屬世界(monsterId);
+  if (monsterWorld !== 狀態.selectedWorld) {
+    狀態.selectedEnemyMonsterId = 預設怪物Id(狀態.selectedWorld);
+    return;
+  }
   狀態.selectedEnemyMonsterId = monsterId;
 }
 
@@ -361,13 +416,16 @@ export function 回滿訓練玩家生命(): void {
 }
 
 export function 召喚訓練敵人(monsterId: string, count: number, around: { x: number; y: number }): void {
-  const monster = 全部可召喚怪物.find((entry) => entry.id === monsterId);
+  const monster = 該世界可召喚怪物(狀態.selectedWorld).find((entry) => entry.id === monsterId);
   if (!monster) return;
 
   const amount = Math.max(1, Math.min(12, Math.floor(count)));
+  const bounds = 取得訓練場景邊界(狀態.selectedWorld);
   for (let index = 0; index < amount; index += 1) {
     const angle = (Math.PI * 2 * index) / amount;
     const distance = 220 + (index % 3) * 92;
+    const x = Math.max(bounds.minX, Math.min(bounds.maxX, around.x + Math.cos(angle) * distance));
+    const y = Math.max(bounds.minY, Math.min(bounds.maxY, around.y + Math.sin(angle) * distance));
     狀態.activeEnemies.push({
       id: `dojo_${monster.id}_${召喚流水號++}`,
       monsterNo: monster.no,
@@ -376,8 +434,8 @@ export function 召喚訓練敵人(monsterId: string, count: number, around: { x
       world: monster.world as World,
       tier: monster.tier as 0 | 1 | 2,
       spritePath: spritePathForMonster(monster),
-      x: around.x + Math.cos(angle) * distance,
-      y: around.y + Math.sin(angle) * distance,
+      x,
+      y,
       hp: monster.stats.hp,
       maxHp: monster.stats.hp,
       atk: monster.stats.atk,

@@ -1,5 +1,5 @@
 import { MEMBERS } from "../../data/成員資料庫";
-import { FAMILY_LABEL, WORLD_LABEL } from "../../data/成員型別";
+import { FAMILY_LABEL, WORLD_LABEL, type World } from "../../data/成員型別";
 import type { CaptainId } from "../../data/戰鬥原語";
 import { 幾何世界圖騰清單 } from "../../totem/資料/幾何世界圖騰";
 import { 有機世界圖騰清單 } from "../../totem/資料/有機世界圖騰";
@@ -30,6 +30,7 @@ import {
   設定訓練選中槽位,
   設定訓練預選怪物,
   設定訓練隊長,
+  設定訓練世界場景,
   召喚訓練敵人,
 } from "../訓練道場狀態";
 
@@ -60,6 +61,7 @@ let 左側模式: 左側視圖模式 = "編排";
 const 全部圖騰角色 = [...幾何世界圖騰清單, ...有機世界圖騰清單, ...分形世界圖騰清單, ...機械世界圖騰清單];
 const 成員圖騰索引 = new Map(全部圖騰角色.map((entry) => [entry.名稱, entry]));
 const 隊長圖騰索引 = new Map(隊長圖騰清單.map((entry) => [entry.id, entry]));
+const 訓練世界選項: World[] = ["geometry", "organic", "fractal", "mechanical"];
 
 function 取得層級標籤(layer: "外" | "中" | "內"): string {
   if (layer === "內") return "最內層";
@@ -665,10 +667,31 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
 
   const selectorWrap = document.createElement("div");
   selectorWrap.style.display = "grid";
-  selectorWrap.style.gridTemplateColumns = "minmax(220px, 1.3fr) auto auto auto auto";
+  selectorWrap.style.gridTemplateColumns = "minmax(148px, 0.8fr) minmax(220px, 1.3fr) auto auto auto auto";
   selectorWrap.style.gap = "8px";
   selectorWrap.style.alignItems = "stretch";
   selectorWrap.style.overflow = "visible";
+
+  const 場景選擇 = document.createElement("select");
+  場景選擇.className = "訓練召喚面板-場景選擇";
+  場景選擇.style.width = "100%";
+  場景選擇.style.minWidth = "0";
+  場景選擇.style.padding = "9px 12px";
+  場景選擇.style.background = "rgba(17,21,33,0.92)";
+  場景選擇.style.color = "#e9ecf8";
+  場景選擇.style.border = "1px solid rgba(111,140,255,0.28)";
+  場景選擇.style.borderRadius = "10px";
+  訓練世界選項.forEach((world) => {
+    const option = document.createElement("option");
+    option.value = world;
+    option.textContent = `${WORLD_LABEL[world]}世界場景`;
+    option.selected = world === summary.selectedWorld;
+    場景選擇.appendChild(option);
+  });
+  場景選擇.onchange = () => {
+    設定訓練世界場景(場景選擇.value as World);
+    刷新();
+  };
 
   const 目前怪物 = catalog.find((monster) => monster.id === summary.selectedEnemyMonsterId) ?? catalog[0];
   const 目前怪物Id = () => 取得訓練道場摘要().selectedEnemyMonsterId || 目前怪物?.id || "";
@@ -754,34 +777,7 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
   pickerWrap.addEventListener("mousedown", (event) => event.stopPropagation());
   pickerWrap.addEventListener("click", (event) => event.stopPropagation());
 
-  const groups = new Map<string, HTMLDivElement>();
   catalog.forEach((monster) => {
-    const worldName = monster.world === "core" ? "核心" : WORLD_LABEL[monster.world];
-    const key = `${worldName}世界`;
-    let group = groups.get(key);
-    if (!group) {
-      const groupWrap = document.createElement("div");
-      groupWrap.style.display = "flex";
-      groupWrap.style.flexDirection = "column";
-      groupWrap.style.gap = "6px";
-
-      const title = document.createElement("div");
-      title.textContent = key;
-      title.style.fontSize = "0.72rem";
-      title.style.letterSpacing = "0.06em";
-      title.style.color = "#9aa6d1";
-      title.style.padding = "0 2px";
-
-      group = document.createElement("div");
-      group.style.display = "flex";
-      group.style.flexDirection = "column";
-      group.style.gap = "4px";
-
-      groupWrap.append(title, group);
-      menu.appendChild(groupWrap);
-      groups.set(key, group);
-    }
-
     const optionBtn = document.createElement("button");
     optionBtn.type = "button";
     optionBtn.style.display = "flex";
@@ -810,7 +806,7 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
       設定選單開關(false);
       刷新();
     };
-    group.appendChild(optionBtn);
+    menu.appendChild(optionBtn);
   });
 
   pickerWrap.append(pickerBtn, menu);
@@ -843,7 +839,7 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
     清空訓練敵人();
     刷新();
   };
-  selectorWrap.append(pickerWrap, summon1, summon3, summon6, clear);
+  selectorWrap.append(場景選擇, pickerWrap, summon1, summon3, summon6, clear);
   root.appendChild(selectorWrap);
 
   const status = document.createElement("div");
