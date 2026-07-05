@@ -75,6 +75,12 @@ const 正式槽位配置: Array<{ slotId: number; layer: 初始成員層級; rin
   { slotId: 1, layer: "middle", ring: "中", angle: 0, role: "火力" },
   { slotId: 2, layer: "outer", ring: "外", angle: 0, role: "補給" },
 ];
+const 隊長例會立繪來源: Record<string, string> = {
+  conductor: "/assets/images/characters/captains/Conductor立繪與頭像.png",
+  operator: "/assets/images/characters/captains/Operator立繪與頭像.png",
+  launcher: "/assets/images/characters/captains/Launcher立繪與頭像.png",
+  architect: "/assets/images/characters/captains/Architect立繪與頭像.png",
+};
 
 function 取得層級標籤(layer: "外" | "中" | "內"): string {
   if (layer === "內") return "最內層";
@@ -542,9 +548,8 @@ function 建立正式槽位格(selectedSlotId: number, 刷新: () => void): HTML
   return grid;
 }
 
-function 建立正式軌道編排器(captain: (typeof 隊長清單)[number], selectedSlotId: number, 刷新: () => void): HTMLElement {
+function 建立正式例會預覽(captain: (typeof 隊長清單)[number], selectedSlotId: number, 刷新: () => void): HTMLElement {
   const slots = 取得正式編隊資料();
-  const slotMap = new Map(slots.map((slot) => [slot.slotId, slot]));
   const root = document.createElement("section");
   root.className = "訓練軌道編排器";
 
@@ -555,79 +560,84 @@ function 建立正式軌道編排器(captain: (typeof 隊長清單)[number], sel
   topBar.className = "訓練軌道編排器-視圖列";
   const viewTitle = document.createElement("div");
   viewTitle.className = "訓練軌道編排器-視圖標題";
-  viewTitle.textContent = 左側模式 === "編排" ? "正式編排視圖" : "正式圖騰預覽";
-  const toggleBtn = document.createElement("button");
-  toggleBtn.type = "button";
-  toggleBtn.className = "訓練軌道編排器-切換箭頭";
-  toggleBtn.textContent = 左側模式 === "編排" ? "→ 圖騰預覽" : "← 返回編排";
-  toggleBtn.onclick = () => {
-    左側模式 = 左側模式 === "編排" ? "預覽" : "編排";
-    刷新();
-  };
-  topBar.append(viewTitle, toggleBtn);
+  viewTitle.textContent = "小隊例會預覽";
+  const hint = document.createElement("div");
+  hint.style.fontSize = "0.72rem";
+  hint.style.color = "#8d93ad";
+  hint.textContent = "隊長置頂，三層席位依序往下展開。";
+  topBar.append(viewTitle, hint);
   stage.appendChild(topBar);
 
-  if (左側模式 === "預覽") {
-    stage.appendChild(建立正式對局圖騰預覽());
-  } else {
-    const orbit = document.createElement("div");
-    orbit.className = "訓練軌道編排器-軌道";
+  const fan = document.createElement("div");
+  fan.className = "訓練圖騰預覽-舞台";
+  fan.style.padding = "20px 18px";
 
-    (["外", "中", "內"] as const).forEach((layer, idx) => {
-      const ring = document.createElement("div");
-      ring.className = `訓練軌道編排器-環 訓練軌道編排器-環-${layer}`;
-      ring.style.setProperty("--ring-duration", idx === 0 ? "30s" : idx === 1 ? "22s" : "16s");
-      ring.style.setProperty("--ring-direction", idx === 1 ? "reverse" : "normal");
-      const duration = idx === 0 ? 30 : idx === 1 ? 22 : 16;
-      ring.style.animationDelay = `-${(Date.now() / 1000) % duration}s`;
+  const captainRow = document.createElement("div");
+  captainRow.className = "正式例會-隊長列";
+  const captainChip = document.createElement("button");
+  captainChip.type = "button";
+  captainChip.className = "正式例會-隊長席";
+  captainChip.style.setProperty("--captain-color", captain.代表色);
+  captainChip.innerHTML = `
+    <span class="正式例會-席位標">隊長席</span>
+    <span class="正式例會-隊長立繪裁切"><img src="${隊長例會立繪來源[captain.id] ?? `/assets/transparent-portraits/captains/${captain.id}_form1.png`}" alt="${captain.名稱}" /></span>
+    <span class="正式例會-席位名">${captain.名稱}</span>
+  `;
+  captainRow.appendChild(captainChip);
+  fan.appendChild(captainRow);
 
-      正式槽位配置
-        .filter((item) => item.ring === layer)
-        .forEach((item) => {
-          const slot = slotMap.get(item.slotId);
-          if (!slot) return;
-          const role = 槽位職責色票[item.role];
-          const node = document.createElement("button");
-          node.type = "button";
-          node.className = `訓練軌道編排器-槽位${selectedSlotId === item.slotId ? " 作用中" : ""}`;
-          node.style.setProperty("--slot-angle", `${item.angle}deg`);
-          node.style.setProperty("--slot-radius", `${軌道半徑[item.ring]}px`);
-          node.style.setProperty("--slot-color", role.color);
-          node.title = `${取得層級標籤(item.ring)}｜${slot.member ? slot.member.nameZh : "未配置"}`;
-          node.onclick = () => {
-            應用程式狀態.額外.選中的小隊成員展示位 = item.slotId;
-            刷新();
-          };
+  const layers: Array<{ ring: "內" | "中" | "外"; label: string; width: string }> = [
+    { ring: "內", label: "最內層", width: "70%" },
+    { ring: "中", label: "中層", width: "82%" },
+    { ring: "外", label: "最外層", width: "94%" },
+  ];
 
-          const num = document.createElement("span");
-          num.className = "訓練軌道編排器-編號";
-          num.textContent = String(item.slotId + 1);
+  layers.forEach((layer) => {
+    const row = document.createElement("div");
+    row.className = "正式例會-列";
+    row.style.width = layer.width;
 
-          const initial = document.createElement("span");
-          initial.className = "訓練軌道編排器-縮寫";
-          initial.textContent = slot.member ? slot.member.nameZh.slice(0, 1) : "空";
+    const tag = document.createElement("div");
+    tag.className = "正式例會-列標";
+    tag.textContent = layer.label;
+    row.appendChild(tag);
 
-          node.append(num, initial);
-          ring.appendChild(node);
-        });
+    正式槽位配置
+      .filter((item) => item.ring === layer.ring)
+      .forEach((item) => {
+        const slot = slots.find((entry) => entry.slotId === item.slotId);
+        if (!slot) return;
+        const role = 槽位職責色票[item.role];
+        const member = slot.member ? MEMBERS.find((entry) => entry.no === slot.member?.memberNo) ?? null : null;
+        const seat = document.createElement("button");
+        seat.type = "button";
+        seat.className = `正式例會-席位${selectedSlotId === item.slotId ? " 作用中" : ""}`;
+        seat.style.setProperty("--slot-color", role.color);
+        seat.title = `${layer.label}｜${member ? member.nameZh : "未配置"}`;
+        seat.onclick = () => {
+          應用程式狀態.額外.選中的小隊成員展示位 = item.slotId;
+          刷新();
+        };
+        seat.innerHTML = `
+          <span class="正式例會-席位標">${role.label}</span>
+          ${member ? `<span class="正式例會-角色立繪"><img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${member.nameZh}" /></span>` : `<span class="正式例會-空位徽記">+</span>`}
+          <span class="正式例會-席位名">${member ? member.nameZh : "空位"}</span>
+          <span class="正式例會-席位副文">${member ? `${member.no.toString().padStart(2, "0")} ｜ 1★` : "待指派"}</span>
+        `;
+        row.appendChild(seat);
+      });
 
-      orbit.appendChild(ring);
-    });
+    fan.appendChild(row);
+  });
 
-    const core = document.createElement("div");
-    core.className = "訓練軌道編排器-核心";
-    core.style.setProperty("--captain-color", captain.代表色);
-    core.textContent = captain.名稱.slice(0, 1);
-    orbit.appendChild(core);
-    stage.appendChild(orbit);
+  stage.appendChild(fan);
 
-    const legend = document.createElement("div");
-    legend.className = "訓練軌道編排器-圖例";
-    legend.innerHTML = (Object.values(槽位職責色票))
-      .map((item) => `<span class="訓練軌道編排器-圖例項"><i style="background:${item.color};"></i>${item.label}</span>`)
-      .join("");
-    stage.appendChild(legend);
-  }
+  const legend = document.createElement("div");
+  legend.className = "訓練軌道編排器-圖例";
+  legend.innerHTML = (Object.values(槽位職責色票))
+    .map((item) => `<span class="訓練軌道編排器-圖例項"><i style="background:${item.color};"></i>${item.label}</span>`)
+    .join("");
+  stage.appendChild(legend);
 
   root.append(stage, 建立隊長核心卡(captain), 建立正式槽位格(selectedSlotId, 刷新));
   return root;
@@ -893,7 +903,7 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   const summary = 取得正式小隊摘要();
   const assignedMembers = new Map(squad.filter((slot) => slot.member).map((slot) => [slot.member!.memberNo, slot.layer]));
 
-  root.appendChild(建立標題("正式編隊台", "沿用訓練場的排版，但只保留正式遊戲真的會用到的編隊功能。"));
+  root.appendChild(建立標題("小隊例會", "先看正式小隊的例會席位與圖騰概況，再從下方調整隊長與三層成員。"));
 
   const layout = document.createElement("div");
   layout.style.display = "grid";
@@ -905,12 +915,15 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   leftPane.style.display = "flex";
   leftPane.style.flexDirection = "column";
   leftPane.style.gap = "14px";
-  leftPane.appendChild(建立正式軌道編排器(captain, selectedSlotId, 刷新));
+  leftPane.appendChild(建立正式對局圖騰預覽());
+  leftPane.appendChild(建立隊長核心卡(captain));
 
   const rightPane = document.createElement("div");
   rightPane.style.display = "flex";
   rightPane.style.flexDirection = "column";
   rightPane.style.gap = "14px";
+
+  rightPane.appendChild(建立正式例會預覽(captain, selectedSlotId, 刷新));
 
   const captainRow = document.createElement("div");
   captainRow.style.display = "grid";
