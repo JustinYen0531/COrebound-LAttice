@@ -2266,7 +2266,8 @@ button.禁用:hover {
 .世界地圖層-物件圖層 {
   position: absolute;
   inset: 0;
-  contain: layout style paint;
+  contain: layout style;
+  overflow: visible;
   will-change: transform;
 }
 .世界地圖層-物件 {
@@ -2524,7 +2525,8 @@ button.禁用:hover {
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  contain: layout style paint;
+  contain: layout style;
+  overflow: visible;
   will-change: transform;
 }
 .世界地圖層-環境物件 {
@@ -2570,7 +2572,8 @@ button.禁用:hover {
   inset: 0;
   pointer-events: none;
   z-index: 3;
-  contain: layout style paint;
+  contain: layout style;
+  overflow: visible;
   will-change: transform;
 }
 .世界地圖層-怪物 {
@@ -2688,7 +2691,8 @@ button.禁用:hover {
   inset: 0;
   pointer-events: none;
   z-index: 5;
-  contain: layout style paint;
+  contain: layout style;
+  overflow: visible;
   will-change: transform;
 }
 .世界地圖層-投射物 {
