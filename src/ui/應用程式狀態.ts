@@ -15,12 +15,13 @@ import { 確保初始補給 } from "../economy/背包狀態";
 import type { 語言代碼 } from "./語系";
 
 type 滑動面板 = "無" | "左" | "右";
+export type 世界地板細節模式 = "smooth" | "medium" | "high";
 const LANGUAGE_STORAGE_KEY = "cola-ui-language";
 const DETAILED_WORLD_FLOORS_STORAGE_KEY = "cola-detailed-world-floors";
 
 interface 額外狀態 {
   語言: 語言代碼;
-  高細節世界地板: boolean;
+  世界地板細節模式: 世界地板細節模式;
   滑動面板: 滑動面板; // R1：左右滑互斥
   圓盤展開階段: 0 | 1 | 2 | 3; // 0=收起, 1=內圈, 2=中圈, 3=外圈
   選中隊長: string | null;
@@ -53,11 +54,14 @@ function 讀取初始語言(): 語言代碼 {
   }
 }
 
-function 讀取高細節世界地板偏好(): boolean {
+function 讀取世界地板細節模式偏好(): 世界地板細節模式 {
   try {
-    return window.localStorage.getItem(DETAILED_WORLD_FLOORS_STORAGE_KEY) === "true";
+    const saved = window.localStorage.getItem(DETAILED_WORLD_FLOORS_STORAGE_KEY);
+    if (saved === "high" || saved === "medium" || saved === "smooth") return saved;
+    if (saved === "true") return "medium";
+    return "smooth";
   } catch {
-    return false;
+    return "smooth";
   }
 }
 
@@ -77,7 +81,7 @@ class 應用程式狀態機 {
   畫面: 畫面狀態 = { 層: "主畫面", 子頁: null };
   額外: 額外狀態 = {
     語言: 讀取初始語言(),
-    高細節世界地板: 讀取高細節世界地板偏好(),
+    世界地板細節模式: 讀取世界地板細節模式偏好(),
     滑動面板: "無",
     圓盤展開階段: 0,
     選中隊長: null,
@@ -124,10 +128,10 @@ class 應用程式狀態機 {
     this.通知();
   }
 
-  設定高細節世界地板(啟用: boolean) {
-    this.額外.高細節世界地板 = 啟用;
+  設定世界地板細節模式(模式: 世界地板細節模式) {
+    this.額外.世界地板細節模式 = 模式;
     try {
-      window.localStorage.setItem(DETAILED_WORLD_FLOORS_STORAGE_KEY, String(啟用));
+      window.localStorage.setItem(DETAILED_WORLD_FLOORS_STORAGE_KEY, 模式);
     } catch {
       // ignore storage failures in preview/sandbox contexts
     }

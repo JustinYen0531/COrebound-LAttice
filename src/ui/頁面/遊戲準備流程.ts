@@ -96,41 +96,52 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   畫質區.innerHTML = `
     <div style="font-size:0.96rem;font-weight:700;color:#f2e6c9;">${雙語("世界地板載入模式", "World Floor Load Mode")}</div>
     <div style="font-size:0.8rem;line-height:1.6;color:#c8d0ec;">
-      ${雙語("你做的磁磚地板保留著，只是改成進場前自己決定要不要載入。順暢模式適合測試，高細節模式會把四世界磁磚地板完整帶回來。", "Your crafted tile floors are kept; this just lets you decide before entering whether to load them. Smooth mode is better for testing, while High Detail restores the full tiled floors across the four worlds.")}
+      ${雙語("順暢模式保留輕量地板；中細節保留你原本那版磁磚、分割與核心節奏；高細節則在中細節之上，再疊上世界地板條紋圖。", "Smooth mode keeps the lightweight floor. Medium Detail keeps your original tile layout, segmentation, and core rhythm. High Detail adds the world stripe artwork on top of Medium Detail.")}
     </div>
   `;
 
   const 模式列 = document.createElement("div");
   模式列.className = "按鈕列";
   模式列.style.marginTop = "0";
-  const 高細節啟用中 = 應用程式狀態.額外.高細節世界地板;
+  const 地板模式 = 應用程式狀態.額外.世界地板細節模式;
 
   const 順暢模式 = document.createElement("button");
-  順暢模式.className = 高細節啟用中 ? "二級按鈕" : "一級按鈕";
+  順暢模式.className = 地板模式 === "smooth" ? "一級按鈕" : "二級按鈕";
   順暢模式.textContent = 雙語("順暢模式", "Smooth Mode");
   順暢模式.onclick = () => {
-    應用程式狀態.設定高細節世界地板(false);
+    應用程式狀態.設定世界地板細節模式("smooth");
+    渲染遊戲準備流程(容器);
+  };
+
+  const 中細節模式 = document.createElement("button");
+  中細節模式.className = 地板模式 === "medium" ? "一級按鈕" : "二級按鈕";
+  中細節模式.textContent = 雙語("中細節磁磚", "Medium Detail Tiles");
+  中細節模式.onclick = () => {
+    應用程式狀態.設定世界地板細節模式("medium");
     渲染遊戲準備流程(容器);
   };
 
   const 高細節模式 = document.createElement("button");
-  高細節模式.className = 高細節啟用中 ? "一級按鈕" : "二級按鈕";
-  高細節模式.textContent = 雙語("高細節磁磚", "High Detail Tiles");
+  高細節模式.className = 地板模式 === "high" ? "一級按鈕" : "二級按鈕";
+  高細節模式.textContent = 雙語("高細節條紋", "High Detail Stripes");
   高細節模式.onclick = () => {
-    應用程式狀態.設定高細節世界地板(true);
+    應用程式狀態.設定世界地板細節模式("high");
     渲染遊戲準備流程(容器);
   };
 
-  模式列.append(順暢模式, 高細節模式);
+  模式列.append(順暢模式, 中細節模式, 高細節模式);
   畫質區.appendChild(模式列);
 
   const 提示 = document.createElement("div");
   提示.style.fontSize = "0.75rem";
   提示.style.lineHeight = "1.6";
   提示.style.color = "#8d93ad";
-  提示.textContent = 高細節啟用中
-    ? 雙語("目前會載入高細節磁磚。若裝置又開始發白或卡頓，回到這裡切回順暢模式即可。", "High Detail tiles will load for this run. If the screen starts whitening or stuttering again, come back here and switch to Smooth Mode.")
-    : 雙語("目前使用順暢模式，只保留輕量世界地板。需要看完整磁磚時，再切到高細節模式進場。", "Smooth Mode is active right now and keeps only the lightweight world floors. Switch to High Detail when you want to inspect the full tile work.");
+  提示.textContent =
+    地板模式 === "high"
+      ? 雙語("目前會載入中細節磁磚，再額外疊上世界條紋地板圖。若裝置開始吃力，可退回中細節或順暢模式。", "High Detail will load the medium tile floor, then add the world stripe floor art on top. If the device struggles, step back to Medium or Smooth.")
+      : 地板模式 === "medium"
+        ? 雙語("目前使用你原本那版磁磚地板，保留切割、色差與核心區域。想再加上條紋圖時，切到高細節。", "Medium Detail keeps your original tile floor with segmentation, variation, and core zones. Switch to High Detail when you want the stripe art on top.")
+        : 雙語("目前使用順暢模式，只保留輕量世界地板。需要看磁磚與核心節奏時，再切到中細節或高細節。", "Smooth Mode is active and keeps only the lightweight floor. Switch to Medium or High Detail when you want the tiled floor and core rhythm back.");
   畫質區.appendChild(提示);
 
   root.appendChild(畫質區);

@@ -294,7 +294,9 @@ export function 建立世界地圖層(): HTMLElement {
   const 訓練道場中 =
     應用程式狀態.畫面.層 === "操作頁面" && 應用程式狀態.畫面.訓練道場;
   const 進度模式 = 訓練道場中 ? "dojo" : "formal";
-  const 啟用高細節地板 = 應用程式狀態.額外.高細節世界地板;
+  const 地板細節模式 = 應用程式狀態.額外.世界地板細節模式;
+  const 啟用中細節地板 = 地板細節模式 === "medium" || 地板細節模式 === "high";
+  const 啟用高細節條紋 = 地板細節模式 === "high";
   let 目前訓練世界: World | null = 訓練道場中 ? 取得訓練道場摘要().selectedWorld : null;
   const 套用訓練場景 = (forceCenter = false) => {
     if (!訓練道場中 || !目前訓練世界) {
@@ -343,12 +345,13 @@ export function 建立世界地圖層(): HTMLElement {
   canvas.appendChild(objectLayer);
 
   const regionPaths = createRegionPaths(zoneSvg);
-  if (啟用高細節地板) createHighDetailBaseFloors(zoneSvg);
+  if (啟用中細節地板) createHighDetailBaseFloors(zoneSvg);
   else if (ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS) createLightweightWrinkleFloors(zoneSvg);
-  const geometryCoreBoundaries: EinsteinPoint[][] = [];
-  const fractalCoreBoundaries: PenrosePoint[][] = [];
-  const organicCoreBoundaries: EscherPoint[][] = [];
-  const mechanicalCoreBoundaries: CairoPoint[][] = [];
+  const geometryCoreBoundaries = 啟用中細節地板 ? createGeometryEinsteinFloor(zoneSvg) : [];
+  const fractalCoreBoundaries = 啟用中細節地板 ? createFractalPenroseFloor(zoneSvg) : [];
+  const organicCoreBoundaries = 啟用中細節地板 ? createOrganicBirdFloor(zoneSvg) : [];
+  const mechanicalCoreBoundaries = 啟用中細節地板 ? createMechanicalCairoFloor(zoneSvg) : [];
+  if (啟用高細節條紋) createHighDetailStripeFloors(zoneSvg);
   const dividerPaths = createDividerPaths(zoneSvg);
   // 區域外框、分界線、地板花紋都是「世界座標固定」的靜態幾何，
   // 不會隨玩家移動改變；只在建圖時設定一次 d 屬性即可，
@@ -2280,19 +2283,46 @@ function createHighDetailBaseFloors(host: SVGSVGElement): void {
     defs.appendChild(clipPath);
 
     const bounds = boundsOf(polygons[world]);
-    const width = bounds.maxX - bounds.minX;
-    const height = bounds.maxY - bounds.minY;
-    const side = Math.max(width, height);
-    const imageX = bounds.minX + width / 2 - side / 2;
-    const imageY = bounds.minY + height / 2 - side / 2;
     const image = document.createElementNS(svgNamespace, "image");
     image.setAttribute("class", `世界地圖層-高細節底板 世界地圖層-高細節底板-${world}`);
     image.setAttribute("href", HIGH_DETAIL_FLOOR_IMAGE[world]);
-    image.setAttribute("x", String(imageX));
-    image.setAttribute("y", String(imageY));
-    image.setAttribute("width", String(side));
-    image.setAttribute("height", String(side));
-    image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    image.setAttribute("x", String(bounds.minX));
+    image.setAttribute("y", String(bounds.minY));
+    image.setAttribute("width", String(bounds.maxX - bounds.minX));
+    image.setAttribute("height", String(bounds.maxY - bounds.minY));
+    image.setAttribute("preserveAspectRatio", "none");
+    image.setAttribute("clip-path", `url(#${clipId})`);
+    group.appendChild(image);
+  });
+
+  host.append(defs, group);
+}
+
+function createHighDetailStripeFloors(host: SVGSVGElement): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const polygons = buildRegionPolygons();
+  const defs = document.createElementNS(svgNamespace, "defs");
+  const group = document.createElementNS(svgNamespace, "g");
+  group.setAttribute("class", "世界地圖層-高細節條紋群");
+
+  (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
+    const clipId = `high-detail-stripe-clip-${world}`;
+    const clipPath = document.createElementNS(svgNamespace, "clipPath");
+    clipPath.setAttribute("id", clipId);
+    const clipShape = document.createElementNS(svgNamespace, "path");
+    clipShape.setAttribute("d", polygonToPath(polygons[world], (point) => point));
+    clipPath.appendChild(clipShape);
+    defs.appendChild(clipPath);
+
+    const bounds = boundsOf(polygons[world]);
+    const image = document.createElementNS(svgNamespace, "image");
+    image.setAttribute("class", `世界地圖層-高細節條紋 世界地圖層-高細節條紋-${world}`);
+    image.setAttribute("href", HIGH_DETAIL_FLOOR_IMAGE[world]);
+    image.setAttribute("x", String(bounds.minX));
+    image.setAttribute("y", String(bounds.minY));
+    image.setAttribute("width", String(bounds.maxX - bounds.minX));
+    image.setAttribute("height", String(bounds.maxY - bounds.minY));
+    image.setAttribute("preserveAspectRatio", "none");
     image.setAttribute("clip-path", `url(#${clipId})`);
     group.appendChild(image);
   });
