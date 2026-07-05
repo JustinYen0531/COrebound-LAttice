@@ -2464,7 +2464,7 @@ function defineCornerCoreTilePattern(
   pattern.setAttribute("y", String(rect.minY));
   pattern.setAttribute("width", String(rect.maxX - rect.minX));
   pattern.setAttribute("height", String(rect.maxY - rect.minY));
-  pattern.setAttribute("viewBox", "0 0 1774 887");
+  pattern.setAttribute("viewBox", "887 0 887 887");
   pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
   const image = document.createElementNS(svgNamespace, "image");
