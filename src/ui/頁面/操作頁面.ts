@@ -511,18 +511,37 @@ export function 渲染操作頁面(容器: HTMLElement) {
   }</span>`;
   root.appendChild(頂部);
 
-  // 世界地圖層:玩家可走動、靠近設施觸發互動
-  root.appendChild(建立世界地圖層());
+  try {
+    // 世界地圖層:玩家可走動、靠近設施觸發互動
+    root.appendChild(建立世界地圖層());
 
-  if (state.訓練道場) {
-    root.appendChild(建立訓練道場快捷面板());
+    if (state.訓練道場) {
+      root.appendChild(建立訓練道場快捷面板());
+    }
+
+    const hud掛載區 = document.createElement("div");
+    hud掛載區.className = "戰鬥HUD掛載區";
+    root.appendChild(hud掛載區);
+    戰鬥HUD接線.掛載(hud掛載區);
+    戰鬥HUD接線.同步狀態();
+  } catch (error) {
+    const fallback = document.createElement("div");
+    fallback.style.margin = "96px auto 0";
+    fallback.style.maxWidth = "680px";
+    fallback.style.padding = "24px";
+    fallback.style.borderRadius = "16px";
+    fallback.style.background = "rgba(8, 12, 20, 0.92)";
+    fallback.style.border = "1px solid rgba(255,255,255,0.1)";
+    fallback.style.color = "#f2e6c9";
+    fallback.innerHTML = `
+      <div style="font-size:1rem;font-weight:700;">${雙語("戰場載入失敗", "Battlefield Load Failed")}</div>
+      <div style="margin-top:10px;font-size:0.82rem;line-height:1.6;color:#c8d0ec;">
+        ${雙語("這次沒有讓整頁白掉，我先把錯誤攔下來了。請把下面訊息貼給我，我繼續追。", "I caught the failure so the whole page does not go blank. Please send me the message below and I will keep tracing it.")}
+      </div>
+      <pre style="margin-top:14px;padding:14px;border-radius:12px;background:rgba(0,0,0,0.28);white-space:pre-wrap;word-break:break-word;font-size:0.76rem;color:#ffcf7f;">${String(error instanceof Error ? error.stack ?? error.message : error)}</pre>
+    `;
+    root.appendChild(fallback);
   }
-
-  const hud掛載區 = document.createElement("div");
-  hud掛載區.className = "戰鬥HUD掛載區";
-  root.appendChild(hud掛載區);
-  戰鬥HUD接線.掛載(hud掛載區);
-  戰鬥HUD接線.同步狀態();
 
   容器.appendChild(root);
 }
