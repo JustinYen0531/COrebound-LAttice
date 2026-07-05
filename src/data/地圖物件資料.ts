@@ -131,6 +131,35 @@ const FAMILY_LABEL_ZH: Record<Family, string> = {
   laser: "激光",
 };
 
+const WORLD_OBJECT_GRID_X = [1480, 2460, 3440, 4420] as const;
+const WORLD_OBJECT_GRID_Y = [1480, 2460, 3440, 4420] as const;
+const WORLD_OBJECT_GRID_ORDER = [0, 5, 10, 15, 3, 12, 6, 9, 1, 14, 4, 11, 2, 13, 7, 8] as const;
+
+function worldSigns(world: World): { x: -1 | 1; y: -1 | 1 } {
+  switch (world) {
+    case "geometry":
+      return { x: 1, y: -1 };
+    case "fractal":
+      return { x: -1, y: -1 };
+    case "organic":
+      return { x: -1, y: 1 };
+    case "mechanical":
+      return { x: 1, y: 1 };
+  }
+}
+
+function buildWorldObjectAnchors(world: World): Array<{ x: number; y: number }> {
+  const signs = worldSigns(world);
+  return WORLD_OBJECT_GRID_ORDER.map((index) => {
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    return {
+      x: WORLD_OBJECT_GRID_X[col] * signs.x,
+      y: WORLD_OBJECT_GRID_Y[row] * signs.y,
+    };
+  });
+}
+
 // ============================================================
 // 三、亂數工具
 // ============================================================
@@ -159,8 +188,8 @@ export function createRandom(seed: number): RandomSource {
 }
 
 function createMapSeed(): number {
-  const base = Date.now() & 0xffffffff;
-  return base ^ 0x51c0ffee;
+  // 鎖定種子，讓世界分界與地圖物件都維持固定版本。
+  return 0x51c0ffee;
 }
 
 function distance(a: { x: number; y: number }, b: { x: number; y: number }): number {
@@ -396,17 +425,18 @@ function nudgePointIntoRegion(
   return current;
 }
 
-function buildObjects(
-  zones: MapZone[],
-  verticalDivider: DividerPoint[],
-  horizontalDivider: DividerPoint[],
-  random: RandomSource,
-): MapObject[] {
-  const usedPoints: Array<{ x: number; y: number }> = [];
+function buildObjects(): MapObject[] {
   const objects: MapObject[] = [];
   const worlds: World[] = ["geometry", "organic", "fractal", "mechanical"];
-  const colaWorld = worlds[random.int(0, worlds.length - 1)];
-  const colaPoint = placePoint(usedPoints, colaWorld, verticalDivider, horizontalDivider, random, 520);
+  const worldAnchors: Record<World, Array<{ x: number; y: number }>> = {
+    geometry: buildWorldObjectAnchors("geometry"),
+    organic: buildWorldObjectAnchors("organic"),
+    fractal: buildWorldObjectAnchors("fractal"),
+    mechanical: buildWorldObjectAnchors("mechanical"),
+  };
+  const takeAnchor = (world: World): { x: number; y: number } | null => worldAnchors[world].shift() ?? null;
+  const colaWorld: World = "mechanical";
+  const colaPoint = takeAnchor(colaWorld);
 
   if (colaPoint) {
     objects.push({
@@ -422,11 +452,10 @@ function buildObjects(
   }
 
   for (const world of worlds) {
-    const zone = findZone(zones, world);
     const worldMembers = MEMBERS.filter((member) => member.world === world);
     const workbenchCount = world === "geometry" || world === "organic" ? 2 : 3;
 
-    const altarPoint = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 480);
+    const altarPoint = takeAnchor(world);
     if (altarPoint) objects.push({
       id: `altar_${world}`,
       kind: "召喚",
@@ -438,7 +467,7 @@ function buildObjects(
       summonType: "guardian",
     });
 
-    const shopPoint = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 480);
+    const shopPoint = takeAnchor(world);
     if (shopPoint) objects.push({
       id: `shop_${world}`,
       kind: "商店",
@@ -450,7 +479,7 @@ function buildObjects(
     });
 
     for (let i = 0; i < workbenchCount; i++) {
-      const point = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 440);
+      const point = takeAnchor(world);
       if (point) objects.push({
         id: `workbench_${world}_${i + 1}`,
         kind: "合成",
@@ -463,7 +492,7 @@ function buildObjects(
     }
 
     for (const member of worldMembers) {
-      const point = placePoint(usedPoints, world, verticalDivider, horizontalDivider, random, 420);
+      const point = takeAnchor(world);
       if (point) objects.push({
         id: `statue_${member.id}`,
         kind: "雕像",
@@ -485,14 +514,7 @@ function buildObjects(
   };
 
   for (const furnace of FURNACE_DISTRIBUTION) {
-    const point = placePoint(
-      usedPoints,
-      furnace.world,
-      verticalDivider,
-      horizontalDivider,
-      random,
-      480,
-    );
+    const point = takeAnchor(furnace.world);
     if (!point) continue;
     furnacesPerWorld[furnace.world] += 1;
 
@@ -516,7 +538,7 @@ function buildGeneratedMap(seed: number): GeneratedMap {
   const verticalDivider = buildWobblyDivider(random, "vertical");
   const horizontalDivider = buildWobblyDivider(random, "horizontal");
   const zones = buildZones(random, verticalDivider, horizontalDivider);
-  const objects = buildObjects(zones, verticalDivider, horizontalDivider, random);
+  const objects = buildObjects();
 
   return {
     seed,

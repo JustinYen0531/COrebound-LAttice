@@ -529,43 +529,29 @@ export function 建立世界地圖層(): HTMLElement {
   initMiniPlaza(miniPlaza);
   createMiniCornerCores(miniSvg);
   const miniObjectNodes = new Map<string, HTMLElement>();
+  const miniMarkers: MiniMapMarker[] = [];
   for (const object of MAP_OBJECTS) {
     const node = document.createElement("div");
     node.className = `世界地圖層-小地圖點 世界地圖層-小地圖點-${object.kind}`;
     miniMapInner.appendChild(node);
     miniObjectNodes.set(object.id, node);
+    miniMarkers.push({ id: object.id, x: object.x, y: object.y });
+  }
+  for (const env of ENV_OBJECTS) {
+    const node = document.createElement("div");
+    node.className = `世界地圖層-小地圖點 世界地圖層-小地圖點-環境物件 世界地圖層-小地圖點-${env.category}`;
+    miniMapInner.appendChild(node);
+    miniObjectNodes.set(env.id, node);
+    miniMarkers.push({ id: env.id, x: env.x, y: env.y });
   }
 
   const miniPlayer = document.createElement("div");
   miniPlayer.className = "世界地圖層-小地圖玩家";
   miniMapInner.appendChild(miniPlayer);
 
-  // Hidden test shortcut: click nearly the same minimap point five times to teleport there.
-  let miniMapTestClicks = 0;
-  let miniMapTestClickAt = 0;
-  let miniMapTestPoint = { x: 0, y: 0 };
   miniMapInner.addEventListener("click", (event) => {
-    const bounds = miniMapInner.getBoundingClientRect();
-    if (bounds.width <= 0 || bounds.height <= 0) return;
-
-    const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
-    const now = performance.now();
-    const isSamePoint = Math.hypot(point.x - miniMapTestPoint.x, point.y - miniMapTestPoint.y) <= 12;
-    const isRapidSequence = now - miniMapTestClickAt <= 2000;
-    miniMapTestClicks = isSamePoint && isRapidSequence ? miniMapTestClicks + 1 : 1;
-    miniMapTestClickAt = now;
-    miniMapTestPoint = point;
-
-    if (miniMapTestClicks < 5) return;
-    miniMapTestClicks = 0;
-    playerVelocity = { x: 0, y: 0 };
-    playerPos = clampTraversablePlayerPosition({
-      x: MAP_BOUNDS.minX + (point.x / bounds.width) * (MAP_BOUNDS.maxX - MAP_BOUNDS.minX),
-      y: MAP_BOUNDS.minY + (point.y / bounds.height) * (MAP_BOUNDS.maxY - MAP_BOUNDS.minY),
-    }, playerPos);
-    if (!訓練道場中) 設定正式玩家位置(playerPos);
-    syncNearbyToState();
-    render();
+    event.preventDefault();
+    miniMap.classList.toggle("世界地圖層-小地圖-放大");
   });
 
   const zoomControl = document.createElement("div");
@@ -1095,7 +1081,7 @@ export function 建立世界地圖層(): HTMLElement {
       slowFieldNode.style.display = "none";
     }
 
-    renderMiniMapDynamic(miniMapInner, miniObjectNodes, miniPlayer);
+    renderMiniMapDynamic(miniMapInner, miniMarkers, miniObjectNodes, miniPlayer);
   }
 
   /**
@@ -2123,6 +2109,12 @@ interface MonsterRuntime {
   persistent?: 正式戰場怪物;
 }
 
+interface MiniMapMarker {
+  id: string;
+  x: number;
+  y: number;
+}
+
 /** 建立一隻怪物的 DOM 節點（去背立繪 + 影子，比照環境物件的視覺結構）。 */
 function createMonsterNode(inst: 可見怪物實例): HTMLElement {
   const node = document.createElement("div");
@@ -2291,6 +2283,7 @@ function initMiniStaticPaths(
 // 區域/邊界/物件點位都在 initMiniStaticPaths 寫死，不再逐幀重算。
 function renderMiniMapDynamic(
   host: HTMLElement,
+  markers: MiniMapMarker[],
   objectNodes: Map<string, HTMLElement>,
   playerNode: HTMLElement,
 ): void {
@@ -2301,12 +2294,12 @@ function renderMiniMapDynamic(
 
   // 物件點位同樣是固定的，但舊版每幀重寫；這裡改成只在首次繪製時設定一次，
   // 之後動態幀跳過，避免反覆寫 style 觸發 layout。
-  for (const object of MAP_OBJECTS) {
-    const node = objectNodes.get(object.id);
+  for (const marker of markers) {
+    const node = objectNodes.get(marker.id);
     if (!node) continue;
     if (node.dataset.placed === "1") continue;
-    node.style.left = `${toMiniX(object.x)}px`;
-    node.style.top = `${toMiniY(object.y)}px`;
+    node.style.left = `${toMiniX(marker.x)}px`;
+    node.style.top = `${toMiniY(marker.y)}px`;
     node.dataset.placed = "1";
   }
 

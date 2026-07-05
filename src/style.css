@@ -2716,6 +2716,13 @@ button.禁用:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.34);
   backdrop-filter: blur(8px);
   z-index: 25;
+  transition: width 160ms ease, height 160ms ease, padding 160ms ease, transform 160ms ease;
+}
+.世界地圖層-小地圖.世界地圖層-小地圖-放大 {
+  width: 360px;
+  height: 360px;
+  padding: 14px;
+  transform: translate(-8px, 8px);
 }
 .世界地圖層-小地圖內層 {
   position: relative;
@@ -2804,11 +2811,20 @@ button.禁用:hover {
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.45);
 }
+.世界地圖層-小地圖點-環境物件 {
+  width: 6px;
+  height: 6px;
+  border-radius: 32%;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.42);
+}
 .世界地圖層-小地圖點-熔爐 { background: #ff8a3d; }
 .世界地圖層-小地圖點-合成 { background: #85b7ff; }
 .世界地圖層-小地圖點-雕像 { background: #d9dde5; }
 .世界地圖層-小地圖點-商店 { background: #86e39d; }
 .世界地圖層-小地圖點-召喚 { background: #f0cf7b; }
+.世界地圖層-小地圖點-障礙物 { background: #c9d0dd; }
+.世界地圖層-小地圖點-資源礦物 { background: #62d7ff; }
+.世界地圖層-小地圖點-環境機關 { background: #ff93c5; }
 .世界地圖層-小地圖玩家 {
   width: 8px;
   height: 8px;

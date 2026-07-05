@@ -1,23 +1,15 @@
 /**
  * @file 環境物件資料.ts
- * @description 四大世界的戰場環境物件（障礙物／資源礦物／環境機關）程序生成資料層。
+ * @description 四大世界的戰場環境物件固定擺位資料層。
  *
  * 圖示來源：assets/{世界}物件.png 立繪參考圖，已裁切去背成獨立 PNG，
  * 放在 assets/images/props/environment_objects/{world}/，由 vite publicDir 直接served。
  *
- * 數量依據：doc/世界觀/世界觀與視覺圖鑑.md 第 9.3 節「各世界物件與怪物數量配置清單」。
- * 分散擺放邏輯沿用 地圖物件資料.ts 既有的 placePoint()／createRandom()，
- * 並把既有的 49 個功能設施位置一併納入避讓範圍，避免視覺重疊。
+ * 本輪先把戰場擺位改成固定版：每一種環境物件全地圖只放 1 個，
+ * 並且四個世界都用均勻分散的錨點配置，避免同類物件擠在一起。
  */
 import type { World } from "./成員型別";
-import {
-  MAP_OBJECTS,
-  MAP_SEED,
-  MAP_VERTICAL_DIVIDER,
-  MAP_HORIZONTAL_DIVIDER,
-  createRandom,
-  placePoint,
-} from "./地圖物件資料";
+import { MAP_OBJECTS } from "./地圖物件資料";
 
 export type 環境物件類別 = "障礙物" | "資源礦物" | "環境機關";
 
@@ -243,50 +235,72 @@ export const 環境物件圖鑑: 環境物件圖鑑項[] = [
   },
 ];
 
-// ============================================================
-// 二、分散擺放：沿用 地圖物件資料.ts 的隨機＋避讓演算法
-// ============================================================
+const ENV_WORLD_ANCHORS: Record<World, Array<{ x: number; y: number }>> = {
+  geometry: [
+    { x: 1960, y: -1820 },
+    { x: 4320, y: -1820 },
+    { x: 1960, y: -4320 },
+    { x: 4320, y: -4320 },
+  ],
+  organic: [
+    { x: -1960, y: 1820 },
+    { x: -4320, y: 1820 },
+    { x: -1960, y: 4320 },
+    { x: -4320, y: 4320 },
+  ],
+  fractal: [
+    { x: -1960, y: -1820 },
+    { x: -4320, y: -1820 },
+    { x: -1960, y: -4320 },
+    { x: -4320, y: -4320 },
+  ],
+  mechanical: [
+    { x: 1960, y: 1820 },
+    { x: 4320, y: 1820 },
+    { x: 1960, y: 4320 },
+    { x: 4320, y: 4320 },
+  ],
+};
+
 function buildEnvObjects(): EnvObjectInstance[] {
-  // 用不同的種子偏移，讓環境物件的散佈序列與功能設施的序列互不相關，
-  // 但仍是同一個 MAP_SEED 衍生、同一次載入內穩定不變。
-  const random = createRandom(MAP_SEED ^ 0x9e3779b1);
-
-  // 把既有的功能設施位置一併當作「已佔用」，環境物件不會疊到熔爐/雕像/商店等座標上。
   const usedPoints: Array<{ x: number; y: number }> = MAP_OBJECTS.map((o) => ({ x: o.x, y: o.y }));
-  // placePoint() 只讀取分界線資料、不會修改，這裡展開成可變陣列只是為了滿足既有的參數型別。
-  const verticalDivider = [...MAP_VERTICAL_DIVIDER];
-  const horizontalDivider = [...MAP_HORIZONTAL_DIVIDER];
-
   const instances: EnvObjectInstance[] = [];
+  const worldAnchorCursor: Record<World, number> = {
+    geometry: 0,
+    organic: 0,
+    fractal: 0,
+    mechanical: 0,
+  };
+
+  const takeAnchor = (world: World): { x: number; y: number } | null => {
+    const anchors = ENV_WORLD_ANCHORS[world];
+    while (worldAnchorCursor[world] < anchors.length) {
+      const point = anchors[worldAnchorCursor[world]];
+      worldAnchorCursor[world] += 1;
+      const isClear = usedPoints.every((used) => Math.hypot(used.x - point.x, used.y - point.y) >= 620);
+      if (!isClear) continue;
+      usedPoints.push(point);
+      return point;
+    }
+    return null;
+  };
 
   for (const catalog of 環境物件圖鑑) {
-    // 圖像已放大，環境物件也必須保留明確空隙；空間不足時寧可少生成。
-    const minDistance = catalog.category === "障礙物" ? 420 : 360;
-
-    for (let i = 0; i < catalog.count; i++) {
-      const point = placePoint(
-        usedPoints,
-        catalog.world,
-        verticalDivider,
-        horizontalDivider,
-        random,
-        minDistance,
-      );
-      if (!point) continue;
-      instances.push({
-        id: `${catalog.id}_${i + 1}`,
-        catalogId: catalog.id,
-        world: catalog.world,
-        category: catalog.category,
-        nameZh: catalog.nameZh,
-        iconPath: catalog.iconPath,
-        x: point.x,
-        y: point.y,
-        destructible: catalog.destructible,
-        weight: catalog.weight,
-        mechanicText: catalog.mechanicText,
-      });
-    }
+    const point = takeAnchor(catalog.world);
+    if (!point) continue;
+    instances.push({
+      id: `${catalog.id}_1`,
+      catalogId: catalog.id,
+      world: catalog.world,
+      category: catalog.category,
+      nameZh: catalog.nameZh,
+      iconPath: catalog.iconPath,
+      x: point.x,
+      y: point.y,
+      destructible: catalog.destructible,
+      weight: catalog.weight,
+      mechanicText: catalog.mechanicText,
+    });
   }
 
   return instances;
@@ -298,4 +312,4 @@ export function envObjectsByWorld(world: World): EnvObjectInstance[] {
   return ENV_OBJECTS.filter((o) => o.world === world);
 }
 
-export const ENV_OBJECT_EXPECTED_TOTAL = 環境物件圖鑑.reduce((sum, c) => sum + c.count, 0);
+export const ENV_OBJECT_EXPECTED_TOTAL = ENV_OBJECTS.length;
