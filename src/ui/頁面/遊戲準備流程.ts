@@ -96,7 +96,7 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   畫質區.innerHTML = `
     <div style="font-size:0.96rem;font-weight:700;color:#f2e6c9;">${雙語("世界地板載入模式", "World Floor Load Mode")}</div>
     <div style="font-size:0.8rem;line-height:1.6;color:#c8d0ec;">
-      ${雙語("順暢模式保留輕量地板；中細節保留你原本那版磁磚、分割與核心節奏；高細節則在中細節之上，再疊上世界地板條紋圖。", "Smooth mode keeps the lightweight floor. Medium Detail keeps your original tile layout, segmentation, and core rhythm. High Detail adds the world stripe artwork on top of Medium Detail.")}
+      ${雙語("順暢模式保留輕量地板；中細節會回到你原本那版世界專屬磁磚；高細節則沿用同一套世界磁磚，再保留更重的材質感。", "Smooth mode keeps the lightweight floor. Medium Detail restores your original world-specific signature tiles. High Detail keeps the same world tiles with a heavier material feel.")}
     </div>
   `;
 
@@ -138,7 +138,7 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   提示.style.color = "#8d93ad";
   提示.textContent =
     地板模式 === "high"
-      ? 雙語("目前會載入中細節磁磚，再額外疊上世界條紋地板圖。若裝置開始吃力，可退回中細節或順暢模式。", "High Detail will load the medium tile floor, then add the world stripe floor art on top. If the device struggles, step back to Medium or Smooth.")
+      ? 雙語("目前使用完整世界磁磚版本。若裝置開始吃力，可退回中細節或順暢模式。", "High Detail is using the full world signature tile version. If the device struggles, step back to Medium or Smooth.")
       : 地板模式 === "medium"
         ? 雙語("目前使用你原本那版磁磚地板，保留切割、色差與核心區域。想再加上條紋圖時，切到高細節。", "Medium Detail keeps your original tile floor with segmentation, variation, and core zones. Switch to High Detail when you want the stripe art on top.")
         : 雙語("目前使用順暢模式，只保留輕量世界地板。需要看磁磚與核心節奏時，再切到中細節或高細節。", "Smooth Mode is active and keeps only the lightweight floor. Switch to Medium or High Detail when you want the tiled floor and core rhythm back.");

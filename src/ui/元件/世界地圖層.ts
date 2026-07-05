@@ -399,12 +399,18 @@ export function 建立世界地圖層(): HTMLElement {
   canvas.appendChild(objectLayer);
 
   const regionPaths = createRegionPaths(zoneSvg);
-  if (啟用中細節地板) createWorldSquareTileFloors(zoneSvg, 啟用高細節條紋);
-  else if (ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS) createLightweightWrinkleFloors(zoneSvg);
-  const geometryCoreBoundaries: EinsteinPoint[][] = [];
-  const fractalCoreBoundaries: PenrosePoint[][] = [];
-  const organicCoreBoundaries: EscherPoint[][] = [];
-  const mechanicalCoreBoundaries: CairoPoint[][] = [];
+  let geometryCoreBoundaries: EinsteinPoint[][] = [];
+  let fractalCoreBoundaries: PenrosePoint[][] = [];
+  let organicCoreBoundaries: EscherPoint[][] = [];
+  let mechanicalCoreBoundaries: CairoPoint[][] = [];
+  if (啟用中細節地板) {
+    geometryCoreBoundaries = createGeometryEinsteinFloor(zoneSvg);
+    fractalCoreBoundaries = createFractalPenroseFloor(zoneSvg);
+    organicCoreBoundaries = createOrganicBirdFloor(zoneSvg);
+    mechanicalCoreBoundaries = createMechanicalCairoFloor(zoneSvg) as CairoPoint[][];
+  } else if (ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS) {
+    createLightweightWrinkleFloors(zoneSvg);
+  }
   const dividerPaths = createDividerPaths(zoneSvg);
   // 區域外框、分界線、地板花紋都是「世界座標固定」的靜態幾何，
   // 不會隨玩家移動改變；只在建圖時設定一次 d 屬性即可，
