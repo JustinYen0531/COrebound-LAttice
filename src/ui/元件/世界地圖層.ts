@@ -177,7 +177,9 @@ const LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE: Record<World, string> = {
 };
 
 const HIGH_DETAIL_FLOOR_IMAGE = "/images/maps/floors/chatgpt-stripes.png";
-const PLAZA_SURFACE_RADIUS = PLAZA_RADIUS + 140;
+const PLAZA_SURFACE_SIZE = (MAP_BOUNDS.maxX - MAP_BOUNDS.minX) * 0.32;
+const PLAZA_SURFACE_HALF = PLAZA_SURFACE_SIZE / 2;
+const PLAZA_WRINKLE_IMAGE = LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE.mechanical;
 
 const SIMPLE_TILE_PALETTE: Record<World | "plaza", {
   base: string;
@@ -402,7 +404,8 @@ export function 建立世界地圖層(): HTMLElement {
   // 不會隨玩家移動改變；只在建圖時設定一次 d 屬性即可，
   // 之後每幀只靠 viewBox 平移鏡頭，避免反覆 setAttribute 觸發瀏覽器重算路徑幾何。
   initRegionPaths(regionPaths, dividerPaths);
-  createCentralPlaza(zoneSvg, 啟用中細節地板);
+  createCentralPlaza(zoneSvg, 啟用中細節地板, 啟用高細節條紋);
+  createCornerCoreOverlays(zoneSvg);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
@@ -494,6 +497,7 @@ export function 建立世界地圖層(): HTMLElement {
     miniDividerPaths,
   );
   initMiniPlaza(miniPlaza);
+  createMiniCornerCores(miniSvg);
   const miniObjectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
     const node = document.createElement("div");
@@ -2410,17 +2414,28 @@ function createWorldSquareTileFloors(host: SVGSVGElement, includeStripeOverlay: 
   if (includeStripeOverlay) host.append(overlayGroup);
 }
 
-function createCentralPlaza(host: SVGSVGElement, useSquareTiles: boolean): void {
+function createCentralPlaza(host: SVGSVGElement, useSquareTiles: boolean, includeStripeOverlay: boolean): void {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const defs = document.createElementNS(svgNamespace, "defs");
   const group = document.createElementNS(svgNamespace, "g");
   group.setAttribute("class", "世界地圖層-中央廣場群");
 
-  const surface = document.createElementNS(svgNamespace, "circle");
+  const clipPath = document.createElementNS(svgNamespace, "clipPath");
+  clipPath.setAttribute("id", "plaza-square-clip");
+  const clipRect = document.createElementNS(svgNamespace, "rect");
+  clipRect.setAttribute("x", String(-PLAZA_SURFACE_HALF));
+  clipRect.setAttribute("y", String(-PLAZA_SURFACE_HALF));
+  clipRect.setAttribute("width", String(PLAZA_SURFACE_SIZE));
+  clipRect.setAttribute("height", String(PLAZA_SURFACE_SIZE));
+  clipPath.appendChild(clipRect);
+  defs.appendChild(clipPath);
+
+  const surface = document.createElementNS(svgNamespace, "rect");
   surface.setAttribute("class", "世界地圖層-中央廣場底");
-  surface.setAttribute("cx", "0");
-  surface.setAttribute("cy", "0");
-  surface.setAttribute("r", String(PLAZA_SURFACE_RADIUS));
+  surface.setAttribute("x", String(-PLAZA_SURFACE_HALF));
+  surface.setAttribute("y", String(-PLAZA_SURFACE_HALF));
+  surface.setAttribute("width", String(PLAZA_SURFACE_SIZE));
+  surface.setAttribute("height", String(PLAZA_SURFACE_SIZE));
   if (useSquareTiles) {
     defineSquareTilePattern(defs, "plaza-square-floor", SIMPLE_TILE_PALETTE.plaza);
     surface.setAttribute("fill", "url(#plaza-square-floor)");
@@ -2429,11 +2444,36 @@ function createCentralPlaza(host: SVGSVGElement, useSquareTiles: boolean): void 
   }
   group.appendChild(surface);
 
-  const ring = document.createElementNS(svgNamespace, "circle");
+  const wrinkle = document.createElementNS(svgNamespace, "image");
+  wrinkle.setAttribute("class", "世界地圖層-中央廣場摺皺");
+  wrinkle.setAttribute("href", PLAZA_WRINKLE_IMAGE);
+  wrinkle.setAttribute("x", String(-PLAZA_SURFACE_HALF));
+  wrinkle.setAttribute("y", String(-PLAZA_SURFACE_HALF));
+  wrinkle.setAttribute("width", String(PLAZA_SURFACE_SIZE));
+  wrinkle.setAttribute("height", String(PLAZA_SURFACE_SIZE));
+  wrinkle.setAttribute("preserveAspectRatio", "none");
+  wrinkle.setAttribute("clip-path", "url(#plaza-square-clip)");
+  group.appendChild(wrinkle);
+
+  if (includeStripeOverlay) {
+    const stripes = document.createElementNS(svgNamespace, "image");
+    stripes.setAttribute("class", "世界地圖層-中央廣場條紋");
+    stripes.setAttribute("href", HIGH_DETAIL_FLOOR_IMAGE);
+    stripes.setAttribute("x", String(-PLAZA_SURFACE_HALF));
+    stripes.setAttribute("y", String(-PLAZA_SURFACE_HALF));
+    stripes.setAttribute("width", String(PLAZA_SURFACE_SIZE));
+    stripes.setAttribute("height", String(PLAZA_SURFACE_SIZE));
+    stripes.setAttribute("preserveAspectRatio", "none");
+    stripes.setAttribute("clip-path", "url(#plaza-square-clip)");
+    group.appendChild(stripes);
+  }
+
+  const ring = document.createElementNS(svgNamespace, "rect");
   ring.setAttribute("class", "世界地圖層-中央廣場外框");
-  ring.setAttribute("cx", "0");
-  ring.setAttribute("cy", "0");
-  ring.setAttribute("r", String(PLAZA_SURFACE_RADIUS));
+  ring.setAttribute("x", String(-PLAZA_SURFACE_HALF));
+  ring.setAttribute("y", String(-PLAZA_SURFACE_HALF));
+  ring.setAttribute("width", String(PLAZA_SURFACE_SIZE));
+  ring.setAttribute("height", String(PLAZA_SURFACE_SIZE));
   group.appendChild(ring);
 
   host.append(defs, group);
@@ -3337,10 +3377,10 @@ function createMiniRegionPaths(host: SVGSVGElement): Record<World, SVGPathElemen
   return regions;
 }
 
-function createMiniPlaza(host: SVGSVGElement): { circle: SVGCircleElement; label: SVGTextElement } {
-  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  circle.setAttribute("class", "世界地圖層-小地圖中央廣場");
-  host.appendChild(circle);
+function createMiniPlaza(host: SVGSVGElement): { rect: SVGRectElement; label: SVGTextElement } {
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect.setAttribute("class", "世界地圖層-小地圖中央廣場");
+  host.appendChild(rect);
 
   const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
   label.setAttribute("class", "世界地圖層-小地圖中央廣場標籤");
@@ -3348,19 +3388,20 @@ function createMiniPlaza(host: SVGSVGElement): { circle: SVGCircleElement; label
   label.setAttribute("dominant-baseline", "middle");
   label.textContent = "中央廣場";
   host.appendChild(label);
-  return { circle, label };
+  return { rect, label };
 }
 
-function initMiniPlaza(plaza: { circle: SVGCircleElement; label: SVGTextElement }): void {
+function initMiniPlaza(plaza: { rect: SVGRectElement; label: SVGTextElement }): void {
   const width = 176;
   const height = 176;
   const centerX = ((0 - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width;
   const centerY = ((0 - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY)) * height;
-  const radius = (PLAZA_SURFACE_RADIUS / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width;
+  const size = (PLAZA_SURFACE_SIZE / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width;
 
-  plaza.circle.setAttribute("cx", String(centerX));
-  plaza.circle.setAttribute("cy", String(centerY));
-  plaza.circle.setAttribute("r", String(radius));
+  plaza.rect.setAttribute("x", String(centerX - size / 2));
+  plaza.rect.setAttribute("y", String(centerY - size / 2));
+  plaza.rect.setAttribute("width", String(size));
+  plaza.rect.setAttribute("height", String(size));
   plaza.label.setAttribute("x", String(centerX));
   plaza.label.setAttribute("y", String(centerY));
 }

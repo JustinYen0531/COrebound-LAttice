@@ -2132,7 +2132,15 @@ button.禁用:hover {
   pointer-events: none;
 }
 .世界地圖層-中央廣場底 {
-  opacity: 0.98;
+  opacity: 1;
+}
+.世界地圖層-中央廣場摺皺 {
+  opacity: 0.3;
+  mix-blend-mode: multiply;
+}
+.世界地圖層-中央廣場條紋 {
+  opacity: 0.42;
+  mix-blend-mode: multiply;
 }
 .世界地圖層-中央廣場外框 {
   fill: none;
@@ -2172,22 +2180,22 @@ button.禁用:hover {
   isolation: isolate;
 }
 .世界地圖層-高細節條紋 {
-  opacity: 0.12;
+  opacity: 0.22;
   mix-blend-mode: normal;
   filter: none;
   image-rendering: auto;
 }
 .世界地圖層-高細節條紋-geometry {
-  opacity: 0.09;
+  opacity: 0.2;
 }
 .世界地圖層-高細節條紋-organic {
-  opacity: 0.1;
+  opacity: 0.22;
 }
 .世界地圖層-高細節條紋-fractal {
-  opacity: 0.11;
+  opacity: 0.24;
 }
 .世界地圖層-高細節條紋-mechanical {
-  opacity: 0.14;
+  opacity: 0.28;
 }
 .世界地圖層-分界線 {
   fill: none;
