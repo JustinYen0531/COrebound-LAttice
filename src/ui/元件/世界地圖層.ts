@@ -419,7 +419,6 @@ export function 建立世界地圖層(): HTMLElement {
   initRegionPaths(regionPaths, dividerPaths);
   if (啟用中細節地板) createWorldStripeOverlays(zoneSvg);
   createCentralPlaza(zoneSvg, 啟用中細節地板, 啟用高細節條紋);
-  createCornerCoreOverlays(zoneSvg);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
   for (const object of MAP_OBJECTS) {
@@ -2451,6 +2450,34 @@ function defineWorldFloorPattern(
   defs.appendChild(pattern);
 }
 
+function defineCornerCoreTilePattern(
+  defs: SVGDefsElement,
+  patternId: string,
+  world: World,
+  rect: { minX: number; minY: number; maxX: number; maxY: number },
+): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const pattern = document.createElementNS(svgNamespace, "pattern");
+  pattern.setAttribute("id", patternId);
+  pattern.setAttribute("patternUnits", "userSpaceOnUse");
+  pattern.setAttribute("x", String(rect.minX));
+  pattern.setAttribute("y", String(rect.minY));
+  pattern.setAttribute("width", String(rect.maxX - rect.minX));
+  pattern.setAttribute("height", String(rect.maxY - rect.minY));
+  pattern.setAttribute("viewBox", "0 0 1774 887");
+  pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+  const image = document.createElementNS(svgNamespace, "image");
+  image.setAttribute("href", WORLD_FLOOR_IMAGE[world]);
+  image.setAttribute("width", "1774");
+  image.setAttribute("height", "887");
+  image.setAttribute("x", "0");
+  image.setAttribute("y", "0");
+  pattern.appendChild(image);
+
+  defs.appendChild(pattern);
+}
+
 function createWorldSquareTileFloors(host: SVGSVGElement, includeStripeOverlay: boolean): void {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const polygons = buildRegionPolygons();
@@ -2645,6 +2672,9 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   const targetHeight = targetBounds.maxY - targetBounds.minY;
   const sourceCenter = pointAtCenter(sourceBounds);
   const targetCenter = pointAtCenter(targetBounds);
+  const coreRect = coreRectForWorld("geometry", targetBounds);
+  const corePatternId = "geometry-corner-core-tiles";
+  defineCornerCoreTilePattern(definitions, corePatternId, "geometry", coreRect);
   const initialScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
   // 保持單一合法超級拼塊，不複製、不疊放；把它放大到整個幾何區都落在外框內。
   const scale = findCoveringScale(
@@ -2700,6 +2730,13 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     applyDetailedTileFill(path, definitions, "geometry", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
     tileGroup.appendChild(path);
+    if (floorZone === "core") {
+      const overlay = document.createElementNS(svgNamespace, "path");
+      overlay.setAttribute("d", tilePath);
+      overlay.setAttribute("fill", `url(#${corePatternId})`);
+      overlay.setAttribute("opacity", "0.3");
+      tileGroup.appendChild(overlay);
+    }
 
   }
 
@@ -2804,6 +2841,9 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
   const targetHeight = targetBounds.maxY - targetBounds.minY;
   const sourceCenter = pointAtCenter(sourceBounds);
   const targetCenter = pointAtCenter(targetBounds);
+  const coreRect = coreRectForWorld("fractal", targetBounds);
+  const corePatternId = "fractal-corner-core-tiles";
+  defineCornerCoreTilePattern(definitions, corePatternId, "fractal", coreRect);
   const initialScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
   const scale = findCoveringScale(
     supertile.boundary,
@@ -2861,6 +2901,13 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
       `世界地圖層-彭羅斯磁磚 世界地圖層-彭羅斯磁磚-${floorZone} 世界地圖層-彭羅斯磁磚-${tile.kind}`,
     );
     tileGroup.appendChild(path);
+    if (floorZone === "core") {
+      const overlay = document.createElementNS(svgNamespace, "path");
+      overlay.setAttribute("d", tilePath);
+      overlay.setAttribute("fill", `url(#${corePatternId})`);
+      overlay.setAttribute("opacity", "0.3");
+      tileGroup.appendChild(overlay);
+    }
 
   }
 
@@ -2952,6 +2999,9 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
   tileGroup.setAttribute("clip-path", "url(#organic-world-floor-clip)");
 
   const targetBounds = boundsOf(organicPolygon);
+  const coreRect = coreRectForWorld("organic", targetBounds);
+  const corePatternId = "organic-corner-core-tiles";
+  defineCornerCoreTilePattern(definitions, corePatternId, "organic", coreRect);
   const field = buildEscherBirdField(targetBounds, 520);
 
   const coreTiles = field.tiles.filter((tile) =>
@@ -2994,6 +3044,13 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     applyDetailedTileFill(path, definitions, "organic", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("class", `世界地圖層-艾雪鳥磁磚 世界地圖層-艾雪鳥磁磚-${floorZone}`);
     tileGroup.appendChild(path);
+    if (floorZone === "core") {
+      const overlay = document.createElementNS(svgNamespace, "path");
+      overlay.setAttribute("d", tilePath);
+      overlay.setAttribute("fill", `url(#${corePatternId})`);
+      overlay.setAttribute("opacity", "0.3");
+      tileGroup.appendChild(overlay);
+    }
 
   }
 
@@ -3087,6 +3144,9 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
   tileGroup.setAttribute("clip-path", "url(#mechanical-world-floor-clip)");
 
   const targetBounds = boundsOf(mechanicalPolygon);
+  const coreRect = coreRectForWorld("mechanical", targetBounds);
+  const corePatternId = "mechanical-corner-core-tiles";
+  defineCornerCoreTilePattern(definitions, corePatternId, "mechanical", coreRect);
   
   // 建立正六邊形平鋪蜂巢網格
   const R = 300; // 六角形半徑加大，保留開羅磁磚語言但減少 DOM path 數量。
@@ -3150,6 +3210,13 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     applyDetailedTileFill(path, definitions, "mechanical", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("class", `世界地圖層-開羅磁磚 世界地圖層-開羅磁磚-${floorZone}`);
     tileGroup.appendChild(path);
+    if (floorZone === "core") {
+      const overlay = document.createElementNS(svgNamespace, "path");
+      overlay.setAttribute("d", tilePath);
+      overlay.setAttribute("fill", `url(#${corePatternId})`);
+      overlay.setAttribute("opacity", "0.3");
+      tileGroup.appendChild(overlay);
+    }
 
   }
 
@@ -3317,8 +3384,8 @@ function coreCornerForWorld(world: World, bounds: ReturnType<typeof boundsOf>): 
 function coreRectForWorld(world: World, bounds: ReturnType<typeof boundsOf>) {
   const width = bounds.maxX - bounds.minX;
   const height = bounds.maxY - bounds.minY;
-  const coreWidth = width * 0.34;
-  const coreHeight = height * 0.34;
+  const coreWidth = width * 0.5;
+  const coreHeight = height * 0.5;
   const insetX = width * 0.015;
   const insetY = height * 0.015;
   const anchor = coreCornerForWorld(world, bounds);
