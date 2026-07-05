@@ -2135,8 +2135,9 @@ button.禁用:hover {
   opacity: 1;
 }
 .世界地圖層-中央廣場摺皺 {
-  opacity: 0.3;
-  mix-blend-mode: multiply;
+  opacity: 0.52;
+  mix-blend-mode: normal;
+  filter: contrast(1.08) brightness(0.94);
 }
 .世界地圖層-中央廣場條紋 {
   opacity: 0.42;
