@@ -10,7 +10,7 @@ import { EROSION_DAMAGE_RATIO_PER_TICK, TIER_DROP } from "../legacy/data/戰鬥�
 import { WEAPON_BASE } from "../legacy/data/武器與附魔";
 import { MONSTERS, monstersByWorld, worldGuardian, finalBoss, resolveControl, type MonsterDef } from "../legacy/data/怪物資料庫";
 import { 計算主動技能效果 } from "../legacy/captain/主動技能效果";
-import { RunState, MAX_DEATHS } from "./state";
+import { RunState, MAX_DEATHS, QUOTA_T1, QUOTA_T2 } from "./state";
 import {
   MAP_W, MAP_H, CX, CY, PLAZA_R, WORLDS, QUADRANT_CENTER, CORE_R,
   worldAt, inPlaza, randomChestSpot, type MapLayout,
@@ -87,9 +87,12 @@ export type RunOutcome = { result: "victory" | "defeat" } | null;
 
 const EROSION_START = 600;      // 侵蝕啟動秒數(重製版節奏,文件原值 900)
 const EROSION_SHRINK = 15;      // px/s
-const EROSION_MIN_R = 980;
+/** 侵蝕收縮下限:保住四世界核心區與祭壇(文件意圖是逼玩家向核心推進,不是關死推圖路線) */
+const EROSION_MIN_R = 3800;
 const PROTECTION_SEC = 300;     // T2 新手保護期(重製版 5 分鐘,文件原值 10 分鐘)
 const BULLET_SPEED_SCALE = 45;
+/** 玩家武器全域傷害倍率:讓武器(而非碰撞)成為主要輸出,對應設計「武器家族=戰力主軸」 */
+const PLAYER_WEAPON_MULT = 2.0;
 const SKILL_ENERGY_COST = 40;
 const SKILL_COOLDOWN = 5;
 const CHEST_INTERVAL = 150;
@@ -145,6 +148,8 @@ export class Sim {
   spawnTimer = 0;
   chestTimer = CHEST_INTERVAL;
   contactTickAcc = 0;
+  /** 最後一次受傷時刻(脫戰回血用) */
+  lastHurtAt = -999;
 
   outcome: RunOutcome = null;
 
@@ -176,6 +181,9 @@ export class Sim {
       hpMult *= Math.pow(1.15, defeatedElsewhere);
       dmgMult *= Math.pow(1.15, defeatedElsewhere);
     }
+    // 世界韌性(機制指南 §9.1:Boss 無法被輕易平推)
+    if (boss === "guardian") hpMult *= 2.2;
+    if (boss === "cola") hpMult *= 1.35;
     const maxHp = Math.round(def.stats.hp * hpMult);
     return {
       uid: UID++, def, world: def.world, x, y, homeX: x, homeY: y,
@@ -199,7 +207,7 @@ export class Sim {
     for (const e of this.enemies) {
       if (e.world === w && e.def.tier <= 2) alive[e.def.tier]++;
     }
-    const caps = { 0: 4, 1: 9, 2: 3 };
+    const caps = { 0: 5, 1: 7, 2: 3 };
     const qc = QUADRANT_CENTER[w];
     const trySpawn = (def: MonsterDef, core: boolean) => {
       for (let i = 0; i < 8; i++) {
@@ -234,6 +242,11 @@ export class Sim {
 
     st.energy.tick(dt);
     this.skillCd = Math.max(0, this.skillCd - dt);
+
+    // 脫戰回血(重製版新增:6 秒未受傷後每秒回 2.5%,讓單人局不靠藥水也能恢復)
+    if (now - this.lastHurtAt > 6 && st.hp < st.maxHp && st.hp > 0) {
+      st.hp = Math.min(st.maxHp, st.hp + st.maxHp * 0.025 * dt);
+    }
 
     // ----- 玩家移動 -----
     const stunned = now < this.pStunUntil;
@@ -319,7 +332,11 @@ export class Sim {
   private updateWeapons(dt: number, now: number): void {
     const st = this.state;
     const families: Family[] = ["shield", "multishot", "straight", "mine"];
-    const target = this.nearestEnemy(1150);
+    // Boss 優先鎖定:守護者/COLA 在射程內時集火,否則打最近的敵人
+    const bossInRange = this.enemies.find(
+      (e) => e.boss && e.hp > 0 && dist(e.x, e.y, this.px, this.py) - e.radius < 1150,
+    );
+    const target = bossInRange ?? this.nearestEnemy(1150);
     for (const fam of families) {
       const star = st.weaponStar(fam);
       this.weaponCd[fam] = Math.max(0, (this.weaponCd[fam] ?? 0) - dt);
@@ -336,7 +353,7 @@ export class Sim {
     const base = WEAPON_BASE[fam];
     const control = st.captainControl();
     const enchant = st.activeEnchant(fam);
-    const dmg = base.damage * star * damageRatio;
+    const dmg = base.damage * star * damageRatio * PLAYER_WEAPON_MULT;
     const dirX = target.x - this.px, dirY = target.y - this.py;
     const dLen = Math.hypot(dirX, dirY) || 1;
     const nx = dirX / dLen, ny = dirY / dLen;
@@ -377,9 +394,8 @@ export class Sim {
           this.projectiles.push(p);
         }
         if (enchant?.id === "rapid_fire") {
-          // 追加一輪(0.25 秒後,傷害 40/60/80%)
+          // 追加一輪(緊貼首輪,傷害 40/60/80%)
           const ratio = [0.4, 0.6, 0.8][enchant.star - 1];
-          setTimeout(() => { /* 不用計時器 — 改為立即第二輪並降低傷害,簡化 */ }, 0);
           for (let i = 0; i < base.pelletCount; i++) {
             const ang = (i / (base.pelletCount - 1) - 0.5) * spread * 2;
             const p = mk(ang, "bullet", { damage: dmg * ratio });
@@ -678,7 +694,7 @@ export class Sim {
       } else {
         const hostile = e.boss !== null || tier === 1 || tier === 3 ||
           (tier === 2 && (e.aggro || !protection || !e.def.nonHostileInitially));
-        const aggroRange = e.boss ? 99999 : tier === 2 ? 780 : 900;
+        const aggroRange = e.boss ? 99999 : e.aggro ? 950 : tier === 2 ? 700 : 620;
         if (hostile && dp < aggroRange) {
           e.aggro = true;
           if (dp > e.radius + this.squadR - 26) {
@@ -692,13 +708,14 @@ export class Sim {
           else { wantX = Math.cos(e.wanderAng) * 0.35; wantY = Math.sin(e.wanderAng) * 0.35; }
         }
 
-        // 開火(T2+ 有武器;沉默時停火)
+        // 開火(有武器者;沉默時停火)。低階怪射速大幅放緩,避免前期彈幕壓死單隊長。
         if (e.aggro && now >= e.silenceUntil && !stunned && dp < 1250) {
+          const periodMult = e.boss === "cola" ? 1.0 : e.boss === "guardian" ? 1.2 : tier === 2 ? 1.9 : 2.6;
           e.def.armament.weapons.forEach((w, i) => {
             e.fireCd[i] -= dt;
             if (e.fireCd[i] > 0) return;
             const base = WEAPON_BASE[w.family];
-            e.fireCd[i] = base.firePeriodTicks * (e.boss === "cola" ? 1.0 : 1.6);
+            e.fireCd[i] = base.firePeriodTicks * periodMult;
             this.enemyFire(e, w.family, now);
           });
         }
@@ -749,8 +766,10 @@ export class Sim {
       const touching = dist(e.x, e.y, this.px, this.py) < e.radius + this.squadR;
       if (touching && e.touchCd <= 0) {
         e.touchCd = 1;
-        if (e.def.stats.atk > 0) this.damagePlayer(e.def.stats.atk * e.dmgMult);
-        this.damageEnemy(e, st.contactAtk() * 0.35, now); // 碰撞傷害折減,鼓勵用武器
+        // Boss 近身極痛(逼走位),小隊碰撞對 Boss 有韌性折減(逼用武器輸出)
+        const contactAtk = e.boss === "cola" ? 420 : e.boss === "guardian" ? 260 : e.def.stats.atk;
+        if (contactAtk > 0) this.damagePlayer(contactAtk * e.dmgMult);
+        this.damageEnemy(e, st.contactAtk() * (e.boss ? 0.3 : 0.8), now);
         if (e.def.tier === 0 || e.def.tier === 2) e.aggro = true;
       }
     }
@@ -783,7 +802,9 @@ export class Sim {
     const d = Math.hypot(dx, dy) || 1;
     const nx = dx / d, ny = dy / d;
     const spd = Math.min(base.speed * BULLET_SPEED_SCALE, 640);
-    const dmg = base.damage * e.dmgMult * (e.def.tier >= 3 ? 1.4 : 1);
+    // 低階怪的子彈傷害折減:單發武器數值是照玩家基準搬的,直接用會壓死前期單隊長
+    const tierDmgMult = e.def.tier <= 1 ? 0.38 : e.def.tier === 2 ? 0.7 : e.def.tier === 3 ? 1.3 : 1.6;
+    const dmg = base.damage * e.dmgMult * tierDmgMult;
     const push = (ang: number, kind: Projectile["kind"], r: number, life: number) => {
       const ca = Math.cos(ang), sa = Math.sin(ang);
       this.projectiles.push({
@@ -836,8 +857,13 @@ export class Sim {
     const w = (e.world === "core" ? null : e.world) as World | null;
     if (w) {
       const shape = TIER_DROP[tier];
-      this.drops.push({ x: e.x + 20, y: e.y, kind: "material", amount: shape.count, world: w, star: shape.star, rarity: shape.rarity, age: 0 });
-      if (tier === 1) this.drops.push({ x: e.x - 22, y: e.y + 10, kind: "material", amount: 1, world: w, star: 2, rarity: "common", age: 0 });
+      // T0 是核心發育資源(怪物圖鑑 §T0),掉 2 份 1★ 普通
+      const mainCount = tier === 0 ? 2 : shape.count;
+      this.drops.push({ x: e.x + 20, y: e.y, kind: "material", amount: mainCount, world: w, star: shape.star, rarity: shape.rarity, age: 0 });
+      if (tier === 1) {
+        this.drops.push({ x: e.x - 22, y: e.y + 10, kind: "material", amount: 1, world: w, star: 2, rarity: "common", age: 0 });
+        this.drops.push({ x: e.x + 6, y: e.y + 22, kind: "material", amount: 1, world: w, star: 1, rarity: "common", age: 0 });
+      }
       if (tier === 2) {
         this.drops.push({ x: e.x - 22, y: e.y + 8, kind: "material", amount: 2, world: w, star: 1, rarity: "fine", age: 0 });
         if (st.progress[w].enraged) {
@@ -873,6 +899,7 @@ export class Sim {
     const st = this.state;
     if (!ignoreInvuln && st.timeSec < this.invulnUntil) return;
     st.hp -= dmg;
+    this.lastHurtAt = st.timeSec;
     st.stats.damageTaken += dmg;
     if (st.hp <= 0) {
       st.applyDeathPenalty();
@@ -936,6 +963,7 @@ export class Sim {
     const st = this.state;
     const p = st.progress[w];
     if (p.guardianSummoned || p.guardianDefeated) return false;
+    if (p.t1Kills < QUOTA_T1 || p.t2Kills < QUOTA_T2) return false;
     const def = worldGuardian(w);
     if (!def) return false;
     p.guardianSummoned = true;
