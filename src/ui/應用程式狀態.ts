@@ -15,6 +15,7 @@ import { 重置Boss召喚佇列 } from "./Boss召喚佇列";
 import { 確保初始補給 } from "../economy/背包狀態";
 import { 套用起始成員配置 } from "../progression/養成狀態";
 import type { 語言代碼 } from "./語系";
+import { EROSION_START_SECOND } from "../data/戰鬥原語";
 
 type 滑動面板 = "無" | "左" | "右";
 export type 世界地板細節模式 = "smooth" | "medium" | "high";
@@ -146,7 +147,7 @@ class 應用程式狀態機 {
       const 在對局內 = this.畫面.層 === "操作頁面" || this.畫面.層 === "管理介面";
       if (!在對局內) return;
       this.額外.世界時鐘秒數 += 1;
-      if (this.額外.世界時鐘秒數 >= 45) this.額外.縮圈警戒 = true;
+      if (this.額外.世界時鐘秒數 >= EROSION_START_SECOND) this.額外.縮圈警戒 = true;
       this.通知();
     }, 1000);
   }

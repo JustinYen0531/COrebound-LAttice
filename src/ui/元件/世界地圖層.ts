@@ -57,6 +57,7 @@ import {
   對局進度摘要,
 } from "../對局進度狀態";
 import { EROSION_DAMAGE_RATIO_PER_TICK } from "../../data/戰鬥原語";
+import { EROSION_START_SECOND } from "../../data/戰鬥原語";
 import { controlEffectAtStar } from "../../data/控制引擎";
 import {
   FACILITY_GLYPH,
@@ -126,6 +127,7 @@ import {
   type 資源掉落物,
 } from "../資源掉落狀態";
 import { 取出Boss召喚 } from "../Boss召喚佇列";
+import { currentSafeRadius } from "../../world/網格侵蝕";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -733,7 +735,10 @@ export function 建立世界地圖層(): HTMLElement {
   const managementButton = document.createElement("button");
   managementButton.className = "世界地圖層-管理按鈕";
   managementButton.type = "button";
-  managementButton.textContent = "管理介面";
+  managementButton.innerHTML = `
+    <span class="世界地圖層-管理按鈕-時間">世界時間 0s</span>
+    <span class="世界地圖層-管理按鈕-主標">管理介面</span>
+  `;
   managementButton.title = "打開管理介面";
   managementButton.onclick = () => 應用程式狀態.進入管理介面("小隊");
   canvas.appendChild(managementButton);
@@ -1047,9 +1052,12 @@ export function 建立世界地圖層(): HTMLElement {
     if (訓練道場中) return;
     if (!應用程式狀態.額外.縮圈警戒) return;
     const 秒 = 應用程式狀態.額外.世界時鐘秒數 ?? 0;
-    // 從警戒點(45s)起 120 秒內由地圖半徑收縮到中央廣場半徑。
-    const t = Math.min(1, Math.max(0, (秒 - 45) / 120));
-    const safeRadius = MAP_BOUNDS.maxX + (PLAZA_RADIUS - MAP_BOUNDS.maxX) * t;
+    if (秒 < EROSION_START_SECOND) return;
+    const safeRadius = currentSafeRadius(秒, {
+      initialRadius: MAP_BOUNDS.maxX,
+      minRadius: PLAZA_RADIUS,
+      shrinkDurationSec: 600,
+    });
     const distToCenter = Math.hypot(playerPos.x, playerPos.y);
     if (distToCenter <= safeRadius) return;
     const summary = 取得正式小隊摘要();
@@ -1859,6 +1867,11 @@ export function 建立世界地圖層(): HTMLElement {
         clockEl.classList.remove("警戒");
       }
     }
+    const managementClockEl = managementButton.querySelector<HTMLElement>(".世界地圖層-管理按鈕-時間");
+    if (managementClockEl) {
+      const 額外 = 應用程式狀態.額外;
+      managementClockEl.textContent = `世界時間 ${額外.世界時鐘秒數}s${額外.縮圈警戒 ? " ⚠" : ""}`;
+    }
 
     rafId = window.requestAnimationFrame(tick);
   }
@@ -2555,10 +2568,51 @@ function createResourceDropNode(drop: 資源掉落物): HTMLElement {
     padding: "0",
   });
   node.innerHTML = `
-    ${leadMaterial ? `<img src="${materialImagePath(leadMaterial.no)}" alt="" draggable="false" style="width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.28));" />` : `<span style="font:700 20px Georgia, serif;color:#ffe7aa;">✦</span>`}
+    <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+      ${leadMaterial ? `<img src="${materialImagePath(leadMaterial.no)}" alt="" draggable="false" style="width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.28));" />` : `<span style="font:700 20px Georgia, serif;color:#ffe7aa;">✦</span>`}
+    </span>
+    <span style="position:absolute;inset:0;pointer-events:none;">
+      ${建立原石粒子HTML(drop.gems)}
+    </span>
     <span style="position:absolute;right:4px;bottom:4px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:rgba(9,11,18,0.88);border:1px solid rgba(255,230,168,0.45);color:#ffe8a8;font:700 12px Georgia, serif;display:flex;align-items:center;justify-content:center;">${totalCount}</span>
   `;
   return node;
+}
+
+function 建立原石粒子HTML(gems: number): string {
+  if (gems <= 0) return "";
+  const units: Array<10 | 5 | 1> = [];
+  let remaining = gems;
+  while (remaining >= 10) {
+    units.push(10);
+    remaining -= 10;
+  }
+  while (remaining >= 5) {
+    units.push(5);
+    remaining -= 5;
+  }
+  while (remaining >= 1) {
+    units.push(1);
+    remaining -= 1;
+  }
+  const capped = units.slice(0, 8);
+  const anchors = [
+    { x: "8%", y: "18%" },
+    { x: "71%", y: "12%" },
+    { x: "79%", y: "45%" },
+    { x: "16%", y: "66%" },
+    { x: "56%", y: "77%" },
+    { x: "35%", y: "8%" },
+    { x: "88%", y: "75%" },
+    { x: "6%", y: "44%" },
+  ];
+  return capped.map((unit, index) => {
+    const anchor = anchors[index % anchors.length];
+    const size = unit === 10 ? 24 : unit === 5 ? 19 : 14;
+    const glow = unit === 10 ? "rgba(255,230,136,0.92)" : unit === 5 ? "rgba(154,226,255,0.88)" : "rgba(255,248,201,0.82)";
+    const label = unit === 10 ? "10E" : unit === 5 ? "5E" : "E";
+    return `<span style="position:absolute;left:${anchor.x};top:${anchor.y};width:${size}px;height:${size}px;transform:translate(-50%,-50%) rotate(${(index % 2 === 0 ? -12 : 11)}deg);border-radius:999px;background:radial-gradient(circle at 35% 30%, #fff, ${glow} 56%, rgba(255,210,88,0.28) 100%);box-shadow:0 0 10px ${glow}, 0 0 18px rgba(255,211,97,0.4);display:flex;align-items:center;justify-content:center;color:#2f2411;font:800 ${unit === 10 ? 8 : 7}px Georgia, serif;letter-spacing:0.02em;">${label}</span>`;
+  }).join("");
 }
 
 function createDeathDropNode(drop: 死亡遺落物): HTMLElement {
