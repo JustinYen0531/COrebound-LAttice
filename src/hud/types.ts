@@ -202,12 +202,15 @@ export interface PeriodicSkillState {
 
 /** 隊長主動技能狀態(規格 §4.2) */
 export interface ActiveSkillState {
+  label: string;
   /** 冷卻進度 0~1(1 = 可施放) */
   cooldownRatio: number;
+  energyCost: number;
   /** 能量是否足夠 */
   energyEnough: boolean;
   /** 施放延遲(防連發)是否進行中 */
   castLatency: boolean;
+  cooldownRemaining: number;
 }
 
 /** 完整的 HUD 資料快照,每幀由上層推入 */
@@ -216,10 +219,14 @@ export interface HudSnapshot {
   /** 隊長代表色(影響生命條與頭像主色) */
   captainColor: string;
   captainPortraitUrl?: string;
+  hpCurrent: number;
+  hpMax: number;
   /** 當前生命比例 0~1 */
   hpRatio: number;
   /** 護盾比例 0~1(相對於最大生命) */
   shieldRatio: number;
+  energyCurrent: number;
+  energyMax: number;
   /** 當前能量比例 0~1 */
   energyRatio: number;
   /** 主動技能 */

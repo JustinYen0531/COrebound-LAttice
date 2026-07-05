@@ -9,6 +9,7 @@
  */
 
 import {
+  FAMILY_LABEL,
   SIZE,
   HEALTH_STAGE,
   type ActiveSkillState,
@@ -65,6 +66,8 @@ export class CoreTrio {
   private readonly healthShield: SVGRectElement;
   private readonly healthRoot: SVGSVGElement;
   private readonly healthText: SVGTextElement;
+  private readonly healthValue: HTMLDivElement;
+  private readonly healthMeta: HTMLDivElement;
   private readonly cooldownRing: SVGCircleElement;
   private readonly cooldownTrack: SVGCircleElement;
   private readonly avatarFace: HTMLDivElement;
@@ -74,6 +77,11 @@ export class CoreTrio {
   private readonly energyFill: SVGPathElement;
   private readonly energyRoot: SVGSVGElement;
   private readonly energyText: SVGTextElement;
+  private readonly energyValue: HTMLDivElement;
+  private readonly energyMeta: HTMLDivElement;
+  private readonly activeSummary: HTMLDivElement;
+  private readonly periodicSummary: HTMLDivElement;
+  private readonly weaponSummary: HTMLDivElement;
   private readonly energyReadyDot: HTMLDivElement;
   private readonly tickDial: HTMLDivElement;
   private readonly tickHand: HTMLDivElement;
@@ -93,6 +101,8 @@ export class CoreTrio {
     this.healthFill = this.healthRoot.querySelector(".bar-fill") as SVGPathElement;
     this.healthShield = this.healthRoot.querySelector(".bar-shield") as SVGRectElement;
     this.healthText = this.healthRoot.querySelector(".bar-text") as SVGTextElement;
+    this.healthValue = this.el.querySelector(".health-value") as HTMLDivElement;
+    this.healthMeta = this.el.querySelector(".health-meta") as HTMLDivElement;
     this.cooldownTrack = this.el.querySelector(".cooldown-track") as SVGCircleElement;
     this.cooldownRing = this.el.querySelector(".cooldown-ring") as SVGCircleElement;
     this.avatarFace = this.el.querySelector(".avatar-face") as HTMLDivElement;
@@ -102,6 +112,11 @@ export class CoreTrio {
     this.energyRoot = this.el.querySelector(".energy-bar") as SVGSVGElement;
     this.energyFill = this.energyRoot.querySelector(".bar-fill") as SVGPathElement;
     this.energyText = this.energyRoot.querySelector(".bar-text") as SVGTextElement;
+    this.energyValue = this.el.querySelector(".energy-value") as HTMLDivElement;
+    this.energyMeta = this.el.querySelector(".energy-meta") as HTMLDivElement;
+    this.activeSummary = this.el.querySelector(".summary-active") as HTMLDivElement;
+    this.periodicSummary = this.el.querySelector(".summary-periodic") as HTMLDivElement;
+    this.weaponSummary = this.el.querySelector(".summary-weapons") as HTMLDivElement;
     this.energyReadyDot = this.el.querySelector(".energy-ready-dot") as HTMLDivElement;
     this.tickDial = this.el.querySelector(".tick-dial") as HTMLDivElement;
     this.tickHand = this.el.querySelector(".tick-dial-hand") as HTMLDivElement;
@@ -139,6 +154,7 @@ export class CoreTrio {
     this.renderHealth(snap);
     this.renderEnergy(snap);
     this.renderAvatar(snap.active, snap.captainColor, snap.captainPortraitUrl, snap.captainId);
+    this.renderCooldownSummary(snap);
     this.renderTick(snap.tickProgress, snap.tickPulseAt);
   }
 
@@ -152,8 +168,9 @@ export class CoreTrio {
     // 護盾覆蓋(外側上方獨立條) — 規格 §1.3
     const shieldW = w * Math.max(0, Math.min(1, snap.shieldRatio));
     this.healthShield.setAttribute("width", `${shieldW}`);
-    // 文字(預設隱藏,由 hover controller 顯示)
     this.healthText.textContent = `${Math.round(ratio * 100)}%`;
+    this.healthValue.textContent = `${Math.round(snap.hpCurrent)} / ${Math.round(snap.hpMax)}`;
+    this.healthMeta.textContent = `目前 ${Math.round(ratio * 100)}%${snap.shieldRatio > 0 ? ` · 護盾 ${Math.round(snap.shieldRatio * 100)}%` : ""}`;
     // 危險脈動
     if (ratio <= HEALTH_STAGE.DANGER) {
       this.healthRoot.classList.add("pulse-danger");
@@ -168,6 +185,8 @@ export class CoreTrio {
     const h = SIZE.ENERGY_BAR_H;
     this.energyFill.setAttribute("d", chamferPath(2, 2, Math.max(0, w * ratio - 4), h - 4, 3));
     this.energyText.textContent = `${Math.round(ratio * 100)}%`;
+    this.energyValue.textContent = `${Math.round(snap.energyCurrent)} / ${Math.round(snap.energyMax)}`;
+    this.energyMeta.textContent = `目前 ${Math.round(ratio * 100)}% · 主動耗能 ${snap.active.energyCost}`;
     // 能量足夠施放主動技能 → 右端亮點 — 規格 §1.4
     if (snap.active.energyEnough && snap.active.cooldownRatio >= 1) {
       this.energyReadyDot.classList.add("on");
@@ -208,6 +227,12 @@ export class CoreTrio {
     this.avatarFallback.style.display = portraitUrl ? "none" : "block";
   }
 
+  private renderCooldownSummary(snap: HudSnapshot): void {
+    this.activeSummary.textContent = `隊長主動 ${snap.active.label}：${this.formatCooldown(snap.active.cooldownRemaining, snap.active.energyEnough)}`;
+    this.periodicSummary.textContent = `週期蓄能：${this.formatPeriodics(snap)}`;
+    this.weaponSummary.textContent = `武器冷卻：${this.formatWeapons(snap)}`;
+  }
+
   private renderTick(progress: number, pulseAt: number): void {
     const clamped = Math.max(0, Math.min(1, progress));
     this.tickHand.style.transform = `translateX(-50%) rotate(${clamped * 360}deg)`;
@@ -217,8 +242,9 @@ export class CoreTrio {
 
   /** 切換生命/能量條文字顯示(滑鼠停留 0.5s 用)— 規格 §1.3、§1.4 */
   showBarText(show: boolean): void {
-    this.healthText.style.opacity = show ? "1" : "0";
-    this.energyText.style.opacity = show ? "1" : "0";
+    this.healthText.style.opacity = "1";
+    this.energyText.style.opacity = "1";
+    this.el.classList.toggle("drawer-open", show);
   }
 
   // ----------------------------------------------------------
@@ -228,7 +254,11 @@ export class CoreTrio {
     const wrap = document.createElement("div");
     wrap.className = "core-trio";
     wrap.innerHTML = `
-      ${this.buildBarSvg("health-bar", SIZE.HEALTH_BAR_W, SIZE.HEALTH_BAR_H, true)}
+      <section class="hud-stat-panel hud-stat-panel-health">
+        <div class="stat-heading"><span>生命值</span><strong class="health-value">0 / 0</strong></div>
+        ${this.buildBarSvg("health-bar", SIZE.HEALTH_BAR_W, SIZE.HEALTH_BAR_H, true)}
+        <div class="stat-meta health-meta">目前 0%</div>
+      </section>
       <div class="avatar" role="button" aria-label="隊長頭像(點擊施放主動技能)">
         <svg class="cooldown-ring-svg" viewBox="0 0 110 110" width="110" height="110">
           <circle class="cooldown-track" cx="55" cy="55" r="51"
@@ -239,7 +269,18 @@ export class CoreTrio {
         <div class="avatar-face"><img class="avatar-face-img" alt="" draggable="false"><span class="avatar-face-fallback">C</span></div>
         <div class="energy-ready-dot"></div>
       </div>
-      ${this.buildBarSvg("energy-bar", SIZE.ENERGY_BAR_W, SIZE.ENERGY_BAR_H, false)}
+      <section class="hud-energy-stack">
+        <div class="hud-summary-panel">
+          <div class="summary-row summary-active">隊長主動：待命</div>
+          <div class="summary-row summary-periodic">週期蓄能：待命</div>
+          <div class="summary-row summary-weapons">武器冷卻：待命</div>
+        </div>
+        <section class="hud-stat-panel hud-stat-panel-energy">
+          <div class="stat-heading"><span>能量</span><strong class="energy-value">0 / 0</strong></div>
+          ${this.buildBarSvg("energy-bar", SIZE.ENERGY_BAR_W, SIZE.ENERGY_BAR_H, false)}
+          <div class="stat-meta energy-meta">目前 0%</div>
+        </section>
+      </section>
       <div class="tick-dial" aria-label="每秒傷害 Tick 指針"><div class="tick-dial-face"><div class="tick-dial-ring"></div><div class="tick-dial-hand"></div><div class="tick-dial-cap"></div></div><div class="tick-dial-label">1.0s</div></div>
     `;
     return wrap;
@@ -270,5 +311,29 @@ export class CoreTrio {
           style="opacity:0; transition: opacity .15s;">0%</text>
       </svg>
     `;
+  }
+
+  private formatCooldown(remaining: number, energyEnough: boolean): string {
+    if (remaining > 0.05) return `${remaining.toFixed(1)}s`;
+    return energyEnough ? "可施放" : "能量不足";
+  }
+
+  private formatPeriodics(snap: HudSnapshot): string {
+    if (!snap.periodics.length) return "無";
+    return snap.periodics
+      .slice(0, 2)
+      .map((periodic) => `${periodic.label} ${Math.round(periodic.chargeRatio * 100)}%`)
+      .join(" · ");
+  }
+
+  private formatWeapons(snap: HudSnapshot): string {
+    const visible = snap.weapons.filter((weapon) => !weapon.disabledByRoster).slice(0, 3);
+    if (!visible.length) return "無";
+    return visible
+      .map((weapon) => {
+        const remaining = Math.max(0, (1 - weapon.cooldownRatio) * 100);
+        return `${FAMILY_LABEL[weapon.family]} ${Math.round(remaining)}%`;
+      })
+      .join(" · ");
   }
 }

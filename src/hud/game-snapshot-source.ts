@@ -235,13 +235,18 @@ export class GameSnapshotSource {
   snapshot(mode: SnapshotMode): HudSnapshot {
     const runtime = this.readRuntime(mode);
     const hpRatio = runtime.playerMaxHp > 0 ? runtime.playerHp / runtime.playerMaxHp : 0;
+    const energy = this.energySystem.snapshot();
     return {
       captainId: runtime.captainId,
       captainColor: captainColor(runtime.captainId),
       captainPortraitUrl: captainPortraitUrl(runtime.captainId),
+      hpCurrent: runtime.playerHp,
+      hpMax: runtime.playerMaxHp,
       hpRatio,
       shieldRatio: 0,
-      energyRatio: this.energySystem.snapshot().ratio,
+      energyCurrent: energy.current,
+      energyMax: energy.max,
+      energyRatio: energy.ratio,
       active: this.activeSkill.snapshot(),
       weapons: this.weapons.map((weapon) => ({ ...weapon })),
       periodics: this.periodics.map((periodic) => ({ ...periodic })),

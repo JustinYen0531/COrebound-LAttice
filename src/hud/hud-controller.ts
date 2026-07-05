@@ -24,7 +24,6 @@ import {
 } from "./types";
 import { CoreTrio } from "./core-trio";
 import { FormationRings } from "./formation-rings";
-import { SkillStrips } from "./skill-strips";
 import { WeaponDrawer } from "./weapon-drawer";
 import { ItemDrawer } from "./item-drawer";
 import { MemberStatusRow } from "./member-status-row";
@@ -48,7 +47,6 @@ export class HudController {
 
   private readonly core: CoreTrio;
   private readonly rings: FormationRings;
-  private readonly strips: SkillStrips;
   private readonly weaponDrawer: WeaponDrawer;
   private readonly itemDrawer: ItemDrawer;
   private readonly memberStatus: MemberStatusRow;
@@ -78,7 +76,6 @@ export class HudController {
 
     this.core = new CoreTrio();
     this.rings = new FormationRings();
-    this.strips = new SkillStrips();
     this.weaponDrawer = new WeaponDrawer();
     this.itemDrawer = new ItemDrawer();
     this.memberStatus = new MemberStatusRow();
@@ -104,9 +101,6 @@ export class HudController {
     const memberStatusHost = document.createElement("div");
     memberStatusHost.className = "hud-member-status-host";
     memberStatusHost.appendChild(this.memberStatus.el);
-    const stripsHost = document.createElement("div");
-    stripsHost.className = "hud-strips-host";
-    stripsHost.appendChild(this.strips.el);
     const drawerLeft = document.createElement("div");
     drawerLeft.className = "hud-drawer-slot hud-drawer-slot-left";
     drawerLeft.appendChild(this.weaponDrawer.el);
@@ -118,7 +112,6 @@ export class HudController {
       ringsHost,
       drawerLeft,
       drawerRight,
-      stripsHost,
       coreHost,
       memberStatusHost,
       this.hintL,
@@ -141,8 +134,6 @@ export class HudController {
     this.core.render(snap);
     this.memberStatus.render(snap);
     this.rings.render(snap);
-    this.strips.renderWeapons(snap.weapons);
-    this.strips.renderPeriodics(snap.periodics);
     if (this.state === "right_open") this.itemDrawer.render(snap);
     if (this.state === "left_open") this.weaponDrawer.render(snap.weapons);
     // 處理自動收回(移動 / 離開)
