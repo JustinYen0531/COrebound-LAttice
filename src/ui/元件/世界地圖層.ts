@@ -417,7 +417,7 @@ export function 建立世界地圖層(): HTMLElement {
   // 之後每幀只靠 viewBox 平移鏡頭，避免反覆 setAttribute 觸發瀏覽器重算路徑幾何。
   initRegionPaths(regionPaths, dividerPaths);
   createCentralPlaza(zoneSvg, 啟用中細節地板, 啟用高細節條紋);
-  if (啟用中細節地板) createInnerSignatureOverlays(zoneSvg);
+  if (啟用中細節地板) createWorldStripeOverlays(zoneSvg);
   createCornerCoreOverlays(zoneSvg);
   const zoneLabels = MAP_ZONES.map((zone) => createZoneLabel(zone, zoneLayer));
   const objectNodes = new Map<string, HTMLElement>();
@@ -2427,13 +2427,15 @@ function defineWorldFloorPattern(
   patternId: string,
   world: World,
   half: "left" | "right",
+  width: number,
+  height: number,
 ): void {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const pattern = document.createElementNS(svgNamespace, "pattern");
   pattern.setAttribute("id", patternId);
   pattern.setAttribute("patternUnits", "userSpaceOnUse");
-  pattern.setAttribute("width", "420");
-  pattern.setAttribute("height", "420");
+  pattern.setAttribute("width", String(width));
+  pattern.setAttribute("height", String(height));
   pattern.setAttribute("viewBox", `${half === "left" ? 0 : 887} 0 887 887`);
   pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
@@ -3341,10 +3343,10 @@ function createCornerCoreOverlays(host: SVGSVGElement): void {
   group.setAttribute("class", "世界地圖層-角落核心群");
 
   (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
-    const patternId = `corner-core-${world}`;
-    defineWorldFloorPattern(defs, patternId, world, "right");
     const bounds = boundsOf(polygons[world]);
     const rect = coreRectForWorld(world, bounds);
+    const patternId = `corner-core-${world}`;
+    defineWorldFloorPattern(defs, patternId, world, "right", rect.maxX - rect.minX, rect.maxY - rect.minY);
     const node = document.createElementNS(svgNamespace, "rect");
     node.setAttribute("class", `世界地圖層-角落核心 世界地圖層-角落核心-${world}`);
     node.setAttribute("x", String(rect.minX));
@@ -3358,31 +3360,35 @@ function createCornerCoreOverlays(host: SVGSVGElement): void {
   host.append(defs, group);
 }
 
-function createInnerSignatureOverlays(host: SVGSVGElement): void {
+function createWorldStripeOverlays(host: SVGSVGElement): void {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const polygons = buildRegionPolygons();
   const defs = document.createElementNS(svgNamespace, "defs");
   const group = document.createElementNS(svgNamespace, "g");
-  group.setAttribute("class", "世界地圖層-內側紋章群");
+  group.setAttribute("class", "世界地圖層-世界條紋群");
 
   (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
-    const patternId = `inner-signature-${world}`;
-    defineWorldFloorPattern(defs, patternId, world, "left");
+    const patternId = `world-stripe-${world}`;
     const bounds = boundsOf(polygons[world]);
-    const zone = MAP_ZONES.find((entry) => entry.region === world);
-    if (!zone) return;
-    const width = (bounds.maxX - bounds.minX) * 0.28;
-    const height = (bounds.maxY - bounds.minY) * 0.28;
-    const anchorX = zone.centerX * 0.74;
-    const anchorY = zone.centerY * 0.74;
+    const width = bounds.maxX - bounds.minX;
+    const height = bounds.maxY - bounds.minY;
+    defineWorldFloorPattern(defs, patternId, world, "left", width, height);
+    const clipId = `world-stripe-clip-${world}`;
+    const clipPath = document.createElementNS(svgNamespace, "clipPath");
+    clipPath.setAttribute("id", clipId);
+    const clipShape = document.createElementNS(svgNamespace, "path");
+    clipShape.setAttribute("d", polygonToPath(polygons[world], (point) => point));
+    clipPath.appendChild(clipShape);
+    defs.appendChild(clipPath);
     const node = document.createElementNS(svgNamespace, "rect");
-    node.setAttribute("class", `世界地圖層-內側紋章 世界地圖層-內側紋章-${world}`);
-    node.setAttribute("x", String(anchorX - width / 2));
-    node.setAttribute("y", String(anchorY - height / 2));
+    node.setAttribute("class", `世界地圖層-世界條紋 世界地圖層-世界條紋-${world}`);
+    node.setAttribute("x", String(bounds.minX));
+    node.setAttribute("y", String(bounds.minY));
     node.setAttribute("width", String(width));
     node.setAttribute("height", String(height));
     node.setAttribute("fill", `url(#${patternId})`);
-    node.setAttribute("opacity", "0.78");
+    node.setAttribute("clip-path", `url(#${clipId})`);
+    node.setAttribute("opacity", "0.42");
     group.appendChild(node);
   });
 
