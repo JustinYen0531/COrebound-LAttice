@@ -15,10 +15,20 @@ import { MATERIAL_RARITY_LABEL } from "../../data/戰鬥原語";
 import * as 背包 from "../../economy/背包狀態";
 import { POTIONS } from "../../economy/流浪商店";
 import { 選文 } from "../語系";
-import { 取得音樂狀態, 切換音樂靜音, 設定音樂音量 } from "../../audio/音樂管理";
+import { 取得音樂狀態, 切換音樂靜音, 訂閱音樂狀態, 設定音樂音量 } from "../../audio/音樂管理";
 
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
+}
+
+function 世界顯示名(world: string): string {
+  return {
+    geometry: 雙語("幾何世界", "Geometry"),
+    organic: 雙語("有機世界", "Organic"),
+    fractal: 雙語("分形世界", "Fractal"),
+    mechanical: 雙語("機械世界", "Mechanical"),
+    core: 雙語("通關道具", "Clear Item"),
+  }[world] ?? world;
 }
 
 const 分頁清單: 管理介面分頁[] = ["小隊", "背包", "互動", "圖鑑", "地圖"];
@@ -43,26 +53,26 @@ const 互動設施標籤: Record<互動設施, string> = {
 // 模擬背包測試數據
 const bagItems = {
   材料: [
-    { id: "g01_orbit", name: "幾何軌道晶體", star: 1, count: 8, rarity: "common", info: "產於幾何世界，基礎合成素材", world: "geometry" },
-    { id: "g02_vertex:fine", name: "幾何高級頂角石", star: 2, count: 4, rarity: "fine", info: "產於幾何世界，升星必需的高純度石料", world: "geometry" },
-    { id: "o07_germ", name: "有機分裂孢子", star: 1, count: 12, rarity: "common", info: "產於有機世界，生命編織基礎材料", world: "organic" },
-    { id: "f13_origin", name: "分形起源之葉", star: 1, count: 6, rarity: "common", info: "產於分形世界，無限結構的基石", world: "fractal" },
-    { id: "k19_ball", name: "機械合金滾珠", star: 1, count: 9, rarity: "common", info: "產於機械世界，維持轉速的滾珠", world: "mechanical" },
+    { id: "g01_orbit", name: "Geometric Orbit Crystal", star: 1, count: 8, rarity: "common", info: "A basic crafting crystal from Geometry.", world: "geometry" },
+    { id: "g02_vertex:fine", name: "Refined Vertex Stone", star: 2, count: 4, rarity: "fine", info: "A high-purity shard used for rank-ups.", world: "geometry" },
+    { id: "o07_germ", name: "Organic Split Spore", star: 1, count: 12, rarity: "common", info: "A basic life-weaving material from Organic.", world: "organic" },
+    { id: "f13_origin", name: "Fractal Origin Leaf", star: 1, count: 6, rarity: "common", info: "A foundational fragment from the Fractal world.", world: "fractal" },
+    { id: "k19_ball", name: "Mechanical Alloy Ball", star: 1, count: 9, rarity: "common", info: "A rolling component that keeps rotation stable.", world: "mechanical" },
   ],
   消耗品: [
-    { id: "hp_s", name: "微型生命藥水", count: 3, effect: "回復 20% 生命值", desc: "野外開箱取得的廉價合成物" },
-    { id: "hp_b", name: "重灌型活性液", count: 1, effect: "回復 50% 生命值", desc: "晶格核心的高活性萃取液" },
-    { id: "en_s", name: "微量共鳴電池", count: 4, effect: "回復 30% 能量值", desc: "補給位特有的攜帶型電瓶" },
+    { id: "hp_s", name: "Minor Life Flask", count: 3, effect: "Restore 20% HP", desc: "A cheap field-made mix found in crates." },
+    { id: "hp_b", name: "Reinforced Vital Fluid", count: 1, effect: "Restore 50% HP", desc: "A high-activity extract refined from lattice cores." },
+    { id: "en_s", name: "Resonance Cell", count: 4, effect: "Restore 30% Energy", desc: "A portable battery favored by supply roles." },
   ],
   任務物: [
-    { id: "sigil_geo", name: "幾何核心印記", got: false, desc: "擊敗幾何世界守護者獲得的幾何特徵鎖鑰" },
-    { id: "sigil_org", name: "有機核心印記", got: false, desc: "擊敗有機世界守護者獲得的細胞核心鎖鑰" },
-    { id: "sigil_fra", name: "分形核心印記", got: false, desc: "擊敗分形世界守護者獲得的自相似分形鎖鑰" },
-    { id: "sigil_mec", name: "機械核心印記", got: false, desc: "擊敗機械世界守護者獲得的轉速咬合齒輪鎖鑰" },
+    { id: "sigil_geo", name: "Geometry Core Sigil", got: false, desc: "A geometric key earned from the Geometry guardian." },
+    { id: "sigil_org", name: "Organic Core Sigil", got: false, desc: "A living-cell key earned from the Organic guardian." },
+    { id: "sigil_fra", name: "Fractal Core Sigil", got: false, desc: "A self-similar key earned from the Fractal guardian." },
+    { id: "sigil_mec", name: "Mechanical Core Sigil", got: false, desc: "A geared lock-key earned from the Mechanical guardian." },
   ],
   追蹤中: [
-    { id: "track_shard", name: "護盾家族碎片", current: 8, target: 15, source: "熔解幾何特產材料獲取" },
-    { id: "track_gem", name: "原石 (用於技能升級)", current: 850, target: 1200, source: "擊殺怪群與流浪商店出售材料" },
+    { id: "track_shard", name: "Shield Family Shards", current: 8, target: 15, source: "Smelt Geometry materials" },
+    { id: "track_gem", name: "Gems (for skill upgrades)", current: 850, target: 1200, source: "Monster drops and shop sales" },
   ]
 };
 
@@ -135,7 +145,7 @@ function 背包分頁內容(): HTMLElement {
       return def ? {
         no,
         id: def.id,
-        name: def.nameZh,
+        name: 應用程式狀態.額外.語言 === "zh" ? def.nameZh : def.nameEn,
         star: def.star,
         count,
         rarity: def.rarity,
@@ -146,12 +156,12 @@ function 背包分頁內容(): HTMLElement {
     })
     .filter((item): item is NonNullable<typeof item> => item !== null && item.count > 0);
   const potionName: Record<keyof typeof POTIONS, string> = {
-    hp_small: "生命藥水 (小)",
-    hp_big: "生命藥水 (大)",
-    energy_small: "能量藥水 (小)",
-    energy_big: "能量藥水 (大)",
-    hybrid_small: "混合藥水 (小)",
-    hybrid_big: "混合藥水 (大)",
+    hp_small: 雙語("生命藥水 (小)", "Life Potion (S)"),
+    hp_big: 雙語("生命藥水 (大)", "Life Potion (L)"),
+    energy_small: 雙語("能量藥水 (小)", "Energy Potion (S)"),
+    energy_big: 雙語("能量藥水 (大)", "Energy Potion (L)"),
+    hybrid_small: 雙語("混合藥水 (小)", "Hybrid Potion (S)"),
+    hybrid_big: 雙語("混合藥水 (大)", "Hybrid Potion (L)"),
   };
   const realPotions = inventory.藥水明細
     .map(({ id, count }) => {
@@ -160,8 +170,8 @@ function 背包分頁內容(): HTMLElement {
         id,
         name: potionName[id],
         count,
-        effect: `${def.hpRatio > 0 ? `HP +${Math.round(def.hpRatio * 100)}%` : ""}${def.hpRatio > 0 && def.energyRatio > 0 ? " / " : ""}${def.energyRatio > 0 ? `能量 +${Math.round(def.energyRatio * 100)}%` : ""}`,
-        desc: def.big ? "大型藥水，需要在戰鬥中確認後使用。" : "小型藥水，可作為戰鬥補給。",
+        effect: `${def.hpRatio > 0 ? `HP +${Math.round(def.hpRatio * 100)}%` : ""}${def.hpRatio > 0 && def.energyRatio > 0 ? " / " : ""}${def.energyRatio > 0 ? `Energy +${Math.round(def.energyRatio * 100)}%` : ""}`,
+        desc: def.big ? "A larger potion meant for confirmed battle use." : "A smaller potion suited for field supply.",
       } : null;
     })
     .filter((item): item is NonNullable<typeof item> => item !== null && item.count > 0);
@@ -235,13 +245,7 @@ function 背包分頁內容(): HTMLElement {
   } else {
     let specDetails = "";
     if (activeTab === "材料") {
-      const worldName = {
-        geometry: "幾何世界",
-        organic: "有機世界",
-        fractal: "分形世界",
-        mechanical: "機械世界",
-        core: "通關道具",
-      }[選中背包物品.world as "geometry" | "organic" | "fractal" | "mechanical" | "core"] ?? "幾何世界";
+      const worldName = 世界顯示名(選中背包物品.world as string);
       
       specDetails = `
         <div style="display:flex;justify-content:center;margin: 0 0 12px;">
@@ -286,12 +290,12 @@ function 背包分頁內容(): HTMLElement {
 // ============================================================
 // 模擬地圖標記列表
 const mapMarkers = [
-  { id: "m_player", icon: "🌀", label: "玩家小隊 (當前位置)", x: 160, y: 160, zone: "中央廣場", desc: "目前位於交匯的廣場區域，可在此裝配 COLA Boss。" },
-  { id: "m_arch", icon: "🛠️", label: "幾何裝備工作台", x: 60, y: 60, zone: "幾何世界", desc: "用於成員合成升星與技能升級，靠近解鎖。" },
-  { id: "m_furnace", icon: "🔥", label: "分形家族熔爐", x: 260, y: 70, zone: "分形世界", desc: "投放分形生物材料熔解為 Mine/Laser 碎片，+20% 地緣加成。" },
-  { id: "m_statue", icon: "🗿", label: "孢粉初始化雕像", x: 80, y: 250, zone: "有機世界", desc: "解鎖角色「孢粉(0➔1★)」的遠古雕像遺留處。" },
-  { id: "m_shop", icon: "🛒", label: "機械流浪商店", x: 240, y: 240, zone: "機械世界", desc: "購買大生命與共鳴電瓶，或將機械合金出售為原石。" },
-  { id: "m_altar", icon: "🔱", label: "世界召喚祭壇", x: 160, y: 50, zone: "北方幾何邊疆", desc: "當集滿精英擊殺進度時，可召喚 T3 幾何守護者 Boss。" },
+  { id: "m_player", icon: "🌀", label: "Player Squad (Current Position)", x: 160, y: 160, zone: "Central Plaza", desc: "Your squad is standing in the hub plaza where the COLA route converges." },
+  { id: "m_arch", icon: "🛠️", label: "Geometry Workbench", x: 60, y: 60, zone: "Geometry", desc: "Used for member crafting, rank-ups, and skill upgrades. Unlocks on approach." },
+  { id: "m_furnace", icon: "🔥", label: "Fractal Family Forge", x: 260, y: 70, zone: "Fractal", desc: "Smelts Fractal materials into Mine/Laser shards with a +20% local bonus." },
+  { id: "m_statue", icon: "🗿", label: "Spore Awakening Statue", x: 80, y: 250, zone: "Organic", desc: "An ancient statue used to unlock Spore from 0 to 1★." },
+  { id: "m_shop", icon: "🛒", label: "Mechanical Wander Shop", x: 240, y: 240, zone: "Mechanical", desc: "Buy major healing and resonance batteries, or sell alloys for gems." },
+  { id: "m_altar", icon: "🔱", label: "World Summoning Altar", x: 160, y: 50, zone: "North Geometry Frontier", desc: "Summon the T3 Geometry guardian once the elite kill condition is full." },
 ];
 
 function 地圖分頁內容(): HTMLElement {
@@ -363,10 +367,10 @@ function 地圖分頁內容(): HTMLElement {
 
   // 四大世界文字標籤標記
   const zonesText = [
-    { text: "🧱 幾何世界", x: 30, y: 40 },
-    { text: "🔮 分形世界", x: 230, y: 40 },
-    { text: "🌿 有機世界", x: 30, y: 290 },
-    { text: "⚙️ 機械世界", x: 230, y: 290 },
+    { text: "🧱 Geometry", x: 30, y: 40 },
+    { text: "🔮 Fractal", x: 230, y: 40 },
+    { text: "🌿 Organic", x: 30, y: 290 },
+    { text: "⚙️ Mechanical", x: 230, y: 290 },
   ];
   zonesText.forEach(zt => {
     const text = document.createElementNS(SVG_NS, "text");
@@ -455,7 +459,7 @@ function 地圖分頁內容(): HTMLElement {
     坐標提示.style.lineHeight = "1.5";
     坐標提示.style.color = "#8d93ad";
     坐標提示.innerHTML = `
-      <div>目前召喚中心：<span style="color:#fff;font-family:monospace;">X ${Math.round(玩家位置.x)} / Y ${Math.round(玩家位置.y)}</span></div>
+      <div>${雙語("目前召喚中心", "Current Summon Center")}：<span style="color:#fff;font-family:monospace;">X ${Math.round(玩家位置.x)} / Y ${Math.round(玩家位置.y)}</span></div>
       <div style="margin-top:4px;">${雙語("召喚時會直接以你現在站的位置為中心，丟到附近做即時碰撞測試。", "Summons will use your current standing point as the center and drop nearby for live collision testing.")}</div>
     `;
     補充區.appendChild(坐標提示);
@@ -609,15 +613,21 @@ export function 渲染管理介面(容器: HTMLElement) {
 
 function 建立管理音量控制(): HTMLElement {
   const wrap = document.createElement("div");
-  wrap.style.display = "flex";
+  wrap.style.display = "grid";
+  wrap.style.gridTemplateColumns = "auto auto minmax(112px, 148px) auto";
   wrap.style.alignItems = "center";
   wrap.style.gap = "8px";
   wrap.style.marginLeft = "auto";
+  wrap.style.padding = "8px 12px";
+  wrap.style.borderRadius = "999px";
+  wrap.style.background = "rgba(255,255,255,0.72)";
+  wrap.style.border = "1px solid rgba(44, 58, 91, 0.08)";
 
   const label = document.createElement("span");
-  label.textContent = 雙語("音量", "Volume");
+  label.textContent = 雙語("音樂", "Music");
   label.style.fontSize = "0.76rem";
-  label.style.color = "#8d93ad";
+  label.style.fontWeight = "700";
+  label.style.color = "#23314f";
 
   const muteBtn = document.createElement("button");
   muteBtn.className = "二級按鈕";
@@ -629,13 +639,28 @@ function 建立管理音量控制(): HTMLElement {
   slider.min = "0";
   slider.max = "100";
   slider.step = "1";
-  slider.style.width = "120px";
+  slider.style.width = "100%";
   slider.style.accentColor = "#4d8dff";
+
+  const value = document.createElement("span");
+  value.style.fontSize = "0.74rem";
+  value.style.fontWeight = "700";
+  value.style.color = "#5c6a85";
+  value.style.minWidth = "42px";
+  value.style.textAlign = "right";
+
+  const track = document.createElement("div");
+  track.style.gridColumn = "1 / -1";
+  track.style.fontSize = "0.7rem";
+  track.style.color = "#7080a3";
+  track.style.textAlign = "right";
 
   const render = () => {
     const state = 取得音樂狀態();
     slider.value = String(Math.round(state.volume * 100));
     muteBtn.textContent = state.muted ? 雙語("取消靜音", "Unmute") : 雙語("靜音", "Mute");
+    value.textContent = state.muted ? 雙語("已靜音", "Muted") : `${Math.round(state.volume * 100)}%`;
+    track.textContent = `${雙語("目前曲目", "Now Playing")}: ${state.trackLabel}`;
   };
 
   muteBtn.onclick = () => {
@@ -647,7 +672,16 @@ function 建立管理音量控制(): HTMLElement {
     render();
   };
 
-  wrap.append(label, muteBtn, slider);
+  const unsubscribe = 訂閱音樂狀態(render);
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(wrap)) {
+      unsubscribe();
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  wrap.append(label, muteBtn, slider, value, track);
   render();
   return wrap;
 }
