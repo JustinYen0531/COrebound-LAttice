@@ -2196,9 +2196,20 @@ button.禁用:hover {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
   pointer-events: none;
+}
+.角色迷你頭像-星級 {
+  position: absolute;
+  right: 5%;
+  bottom: 3%;
+  z-index: 2;
+  color: #ffd24d;
+  font-size: 18%;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  text-shadow: 0 1px 2px #000, 0 0 2px #000;
 }
 .角色迷你頭像-背光,
 .角色迷你頭像-底盤,

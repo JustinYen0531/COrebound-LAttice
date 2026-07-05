@@ -63,13 +63,8 @@ export function 生成角色迷你頭像HTML(memberId: string, star: number, ext
     .join(" ");
   return `
     <span class="${classes}" style="${建立樣式字串(memberId, star)}" aria-hidden="true">
-      <span class="角色迷你頭像-背光"></span>
-      <span class="角色迷你頭像-底盤"></span>
-      <span class="角色迷你頭像-左翼"></span>
-      <span class="角色迷你頭像-右翼"></span>
-      <span class="角色迷你頭像-輪廓"></span>
-      <span class="角色迷你頭像-冠飾"></span>
-      <span class="角色迷你頭像-核心"></span>
+      <img class="角色迷你頭像-icon" src="/assets/transparent-portraits/avatars/${member.id}.png" alt="" draggable="false" />
+      <span class="角色迷你頭像-星級">${"★".repeat(Math.max(1, Math.min(3, star)))}</span>
     </span>
   `;
 }

@@ -108,9 +108,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.42);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
-.hud-member-status-card--inner { --member-accent: #65d9ff; }
-.hud-member-status-card--middle { --member-accent: #ffd36a; }
-.hud-member-status-card--outer { --member-accent: #ff7f9d; }
+.hud-member-status-card--protect { --member-accent: #4d8dff; }
+.hud-member-status-card--firepower { --member-accent: #ff4d5e; }
+.hud-member-status-card--supply { --member-accent: #ffd24d; }
 .hud-member-avatar {
   width: 34px;
   height: 34px;

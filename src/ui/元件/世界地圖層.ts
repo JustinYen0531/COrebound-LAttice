@@ -1150,19 +1150,7 @@ export function 建立世界地圖層(): HTMLElement {
       const visible = isVisible(screenPos, viewport);
       setProjectedNodePosition(m.node, m.pos);
       m.node.style.display = visible ? "block" : "none";
-      // 存活怪物常駐血條，接觸傷害與遠程傷害都能立即看出生命變化。
-      if (visible && m.inst.hp > 0) {
-        const bar = m.node.querySelector<HTMLElement>(".世界地圖層-怪物-血條")!;
-        const fill = bar.querySelector<HTMLElement>(".世界地圖層-怪物-血條填充")!;
-        const label = bar.querySelector<HTMLElement>(".世界地圖層-怪物-血條文字")!;
-        const hpPercent = Math.max(0, Math.min(100, (m.inst.hp / m.inst.maxHp) * 100));
-        const displayPercent = hpPercent >= 100 ? 100 : Math.max(10, Math.floor(hpPercent / 10) * 10);
-        bar.style.display = "block";
-        fill.style.width = `${displayPercent}%`;
-        label.textContent = `${displayPercent}%`;
-      } else {
-        m.node.querySelector<HTMLElement>(".世界地圖層-怪物-血條")!.style.display = "none";
-      }
+      更新怪物血條(m, visible);
     }
 
     // 投射物（佔位美術：小圓點，我方金色/敵方紅色），與其他物件共用同一套俯視鏡頭。
@@ -1417,6 +1405,7 @@ export function 建立世界地圖層(): HTMLElement {
       });
       const appliedDamage = Math.min(m.inst.hp, res.damage);
       m.inst.hp = Math.max(0, m.inst.hp - appliedDamage);
+      更新怪物血條(m);
       hitTargets.add(m.inst.id);
       if (!訓練道場中) 記錄對局傷害(appliedDamage);
       m.lastHitMs = performance.now();
@@ -1515,6 +1504,19 @@ export function 建立世界地圖層(): HTMLElement {
     return Math.max(96, Math.min(210, 82 + Math.sqrt(Math.max(0, weight)) * 9));
   }
 
+  function 更新怪物血條(monster: MonsterRuntime, visible = true): void {
+    const bar = monster.node.querySelector<HTMLElement>(".世界地圖層-怪物-血條")!;
+    if (!visible || monster.inst.hp <= 0) {
+      bar.style.display = "none";
+      return;
+    }
+    const hpPercent = Math.max(0, Math.min(100, (monster.inst.hp / monster.inst.maxHp) * 100));
+    const displayPercent = hpPercent >= 100 ? 100 : Math.max(10, Math.floor(hpPercent / 10) * 10);
+    bar.style.display = "block";
+    bar.querySelector<HTMLElement>(".世界地圖層-怪物-血條填充")!.style.width = `${displayPercent}%`;
+    bar.querySelector<HTMLElement>(".世界地圖層-怪物-血條文字")!.textContent = `${displayPercent}%`;
+  }
+
   /** 讓接觸判定貼合畫面上真正展開的最外圈，而不是用重量猜一個較小的中心圓。 */
   function 玩家圖騰碰撞半徑(): number {
     const ringRadius = PLAYER_RING_OUTER_RADIUS[玩家最大展開層級];
@@ -1588,6 +1590,7 @@ export function 建立世界地圖層(): HTMLElement {
           const runtime = contacts.find((monster) => monster.inst.id === result.id);
           if (!runtime) continue;
           runtime.inst.hp = Math.max(0, runtime.inst.hp - result.damage);
+          更新怪物血條(runtime);
           if (result.dead) runtime.node.style.display = "none";
           dealtTotal += result.damage;
         }
@@ -1662,6 +1665,7 @@ export function 建立世界地圖層(): HTMLElement {
         if (!runtime) continue;
         const appliedDamage = Math.min(runtime.inst.hp, result.damage);
         runtime.inst.hp = Math.max(0, runtime.inst.hp - appliedDamage);
+        更新怪物血條(runtime);
         記錄對局傷害(appliedDamage);
         if (result.dead) runtime.node.style.display = "none";
       }
