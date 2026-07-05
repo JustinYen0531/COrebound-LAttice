@@ -678,6 +678,14 @@ export function 建立世界地圖層(): HTMLElement {
   exclaim.onclick = () => 應用程式狀態.點擊驚嘆號提示();
   canvas.appendChild(exclaim);
 
+  const managementButton = document.createElement("button");
+  managementButton.className = "世界地圖層-管理按鈕";
+  managementButton.type = "button";
+  managementButton.textContent = "管理介面";
+  managementButton.title = "打開管理介面";
+  managementButton.onclick = () => 應用程式狀態.進入管理介面("小隊");
+  canvas.appendChild(managementButton);
+
   const pressed = new Set<string>();
   let rafId = 0;
   let destroyed = false;
@@ -1716,6 +1724,12 @@ export function 建立世界地圖層(): HTMLElement {
     }
     if (event.code === "KeyE") {
       event.preventDefault();
+      if (!event.repeat) {
+        if (應用程式狀態.額外.靠近的互動設施) {
+          應用程式狀態.點擊驚嘆號提示();
+          return;
+        }
+      }
       if (!event.repeat && !訓練道場中) {
         const nearestChest = worldChests
           .map((chest) => ({ chest, distance: Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) }))
