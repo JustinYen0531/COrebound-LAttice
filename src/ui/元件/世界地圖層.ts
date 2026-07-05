@@ -495,6 +495,16 @@ export function 建立世界地圖層(): HTMLElement {
   miniMap.className = "世界地圖層-小地圖";
   canvas.appendChild(miniMap);
 
+  const miniMapTitle = document.createElement("div");
+  miniMapTitle.className = "世界地圖層-小地圖標題";
+  miniMapTitle.textContent = "世界總覽";
+  miniMap.appendChild(miniMapTitle);
+
+  const miniMapHint = document.createElement("div");
+  miniMapHint.className = "世界地圖層-小地圖說明";
+  miniMapHint.textContent = "點一下放大，再點一下收起";
+  miniMap.appendChild(miniMapHint);
+
   const miniMapInner = document.createElement("div");
   miniMapInner.className = "世界地圖層-小地圖內層";
   miniMap.appendChild(miniMapInner);
@@ -531,18 +541,36 @@ export function 建立世界地圖層(): HTMLElement {
   const miniObjectNodes = new Map<string, HTMLElement>();
   const miniMarkers: MiniMapMarker[] = [];
   for (const object of MAP_OBJECTS) {
+    const marker = miniMarkerForObject(object);
     const node = document.createElement("div");
     node.className = `世界地圖層-小地圖點 世界地圖層-小地圖點-${object.kind}`;
+    node.title = marker.title;
+    const icon = document.createElement("span");
+    icon.className = "世界地圖層-小地圖點圖示";
+    icon.textContent = marker.icon;
+    const label = document.createElement("span");
+    label.className = "世界地圖層-小地圖點標籤";
+    label.textContent = marker.label;
+    node.append(icon, label);
     miniMapInner.appendChild(node);
     miniObjectNodes.set(object.id, node);
-    miniMarkers.push({ id: object.id, x: object.x, y: object.y });
+    miniMarkers.push(marker);
   }
   for (const env of ENV_OBJECTS) {
+    const marker = miniMarkerForEnvObject(env);
     const node = document.createElement("div");
     node.className = `世界地圖層-小地圖點 世界地圖層-小地圖點-環境物件 世界地圖層-小地圖點-${env.category}`;
+    node.title = marker.title;
+    const icon = document.createElement("span");
+    icon.className = "世界地圖層-小地圖點圖示";
+    icon.textContent = marker.icon;
+    const label = document.createElement("span");
+    label.className = "世界地圖層-小地圖點標籤";
+    label.textContent = marker.label;
+    node.append(icon, label);
     miniMapInner.appendChild(node);
     miniObjectNodes.set(env.id, node);
-    miniMarkers.push({ id: env.id, x: env.x, y: env.y });
+    miniMarkers.push(marker);
   }
 
   const miniPlayer = document.createElement("div");
@@ -2113,6 +2141,49 @@ interface MiniMapMarker {
   id: string;
   x: number;
   y: number;
+  icon: string;
+  label: string;
+  title: string;
+}
+
+function miniMarkerForObject(object: MapObject): MiniMapMarker {
+  const shortLabel = (() => {
+    if (object.kind === "合成") {
+      const match = object.id.match(/_(\d+)$/);
+      return `工作台${match?.[1] ?? ""}`;
+    }
+    if (object.kind === "雕像") return object.label.replace(" 雕像", "");
+    if (object.kind === "商店") return "商店";
+    if (object.kind === "熔爐") return object.label;
+    if (object.summonType === "cola") return "COLA";
+    return "守護祭壇";
+  })();
+
+  return {
+    id: object.id,
+    x: object.x,
+    y: object.y,
+    icon: FACILITY_GLYPH[object.kind],
+    label: shortLabel,
+    title: object.detail ?? object.label,
+  };
+}
+
+function miniMarkerForEnvObject(env: EnvObjectInstance): MiniMapMarker {
+  const icon = env.category === "障礙物"
+    ? "🪨"
+    : env.category === "資源礦物"
+      ? "💎"
+      : "⚙️";
+
+  return {
+    id: env.id,
+    x: env.x,
+    y: env.y,
+    icon,
+    label: env.nameZh,
+    title: `${env.nameZh}｜${env.category}`,
+  };
 }
 
 /** 建立一隻怪物的 DOM 節點（去背立繪 + 影子，比照環境物件的視覺結構）。 */
@@ -2289,6 +2360,13 @@ function renderMiniMapDynamic(
 ): void {
   const width = host.clientWidth || 176;
   const height = host.clientHeight || 176;
+  const lastWidth = Number(host.dataset.lastWidth ?? "0");
+  const lastHeight = Number(host.dataset.lastHeight ?? "0");
+  const sizeChanged = width !== lastWidth || height !== lastHeight;
+  if (sizeChanged) {
+    host.dataset.lastWidth = String(width);
+    host.dataset.lastHeight = String(height);
+  }
   const toMiniX = (x: number) => ((x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width;
   const toMiniY = (y: number) => ((y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY)) * height;
 
@@ -2297,7 +2375,7 @@ function renderMiniMapDynamic(
   for (const marker of markers) {
     const node = objectNodes.get(marker.id);
     if (!node) continue;
-    if (node.dataset.placed === "1") continue;
+    if (!sizeChanged && node.dataset.placed === "1") continue;
     node.style.left = `${toMiniX(marker.x)}px`;
     node.style.top = `${toMiniY(marker.y)}px`;
     node.dataset.placed = "1";

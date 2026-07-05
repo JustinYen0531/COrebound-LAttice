@@ -2708,21 +2708,66 @@ button.禁用:hover {
   position: absolute;
   top: 24px;
   right: 24px;
+  left: auto;
   width: 196px;
   height: 196px;
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(8, 12, 20, 0.72);
+  border-radius: 18px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.34);
   backdrop-filter: blur(8px);
   z-index: 25;
-  transition: width 160ms ease, height 160ms ease, padding 160ms ease, transform 160ms ease;
+  overflow: hidden;
+  transition:
+    width 180ms ease,
+    height 180ms ease,
+    padding 180ms ease,
+    transform 180ms ease,
+    top 180ms ease,
+    left 180ms ease,
+    right 180ms ease,
+    box-shadow 180ms ease;
 }
 .世界地圖層-小地圖.世界地圖層-小地圖-放大 {
-  width: 360px;
-  height: 360px;
-  padding: 14px;
-  transform: translate(-8px, 8px);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  width: min(76vw, 760px);
+  height: min(76vh, 760px);
+  padding: 24px 24px 18px;
+  transform: translate(-50%, -50%);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 0 0 9999px rgba(4, 8, 14, 0.55), 0 24px 70px rgba(0, 0, 0, 0.48);
+  z-index: 160;
+}
+.世界地圖層-小地圖標題,
+.世界地圖層-小地圖說明 {
+  position: absolute;
+  left: 24px;
+  z-index: 2;
+  color: rgba(255, 250, 240, 0.92);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  pointer-events: none;
+}
+.世界地圖層-小地圖標題 {
+  top: 12px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.世界地圖層-小地圖說明 {
+  top: 42px;
+  font-size: 12px;
+  color: rgba(236, 228, 210, 0.82);
+}
+.世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖標題,
+.世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖說明 {
+  opacity: 1;
+  transform: translateY(0);
 }
 .世界地圖層-小地圖內層 {
   position: relative;
@@ -2730,9 +2775,14 @@ button.禁用:hover {
   height: 100%;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
   background:
     radial-gradient(circle at 50% 50%, rgba(111, 140, 255, 0.1), transparent 60%),
     rgba(7, 10, 17, 0.9);
+}
+.世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖內層 {
+  margin-top: 44px;
+  height: calc(100% - 44px);
 }
 .世界地圖層-小地圖片 {
   opacity: 0.86;
@@ -2803,19 +2853,54 @@ button.禁用:hover {
 .世界地圖層-小地圖玩家 {
   position: absolute;
   transform: translate(-50%, -50%);
-  border-radius: 50%;
 }
 .世界地圖層-小地圖點 {
-  width: 4px;
-  height: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 10px;
+  height: 10px;
+  padding: 0;
   background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.45);
+  color: transparent;
+  overflow: hidden;
+  white-space: nowrap;
 }
 .世界地圖層-小地圖點-環境物件 {
-  width: 6px;
-  height: 6px;
-  border-radius: 32%;
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.42);
+}
+.世界地圖層-小地圖點圖示,
+.世界地圖層-小地圖點標籤 {
+  display: none;
+}
+.世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖點 {
+  width: auto;
+  height: 22px;
+  max-width: 170px;
+  padding: 0 8px 0 6px;
+  gap: 6px;
+  color: #10161f;
+  background: rgba(255, 252, 244, 0.94);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+.世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖點圖示,
+.世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖點標籤 {
+  display: block;
+}
+.世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖點圖示 {
+  font-size: 12px;
+  line-height: 1;
+}
+.世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖點標籤 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
 }
 .世界地圖層-小地圖點-熔爐 { background: #ff8a3d; }
 .世界地圖層-小地圖點-合成 { background: #85b7ff; }
@@ -2828,6 +2913,7 @@ button.禁用:hover {
 .世界地圖層-小地圖玩家 {
   width: 8px;
   height: 8px;
+  border-radius: 50%;
   background: #6f8cff;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 0 10px rgba(111, 140, 255, 0.8);
   z-index: 3;
