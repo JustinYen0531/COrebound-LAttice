@@ -53,6 +53,11 @@ interface RosterRuntime {
   familyStars: Record<WeaponFamily, number[]>;
 }
 
+function captainPortraitUrl(captainId: CaptainId): string {
+  if (captainId === "conductor") return "/assets/images/ui/hud/conductor-codex-head.png";
+  return `/assets/transparent-portraits/captains/${captainId}_form4_head.png`;
+}
+
 function captainColor(captainId: CaptainId): string {
   return 隊長清單.find((captain) => captain.id === captainId)?.代表色 ?? "#3b82f6";
 }
@@ -88,6 +93,8 @@ export class GameSnapshotSource {
     { id: "a_focus", label: "武裝連動", chargeRatio: 0.8, kind: "auto" },
   ];
   private readonly potions: PotionItem[] = STATIC_POTIONS.map((potion) => ({ ...potion }));
+  private tickProgress = 0;
+  private tickPulseAt = 0;
 
   setMoving(moving: boolean): void {
     this.moving = moving;
@@ -112,6 +119,8 @@ export class GameSnapshotSource {
       periodic.chargeRatio = periodicRatios[index] ?? 0;
     });
     this.potions.splice(0, this.potions.length, ...STATIC_POTIONS.map((potion) => ({ ...potion })));
+    this.tickProgress = 0;
+    this.tickPulseAt = 0;
   }
 
   tick(dt: number): void {
@@ -128,6 +137,11 @@ export class GameSnapshotSource {
       const speed = periodic.kind === "periodic" ? (this.moving ? 0.42 : 0.18) : 0.14;
       periodic.chargeRatio += dt * speed;
       if (periodic.chargeRatio >= 1) periodic.chargeRatio -= 1;
+    }
+    this.tickProgress += dt;
+    while (this.tickProgress >= 1) {
+      this.tickProgress -= 1;
+      this.tickPulseAt = Date.now();
     }
   }
 
@@ -222,7 +236,9 @@ export class GameSnapshotSource {
     const runtime = this.readRuntime(mode);
     const hpRatio = runtime.playerMaxHp > 0 ? runtime.playerHp / runtime.playerMaxHp : 0;
     return {
+      captainId: runtime.captainId,
       captainColor: captainColor(runtime.captainId),
+      captainPortraitUrl: captainPortraitUrl(runtime.captainId),
       hpRatio,
       shieldRatio: 0,
       energyRatio: this.energySystem.snapshot().ratio,
@@ -232,6 +248,8 @@ export class GameSnapshotSource {
       formation: this.buildFormation(runtime.roster, hpRatio),
       lastHitAt: this.lastHitAt,
       moving: this.moving,
+      tickProgress: this.tickProgress,
+      tickPulseAt: this.tickPulseAt,
       potions: mode === "formal"
         ? this.buildFormalPotions()
         : this.potions.filter((potion) => potion.count > 0).map((potion) => ({ ...potion })),

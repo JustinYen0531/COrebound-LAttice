@@ -10,6 +10,7 @@
 
 :host,
 .hud-root {
+  --hud-scale: 2;
   /* 色彩變數：中性色以黑白為主，僅職責色(藍/紅/黃)與生命階梯色帶有語意，其餘一律線稿化 */
   --c-hp-full: #e9ecf8;
   --c-hp-warn: #e8b64d;
@@ -63,9 +64,10 @@
  * ============================================================ */
 .hud-core-host {
   position: absolute;
-  bottom: 40px;
+  bottom: 72px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(var(--hud-scale));
+  transform-origin: center bottom;
   display: flex;
   align-items: center;
   gap: 0;
@@ -84,8 +86,9 @@
 .hud-member-status-host {
   position: absolute;
   left: 50%;
-  bottom: 4px;
-  transform: translateX(-50%);
+  bottom: 10px;
+  transform: translateX(-50%) scale(var(--hud-scale));
+  transform-origin: center bottom;
   z-index: 11;
   pointer-events: none;
 }
@@ -228,6 +231,17 @@
   color: #05060a;
   background: var(--c-ink) !important;
   border: 2px solid rgba(5, 6, 10, 0.5);
+  overflow: hidden;
+}
+.core-trio .avatar-face-img {
+  width: 100%;
+  height: 100%;
+  display: none;
+  object-fit: cover;
+}
+.core-trio .avatar-face-fallback {
+  display: block;
+  line-height: 1;
 }
 .core-trio .cooldown-ring-svg {
   position: absolute;
@@ -257,6 +271,59 @@
   background: var(--c-energy);
   border-color: var(--c-energy);
   box-shadow: 0 0 8px var(--c-energy);
+}
+.core-trio .tick-dial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 74px;
+}
+.core-trio .tick-dial-face {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: rgba(4, 5, 9, 0.88);
+  border: 1px solid var(--c-border);
+  box-shadow: inset 0 0 0 1px var(--c-line-soft);
+}
+.core-trio .tick-dial-ring {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  border: 1px dashed var(--c-gold-soft);
+}
+.core-trio .tick-dial-hand {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 2px;
+  height: 23px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--c-energy), rgba(255, 210, 77, 0.2));
+  transform-origin: 50% calc(100% - 1px);
+  transition: transform 0.08s linear;
+}
+.core-trio .tick-dial-cap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--c-energy);
+  box-shadow: 0 0 8px rgba(255, 210, 77, 0.45);
+}
+.core-trio .tick-dial-label {
+  color: var(--c-ink);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.core-trio .tick-dial.pulse .tick-dial-face {
+  box-shadow: 0 0 16px rgba(255, 210, 77, 0.5), inset 0 0 0 1px var(--c-line-soft);
 }
 
 /* 生命/能量條：切角端頭取代圓角，呼應世界地板/按鈕的切角語言 */
@@ -301,9 +368,10 @@
  * ============================================================ */
 .hud-rings-host {
   position: absolute;
-  bottom: 40px;
+  bottom: 72px;
   left: 50%;
-  transform: translate(-50%, 65px);
+  transform: translate(-50%, 65px) scale(var(--hud-scale));
+  transform-origin: center bottom;
   width: 392px;
   height: 392px;
   margin-bottom: 0;
@@ -347,9 +415,10 @@
  * ============================================================ */
 .hud-strips-host {
   position: absolute;
-  bottom: 40px;
+  bottom: 72px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(var(--hud-scale));
+  transform-origin: center bottom;
   pointer-events: auto;
   z-index: 8;
   display: flex;
@@ -423,7 +492,7 @@
  * ============================================================ */
 .hud-drawer-slot {
   position: absolute;
-  bottom: 40px;
+  bottom: 72px;
   pointer-events: auto;
   z-index: 11;
 }
@@ -744,7 +813,7 @@
  * ============================================================ */
 .hud-hint {
   position: absolute;
-  bottom: 90px;
+  bottom: 150px;
   font-size: 10.5px;
   color: var(--c-ink-dim);
   opacity: 0;
@@ -757,11 +826,13 @@
 }
 .hud-hint-l {
   left: calc(50% - 200px);
-  transform: translateX(-100%);
+  transform: translateX(-100%) scale(var(--hud-scale));
+  transform-origin: right bottom;
 }
 .hud-hint-r {
   right: calc(50% - 200px);
-  transform: translateX(100%);
+  transform: translateX(100%) scale(var(--hud-scale));
+  transform-origin: left bottom;
 }
 .hud-suppress-toast {
   position: absolute;

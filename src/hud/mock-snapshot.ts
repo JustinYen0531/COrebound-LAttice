@@ -26,6 +26,8 @@ export class MockSnapshotSource {
   private shield = 0.2;
   private moving = false;
   private lastHitAt = 0;
+  private tickProgress = 0;
+  private tickPulseAt = 0;
   private t = 0; // 模擬時間秒
   private readonly energySystem = new EnergySystem({
     max: 100,
@@ -110,7 +112,9 @@ export class MockSnapshotSource {
     const active = this.activeSkill.snapshot();
 
     return {
+      captainId: "conductor",
       captainColor: "#3b82f6",
+      captainPortraitUrl: "/assets/images/ui/hud/conductor-codex-head.png",
       hpRatio: this.hp,
       shieldRatio: this.shield,
       energyRatio: energy.ratio,
@@ -120,6 +124,8 @@ export class MockSnapshotSource {
       formation: this.buildFormation(),
       lastHitAt: this.lastHitAt,
       moving: this.moving,
+      tickProgress: this.tickProgress,
+      tickPulseAt: this.tickPulseAt,
       potions: this.potions.filter((p) => p.count > 0).map((p) => ({ ...p })),
       roster: this.roster.map((m) => ({ ...m })),
     };
@@ -166,6 +172,13 @@ export class MockSnapshotSource {
       const speed = p.kind === "periodic" ? 0.25 : 0.18;
       p.chargeRatio = (p.chargeRatio + dt * speed) % 1.05;
       if (p.chargeRatio > 1) p.chargeRatio = 1; // 滿了等待觸發
+    }
+    this.tickProgress += dt;
+    while (this.tickProgress >= 1) {
+      this.tickProgress -= 1;
+      this.tickPulseAt = Date.now();
+      this.hp = Math.max(0, this.hp - 0.03);
+      this.lastHitAt = this.tickPulseAt;
     }
     // 護盾緩慢衰減
     this.shield = Math.max(0, this.shield - dt * 0.01);

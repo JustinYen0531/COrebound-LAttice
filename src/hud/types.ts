@@ -212,8 +212,10 @@ export interface ActiveSkillState {
 
 /** 完整的 HUD 資料快照,每幀由上層推入 */
 export interface HudSnapshot {
+  captainId: string;
   /** 隊長代表色(影響生命條與頭像主色) */
   captainColor: string;
+  captainPortraitUrl?: string;
   /** 當前生命比例 0~1 */
   hpRatio: number;
   /** 護盾比例 0~1(相對於最大生命) */
@@ -232,6 +234,8 @@ export interface HudSnapshot {
   lastHitAt: number;
   /** 小隊是否正在移動(影響展開/旋轉) */
   moving: boolean;
+  tickProgress: number;
+  tickPulseAt: number;
   /** 背包:可拖曳藥水(右滑抽屜用) */
   potions: PotionItem[];
   /** 隊員狀態條資料(右滑抽屜用) */

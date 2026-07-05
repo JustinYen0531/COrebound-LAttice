@@ -68,11 +68,16 @@ export class CoreTrio {
   private readonly cooldownRing: SVGCircleElement;
   private readonly cooldownTrack: SVGCircleElement;
   private readonly avatarFace: HTMLDivElement;
+  private readonly avatarImg: HTMLImageElement;
+  private readonly avatarFallback: HTMLSpanElement;
   private readonly avatarBtn: HTMLDivElement;
   private readonly energyFill: SVGPathElement;
   private readonly energyRoot: SVGSVGElement;
   private readonly energyText: SVGTextElement;
   private readonly energyReadyDot: HTMLDivElement;
+  private readonly tickDial: HTMLDivElement;
+  private readonly tickHand: HTMLDivElement;
+  private readonly tickLabel: HTMLDivElement;
 
   private readonly cooldownCircumference: number;
   private snapshot: HudSnapshot | null = null;
@@ -91,11 +96,16 @@ export class CoreTrio {
     this.cooldownTrack = this.el.querySelector(".cooldown-track") as SVGCircleElement;
     this.cooldownRing = this.el.querySelector(".cooldown-ring") as SVGCircleElement;
     this.avatarFace = this.el.querySelector(".avatar-face") as HTMLDivElement;
+    this.avatarImg = this.el.querySelector(".avatar-face-img") as HTMLImageElement;
+    this.avatarFallback = this.el.querySelector(".avatar-face-fallback") as HTMLSpanElement;
     this.avatarBtn = this.el.querySelector(".avatar") as HTMLDivElement;
     this.energyRoot = this.el.querySelector(".energy-bar") as SVGSVGElement;
     this.energyFill = this.energyRoot.querySelector(".bar-fill") as SVGPathElement;
     this.energyText = this.energyRoot.querySelector(".bar-text") as SVGTextElement;
     this.energyReadyDot = this.el.querySelector(".energy-ready-dot") as HTMLDivElement;
+    this.tickDial = this.el.querySelector(".tick-dial") as HTMLDivElement;
+    this.tickHand = this.el.querySelector(".tick-dial-hand") as HTMLDivElement;
+    this.tickLabel = this.el.querySelector(".tick-dial-label") as HTMLDivElement;
 
     // 初始化冷卻環幾何
     this.cooldownTrack.setAttribute("stroke-dasharray", `${this.cooldownCircumference}`);
@@ -128,7 +138,8 @@ export class CoreTrio {
     this.snapshot = snap;
     this.renderHealth(snap);
     this.renderEnergy(snap);
-    this.renderAvatar(snap.active, snap.captainColor);
+    this.renderAvatar(snap.active, snap.captainColor, snap.captainPortraitUrl, snap.captainId);
+    this.renderTick(snap.tickProgress, snap.tickPulseAt);
   }
 
   private renderHealth(snap: HudSnapshot): void {
@@ -171,7 +182,7 @@ export class CoreTrio {
     }
   }
 
-  private renderAvatar(active: ActiveSkillState, captainColor: string): void {
+  private renderAvatar(active: ActiveSkillState, captainColor: string, portraitUrl: string | undefined, captainId: string): void {
     const { cooldownRatio, energyEnough, castLatency } = active;
     // 冷卻環掃描 — 規格 §1.5(順時針掃過已冷卻部分)
     this.cooldownRing.setAttribute(
@@ -189,8 +200,19 @@ export class CoreTrio {
     // 致命傷警示環 — 規格 §1.5(生命<30%)
     const hpLow = this.snapshot ? this.snapshot.hpRatio < HEALTH_STAGE.DANGER : false;
     this.avatarBtn.classList.toggle("lethal", hpLow);
-    // 隊長代表色應用到頭像底色
-    this.avatarFace.style.backgroundColor = captainColor;
+    this.avatarFace.style.backgroundColor = portraitUrl ? "transparent" : captainColor;
+    this.avatarImg.src = portraitUrl ?? "";
+    this.avatarImg.alt = `${captainId} portrait`;
+    this.avatarImg.style.display = portraitUrl ? "block" : "none";
+    this.avatarFallback.textContent = captainId.slice(0, 1).toUpperCase();
+    this.avatarFallback.style.display = portraitUrl ? "none" : "block";
+  }
+
+  private renderTick(progress: number, pulseAt: number): void {
+    const clamped = Math.max(0, Math.min(1, progress));
+    this.tickHand.style.transform = `translateX(-50%) rotate(${clamped * 360}deg)`;
+    this.tickLabel.textContent = `${Math.ceil((1 - clamped) * 10) / 10}s`;
+    this.tickDial.classList.toggle("pulse", Date.now() - pulseAt < 180);
   }
 
   /** 切換生命/能量條文字顯示(滑鼠停留 0.5s 用)— 規格 §1.3、§1.4 */
@@ -214,10 +236,11 @@ export class CoreTrio {
           <circle class="cooldown-ring" cx="55" cy="55" r="51"
             fill="none" stroke="var(--c-active)" stroke-width="4" stroke-linecap="round" />
         </svg>
-        <div class="avatar-face">C</div>
+        <div class="avatar-face"><img class="avatar-face-img" alt="" draggable="false"><span class="avatar-face-fallback">C</span></div>
         <div class="energy-ready-dot"></div>
       </div>
       ${this.buildBarSvg("energy-bar", SIZE.ENERGY_BAR_W, SIZE.ENERGY_BAR_H, false)}
+      <div class="tick-dial" aria-label="每秒傷害 Tick 指針"><div class="tick-dial-face"><div class="tick-dial-ring"></div><div class="tick-dial-hand"></div><div class="tick-dial-cap"></div></div><div class="tick-dial-label">1.0s</div></div>
     `;
     return wrap;
   }
