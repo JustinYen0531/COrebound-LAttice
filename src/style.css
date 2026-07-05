@@ -162,7 +162,7 @@ body {
   border: 2px solid #333c56; display: flex; flex-direction: column; align-items: center; justify-content: center;
   overflow: hidden;
 }
-.sq img { width: 36px; height: 36px; border-radius: 50%; }
+.sq img { width: 36px; height: 36px; border-radius: 50%; background: #ece7da; }
 .sq b { font-size: 9px; color: #ffd76b; line-height: 1; }
 .sq.empty { color: #4a5578; font-size: 20px; }
 
@@ -224,9 +224,9 @@ body {
 .soul { color: #aab6d8; font-size: 13px; font-style: italic; margin: 6px 0; }
 .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .tbl th, .tbl td { padding: 6px 8px; border-bottom: 1px solid #232a40; text-align: left; vertical-align: middle; }
-.tbl img.mini { width: 30px; height: 30px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
+.tbl img.mini { width: 30px; height: 30px; border-radius: 50%; vertical-align: middle; margin-right: 6px; background: #ece7da; }
 .statue-grid { display: grid; grid-template-columns: 130px 1fr; gap: 20px; align-items: start; }
-.statue-portrait { width: 130px; height: 130px; border-radius: 14px; border: 2px solid #ffd76b; }
+.statue-portrait { width: 130px; height: 130px; border-radius: 14px; border: 2px solid #ffd76b; background: #ece7da; }
 
 /* ============ 結算 ============ */
 .result {

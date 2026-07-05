@@ -298,6 +298,8 @@ export class Renderer {
         if (unlocked) ctx.globalAlpha = 0.4;
         ctx.beginPath();
         ctx.arc(f.x, f.y - 34, 46, 0, Math.PI * 2);
+        ctx.fillStyle = "#ece7da";
+        ctx.fill();
         ctx.clip();
         ctx.drawImage(img, f.x - 46, f.y - 80, 92, 92);
         ctx.restore();
@@ -455,6 +457,8 @@ export class Renderer {
           ctx.save();
           ctx.beginPath();
           ctx.arc(mx, my, size / 2, 0, Math.PI * 2);
+          ctx.fillStyle = "#ece7da";
+          ctx.fill();
           ctx.clip();
           ctx.drawImage(img, mx - size / 2, my - size / 2, size, size);
           ctx.restore();

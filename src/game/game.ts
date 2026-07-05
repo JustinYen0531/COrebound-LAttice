@@ -59,6 +59,9 @@ export class Game {
     window.addEventListener("keydown", this.keydownHandler);
     window.addEventListener("keyup", this.keyupHandler);
 
+    // 隱藏開發控制代碼(僅供 console 驗收,無任何 UI)
+    (window as unknown as { __cola?: unknown }).__cola = this;
+
     music.play("early");
     this.hud.pushToast("歡迎來到 COrebound LAttence。目標:達成擊殺指標 → 召喚並擊敗四世界守護者 → 集齊印記 → 在中央廣場擊敗 COLA!");
     this.hud.pushToast("先去找雕像解鎖第一位隊員(打 T0/T1 怪收集材料)。");

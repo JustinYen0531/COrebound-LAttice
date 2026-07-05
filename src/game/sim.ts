@@ -157,6 +157,7 @@ export class Sim {
     this.state = state;
     this.layout = layout;
     this.rnd = mulberry32(seed ^ 0x9e3779b9);
+    this.invulnUntil = 3; // 開局短暫無敵,避免出生點被戳
     for (const w of WORLDS) this.populateWorld(w, true);
     // 開局三個寶箱
     for (let i = 0; i < 3; i++) {
