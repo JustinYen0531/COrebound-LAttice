@@ -343,7 +343,8 @@ export function 建立世界地圖層(): HTMLElement {
   canvas.appendChild(objectLayer);
 
   const regionPaths = createRegionPaths(zoneSvg);
-  if (ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS) createLightweightWrinkleFloors(zoneSvg);
+  if (啟用高細節地板) createHighDetailBaseFloors(zoneSvg);
+  else if (ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS) createLightweightWrinkleFloors(zoneSvg);
   const geometryCoreBoundaries = 啟用高細節地板 ? createGeometryEinsteinFloor(zoneSvg) : [];
   const fractalCoreBoundaries = 啟用高細節地板 ? createFractalPenroseFloor(zoneSvg) : [];
   const organicCoreBoundaries = 啟用高細節地板 ? createOrganicBirdFloor(zoneSvg) : [];
@@ -2262,6 +2263,38 @@ function createLightweightWrinkleFloors(host: SVGSVGElement): void {
   host.append(defs, group);
 }
 
+function createHighDetailBaseFloors(host: SVGSVGElement): void {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const polygons = buildRegionPolygons();
+  const defs = document.createElementNS(svgNamespace, "defs");
+  const group = document.createElementNS(svgNamespace, "g");
+  group.setAttribute("class", "世界地圖層-高細節底板群");
+
+  (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
+    const clipId = `high-detail-floor-clip-${world}`;
+    const clipPath = document.createElementNS(svgNamespace, "clipPath");
+    clipPath.setAttribute("id", clipId);
+    const clipShape = document.createElementNS(svgNamespace, "path");
+    clipShape.setAttribute("d", polygonToPath(polygons[world], (point) => point));
+    clipPath.appendChild(clipShape);
+    defs.appendChild(clipPath);
+
+    const bounds = boundsOf(polygons[world]);
+    const image = document.createElementNS(svgNamespace, "image");
+    image.setAttribute("class", `世界地圖層-高細節底板 世界地圖層-高細節底板-${world}`);
+    image.setAttribute("href", HIGH_DETAIL_FLOOR_IMAGE[world]);
+    image.setAttribute("x", String(bounds.minX));
+    image.setAttribute("y", String(bounds.minY));
+    image.setAttribute("width", String(bounds.maxX - bounds.minX));
+    image.setAttribute("height", String(bounds.maxY - bounds.minY));
+    image.setAttribute("preserveAspectRatio", "none");
+    image.setAttribute("clip-path", `url(#${clipId})`);
+    group.appendChild(image);
+  });
+
+  host.append(defs, group);
+}
+
 function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const geometryPolygon = buildRegionPolygons().geometry;
@@ -2337,7 +2370,6 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   const sourceHeight = sourceBounds.maxY - sourceBounds.minY;
   const targetWidth = targetBounds.maxX - targetBounds.minX;
   const targetHeight = targetBounds.maxY - targetBounds.minY;
-  appendHighDetailFloorOverlay(tileGroup, "geometry", targetBounds, svgNamespace);
   const sourceCenter = pointAtCenter(sourceBounds);
   const targetCenter = pointAtCenter(targetBounds);
   const initialScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
@@ -2355,9 +2387,8 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     center: transformFloorPoint(tile.center, sourceCenter, targetCenter, scale),
   }));
 
-  const regionArea = Math.abs(polygonArea(geometryPolygon));
   const coreTiles = transformedTiles.filter((tile) =>
-    floorZoneFromCorners(tile.center, targetBounds, regionArea) === "core",
+    floorZoneForWorld("geometry", tile.center, targetBounds) === "core",
   );
   const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
 
@@ -2389,7 +2420,7 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   for (let index = 0; index < transformedTiles.length; index += 1) {
     const tile = transformedTiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
-    const floorZone = floorZoneFromCorners(tile.center, targetBounds, regionArea);
+    const floorZone = floorZoneForWorld("geometry", tile.center, targetBounds);
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
@@ -2508,7 +2539,6 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
   const sourceHeight = sourceBounds.maxY - sourceBounds.minY;
   const targetWidth = targetBounds.maxX - targetBounds.minX;
   const targetHeight = targetBounds.maxY - targetBounds.minY;
-  appendHighDetailFloorOverlay(tileGroup, "fractal", targetBounds, svgNamespace);
   const sourceCenter = pointAtCenter(sourceBounds);
   const targetCenter = pointAtCenter(targetBounds);
   const initialScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
@@ -2525,9 +2555,8 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
     center: transformFloorPoint(tile.center, sourceCenter, targetCenter, scale),
   }));
 
-  const regionArea = Math.abs(polygonArea(fractalPolygon));
   const coreTiles = transformedTiles.filter((tile) =>
-    floorZoneFromCorners(tile.center, targetBounds, regionArea) === "core",
+    floorZoneForWorld("fractal", tile.center, targetBounds) === "core",
   );
   const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
 
@@ -2559,7 +2588,7 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
   for (let index = 0; index < transformedTiles.length; index += 1) {
     const tile = transformedTiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
-    const floorZone = floorZoneFromCorners(tile.center, targetBounds, regionArea);
+    const floorZone = floorZoneForWorld("fractal", tile.center, targetBounds);
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
@@ -2670,12 +2699,10 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
   tileGroup.setAttribute("clip-path", "url(#organic-world-floor-clip)");
 
   const targetBounds = boundsOf(organicPolygon);
-  appendHighDetailFloorOverlay(tileGroup, "organic", targetBounds, svgNamespace);
   const field = buildEscherBirdField(targetBounds, 520);
 
-  const regionArea = Math.abs(polygonArea(organicPolygon));
   const coreTiles = field.tiles.filter((tile) =>
-    floorZoneFromCorners(tile.center, targetBounds, regionArea) === "core",
+    floorZoneForWorld("organic", tile.center, targetBounds) === "core",
   );
   const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
 
@@ -2707,7 +2734,7 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
   for (let index = 0; index < field.tiles.length; index += 1) {
     const tile = field.tiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
-    const floorZone = floorZoneFromCorners(tile.center, targetBounds, regionArea);
+    const floorZone = floorZoneForWorld("organic", tile.center, targetBounds);
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
@@ -2817,7 +2844,6 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
   tileGroup.setAttribute("clip-path", "url(#mechanical-world-floor-clip)");
 
   const targetBounds = boundsOf(mechanicalPolygon);
-  appendHighDetailFloorOverlay(tileGroup, "mechanical", targetBounds, svgNamespace);
   
   // 建立正六邊形平鋪蜂巢網格
   const R = 300; // 六角形半徑加大，保留開羅磁磚語言但減少 DOM path 數量。
@@ -2841,9 +2867,8 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     }
   }
 
-  const regionArea = Math.abs(polygonArea(mechanicalPolygon));
   const coreTiles = tiles.filter((tile) =>
-    floorZoneFromCorners(tile.center, targetBounds, regionArea) === "core",
+    floorZoneForWorld("mechanical", tile.center, targetBounds) === "core",
   );
   const coreBoundaries = buildTileBoundaryLoops(coreTiles.map((tile) => tile.points));
 
@@ -2875,7 +2900,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
   for (let index = 0; index < tiles.length; index += 1) {
     const tile = tiles[index];
     const tilePath = polygonToPath(tile.points, (point) => point);
-    const floorZone = floorZoneFromCorners(tile.center, targetBounds, regionArea);
+    const floorZone = floorZoneForWorld("mechanical", tile.center, targetBounds);
     const variant = stableTileVariant(tile.center, index);
     const path = document.createElementNS(svgNamespace, "path");
     path.setAttribute("d", tilePath);
@@ -3034,33 +3059,50 @@ function stableTileShade(center: EinsteinPoint, index: number): number {
   return hash - Math.floor(hash);
 }
 
-function cornerCoreRadius(regionArea: number): number {
-  return Math.sqrt((regionArea * 0.18) / (4 * Math.PI));
-}
-
-function nearestBoundsCornerDistance(
-  point: { x: number; y: number },
-  bounds: ReturnType<typeof boundsOf>,
-): number {
-  const corners = [
-    { x: bounds.minX, y: bounds.minY },
-    { x: bounds.maxX, y: bounds.minY },
-    { x: bounds.minX, y: bounds.maxY },
-    { x: bounds.maxX, y: bounds.maxY },
+function coreCornerForWorld(world: World, bounds: ReturnType<typeof boundsOf>): { x: number; y: number; xSide: "min" | "max"; ySide: "min" | "max" } {
+  const candidates = [
+    { x: bounds.minX, y: bounds.minY, xSide: "min" as const, ySide: "min" as const },
+    { x: bounds.maxX, y: bounds.minY, xSide: "max" as const, ySide: "min" as const },
+    { x: bounds.minX, y: bounds.maxY, xSide: "min" as const, ySide: "max" as const },
+    { x: bounds.maxX, y: bounds.maxY, xSide: "max" as const, ySide: "max" as const },
   ];
-  let minDistance = Infinity;
-  for (const corner of corners) {
-    minDistance = Math.min(minDistance, Math.hypot(point.x - corner.x, point.y - corner.y));
-  }
-  return minDistance;
+  const ranked = candidates
+    .map((corner) => ({ corner, distance: Math.hypot(corner.x, corner.y) }))
+    .sort((a, b) => {
+      if (b.distance !== a.distance) return b.distance - a.distance;
+      return a.corner.y - b.corner.y;
+    });
+  return ranked[0]?.corner ?? candidates[0];
 }
 
-function floorZoneFromCorners(
+function coreRectForWorld(world: World, bounds: ReturnType<typeof boundsOf>) {
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  const coreWidth = width * 0.5;
+  const coreHeight = height * 0.5;
+  const insetX = width * 0.08;
+  const insetY = height * 0.08;
+  const anchor = coreCornerForWorld(world, bounds);
+
+  const minX = anchor.xSide === "min" ? bounds.minX + insetX : bounds.maxX - insetX - coreWidth;
+  const minY = anchor.ySide === "min" ? bounds.minY + insetY : bounds.maxY - insetY - coreHeight;
+  return {
+    minX,
+    maxX: minX + coreWidth,
+    minY,
+    maxY: minY + coreHeight,
+  };
+}
+
+function floorZoneForWorld(
+  world: World,
   center: { x: number; y: number },
   bounds: ReturnType<typeof boundsOf>,
-  regionArea: number,
 ): "outer" | "core" {
-  return nearestBoundsCornerDistance(center, bounds) <= cornerCoreRadius(regionArea) ? "core" : "outer";
+  const rect = coreRectForWorld(world, bounds);
+  return center.x >= rect.minX && center.x <= rect.maxX && center.y >= rect.minY && center.y <= rect.maxY
+    ? "core"
+    : "outer";
 }
 
 function applyDetailedTileFill(
@@ -3103,43 +3145,25 @@ function detailedTileVariedFill(
   const shade = stableTileShade(center, tileIndex);
   const palettes: Record<World, Record<"outer" | "core", { hue: number; sat: number; light: number; variance: number }>> = {
     geometry: {
-      outer: { hue: 211, sat: 44, light: 43, variance: 7 },
-      core: { hue: 205, sat: 66, light: 75, variance: 8 },
+      outer: { hue: 211, sat: 48, light: 37, variance: 7 },
+      core: { hue: 205, sat: 68, light: 68, variance: 8 },
     },
     organic: {
-      outer: { hue: 131, sat: 42, light: 26, variance: 6 },
-      core: { hue: 124, sat: 32, light: 54, variance: 7 },
+      outer: { hue: 131, sat: 42, light: 22, variance: 6 },
+      core: { hue: 124, sat: 34, light: 46, variance: 7 },
     },
     fractal: {
-      outer: { hue: 272, sat: 39, light: 69, variance: 6 },
-      core: { hue: 274, sat: 45, light: 81, variance: 7 },
+      outer: { hue: 272, sat: 42, light: 54, variance: 8 },
+      core: { hue: 274, sat: 48, light: 68, variance: 9 },
     },
     mechanical: {
-      outer: { hue: 24, sat: 34, light: 29, variance: 6 },
-      core: { hue: 44, sat: 62, light: 58, variance: 8 },
+      outer: { hue: 24, sat: 36, light: 25, variance: 6 },
+      core: { hue: 44, sat: 64, light: 52, variance: 8 },
     },
   };
   const palette = palettes[world][floorZone];
   const lightness = palette.light + (shade - 0.5) * palette.variance;
   return `hsl(${palette.hue} ${palette.sat}% ${lightness.toFixed(2)}%)`;
-}
-
-function appendHighDetailFloorOverlay(
-  tileGroup: SVGGElement,
-  world: World,
-  bounds: ReturnType<typeof boundsOf>,
-  svgNamespace: string,
-): void {
-  const image = document.createElementNS(svgNamespace, "image");
-  image.setAttribute("href", HIGH_DETAIL_FLOOR_IMAGE[world]);
-  image.setAttribute("x", String(bounds.minX));
-  image.setAttribute("y", String(bounds.minY));
-  image.setAttribute("width", String(bounds.maxX - bounds.minX));
-  image.setAttribute("height", String(bounds.maxY - bounds.minY));
-  image.setAttribute("preserveAspectRatio", "xMidYMid slice");
-  image.setAttribute("opacity", "0.18");
-  image.setAttribute("class", `世界地圖層-高細節花紋 世界地圖層-高細節花紋-${world}`);
-  tileGroup.appendChild(image);
 }
 
 function 創建並綁定隨機偏移旋轉圖樣(

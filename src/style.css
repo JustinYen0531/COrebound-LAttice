@@ -2112,11 +2112,6 @@ button.禁用:hover {
   fill-opacity: 0.92;
   stroke-width: 3.1;
 }
-.世界地圖層-高細節花紋 {
-  pointer-events: none;
-  mix-blend-mode: multiply;
-  filter: saturate(0.94) contrast(1.02);
-}
 .世界地圖層-區域片-organic {
   fill: rgba(111, 220, 140, 0.14);
 }
@@ -2129,6 +2124,29 @@ button.禁用:hover {
 .世界地圖層-輕量折皺地板 {
   pointer-events: none;
   opacity: 0.34;
+}
+.世界地圖層-高細節底板群 {
+  pointer-events: none;
+}
+.世界地圖層-高細節底板 {
+  opacity: 0.72;
+  mix-blend-mode: multiply;
+}
+.世界地圖層-高細節底板-geometry {
+  opacity: 0.76;
+  filter: saturate(1.02) contrast(1.08) brightness(0.86);
+}
+.世界地圖層-高細節底板-organic {
+  opacity: 0.74;
+  filter: saturate(1.04) contrast(1.05) brightness(0.82);
+}
+.世界地圖層-高細節底板-fractal {
+  opacity: 0.92;
+  filter: saturate(1.18) contrast(1.18) brightness(0.72);
+}
+.世界地圖層-高細節底板-mechanical {
+  opacity: 0.78;
+  filter: saturate(1.08) contrast(1.12) brightness(0.8);
 }
 .世界地圖層-分界線 {
   fill: none;
