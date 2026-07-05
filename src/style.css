@@ -1492,22 +1492,18 @@ button.禁用:hover {
   border-color: rgba(216, 180, 106, 0.42);
   background: radial-gradient(circle at 50% 15%, rgba(255,255,255,0.08), rgba(18,23,38,0.96));
 }
-.正式例會-隊長立繪裁切 {
-  width: 84px;
-  height: 84px;
-  overflow: hidden;
+.正式例會-隊長徽記 {
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   display: inline-flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
   background: radial-gradient(circle at 32% 28%, var(--captain-color, #4d8dff), #12182a 74%);
   border: 2px solid rgba(255, 210, 77, 0.8);
-}
-.正式例會-隊長立繪裁切 img {
-  width: 128px;
-  height: auto;
-  transform: translateY(-10px);
-  pointer-events: none;
 }
 .正式例會-列 {
   position: relative;
@@ -1550,20 +1546,6 @@ button.禁用:hover {
   font-weight: 800;
   color: var(--slot-color, #d8b46a);
 }
-.正式例會-角色立繪 {
-  width: 68px;
-  height: 68px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.正式例會-角色立繪 img {
-  width: 84px;
-  height: auto;
-  object-fit: contain;
-  pointer-events: none;
-}
 .正式例會-空位徽記 {
   width: 42px;
   height: 42px;
@@ -1585,12 +1567,87 @@ button.禁用:hover {
   font-size: 0.68rem;
   color: #8d93ad;
 }
+.正式立會舞台 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.正式立會舞台-框 {
+  position: relative;
+  min-height: 500px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 22%),
+    url("/assets/images/立繪展示舞台.png") center / cover no-repeat;
+  box-shadow: 0 16px 34px rgba(62, 48, 29, 0.14);
+  overflow: hidden;
+}
+.正式立會舞台-框::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 30px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0) 76%);
+  pointer-events: none;
+}
+.正式立會舞台-角色 {
+  position: absolute;
+  bottom: 44px;
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+.正式立會舞台-角色 img {
+  width: 100%;
+  height: 290px;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 12px 6px rgba(38, 31, 23, 0.28));
+}
+.正式立會舞台-角色--高 {
+  left: 30%;
+  bottom: 92px;
+  width: 42%;
+  z-index: 3;
+}
+.正式立會舞台-角色--左 {
+  left: -2%;
+  width: 38%;
+  z-index: 2;
+}
+.正式立會舞台-角色--right,
+.正式立會舞台-角色--右 {
+  right: -2%;
+  width: 38%;
+  z-index: 1;
+}
+.正式立會舞台-名牌 {
+  margin-top: -6px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(17, 21, 33, 0.78);
+  color: #f0ead8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
 @media (max-width: 1100px) {
   .訓練軌道編排器-槽位格 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .正式例會-列 {
     width: 100% !important;
+  }
+  .正式立會舞台-框 {
+    min-height: 440px;
+  }
+  .正式立會舞台-角色 img {
+    height: 250px;
   }
 }
 

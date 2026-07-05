@@ -75,12 +75,6 @@ const 正式槽位配置: Array<{ slotId: number; layer: 初始成員層級; rin
   { slotId: 1, layer: "middle", ring: "中", angle: 0, role: "火力" },
   { slotId: 2, layer: "outer", ring: "外", angle: 0, role: "補給" },
 ];
-const 隊長例會立繪來源: Record<string, string> = {
-  conductor: "/assets/images/characters/captains/Conductor立繪與頭像.png",
-  operator: "/assets/images/characters/captains/Operator立繪與頭像.png",
-  launcher: "/assets/images/characters/captains/Launcher立繪與頭像.png",
-  architect: "/assets/images/characters/captains/Architect立繪與頭像.png",
-};
 
 function 取得層級標籤(layer: "外" | "中" | "內"): string {
   if (layer === "內") return "最內層";
@@ -232,6 +226,42 @@ function 建立正式對局圖騰預覽(): HTMLElement {
     }),
   );
   root.appendChild(view);
+  return root;
+}
+
+function 建立正式小隊立繪舞台(): HTMLElement {
+  const roster = 取得上陣養成();
+  const root = document.createElement("div");
+  root.className = "正式立會舞台";
+  root.innerHTML = `
+    <div class="訓練軌道編排器-圖騰預覽標題">小隊立會舞台</div>
+    <div class="訓練軌道編排器-圖騰預覽說明">預設展示三名正式上陣成員的合照站位，不含隊長。</div>
+  `;
+
+  const stage = document.createElement("div");
+  stage.className = "正式立會舞台-框";
+
+  const positions: Array<{ layer: 初始成員層級; className: string }> = [
+    { layer: "middle", className: "正式立會舞台-角色 正式立會舞台-角色--高" },
+    { layer: "inner", className: "正式立會舞台-角色 正式立會舞台-角色--左" },
+    { layer: "outer", className: "正式立會舞台-角色 正式立會舞台-角色--右" },
+  ];
+
+  positions.forEach((position) => {
+    const memberState = roster.find((entry) => entry.layer === position.layer);
+    if (!memberState) return;
+    const member = MEMBERS.find((entry) => entry.no === memberState.memberNo);
+    if (!member) return;
+    const figure = document.createElement("div");
+    figure.className = position.className;
+    figure.innerHTML = `
+      <img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${member.nameZh}" />
+      <span class="正式立會舞台-名牌">${member.nameZh}</span>
+    `;
+    stage.appendChild(figure);
+  });
+
+  root.appendChild(stage);
   return root;
 }
 
@@ -580,7 +610,7 @@ function 建立正式例會預覽(captain: (typeof 隊長清單)[number], select
   captainChip.style.setProperty("--captain-color", captain.代表色);
   captainChip.innerHTML = `
     <span class="正式例會-席位標">隊長席</span>
-    <span class="正式例會-隊長立繪裁切"><img src="${隊長例會立繪來源[captain.id] ?? `/assets/transparent-portraits/captains/${captain.id}_form1.png`}" alt="${captain.名稱}" /></span>
+    <span class="正式例會-隊長徽記">${captain.名稱.slice(0, 1)}</span>
     <span class="正式例會-席位名">${captain.名稱}</span>
   `;
   captainRow.appendChild(captainChip);
@@ -620,7 +650,6 @@ function 建立正式例會預覽(captain: (typeof 隊長清單)[number], select
         };
         seat.innerHTML = `
           <span class="正式例會-席位標">${role.label}</span>
-          ${member ? `<span class="正式例會-角色立繪"><img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${member.nameZh}" /></span>` : `<span class="正式例會-空位徽記">+</span>`}
           <span class="正式例會-席位名">${member ? member.nameZh : "空位"}</span>
           <span class="正式例會-席位副文">${member ? `${member.no.toString().padStart(2, "0")} ｜ 1★` : "待指派"}</span>
         `;
@@ -915,8 +944,7 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   leftPane.style.display = "flex";
   leftPane.style.flexDirection = "column";
   leftPane.style.gap = "14px";
-  leftPane.appendChild(建立正式對局圖騰預覽());
-  leftPane.appendChild(建立隊長核心卡(captain));
+  leftPane.appendChild(建立正式小隊立繪舞台());
 
   const rightPane = document.createElement("div");
   rightPane.style.display = "flex";
