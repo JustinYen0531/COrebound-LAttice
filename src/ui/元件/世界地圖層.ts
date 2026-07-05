@@ -502,7 +502,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   const miniMapHint = document.createElement("div");
   miniMapHint.className = "世界地圖層-小地圖說明";
-  miniMapHint.textContent = "點一下放大，再點一下收起";
+  miniMapHint.textContent = "點一下放大；同點五次瞬移；點外面收起";
   miniMap.appendChild(miniMapHint);
 
   const miniMapInner = document.createElement("div");
@@ -524,7 +524,25 @@ export function 建立世界地圖層(): HTMLElement {
   const miniDividerPaths = createMiniDividerPaths(miniSvg);
   // 小地圖的區域外框、中央區邊界、分界線同樣是固定幾何，初始化時綁定一次即可，
   // 不再每幀重設 d（中央區邊界含數百個頂點，逐幀重設是移動卡頓的主因）。
+  const refreshMiniMapLayout = () => {
+    initMiniStaticPaths(
+      miniMapInner,
+      miniRegionPaths,
+      miniGeometryCore,
+      geometryCoreBoundaries,
+      miniFractalCore,
+      fractalCoreBoundaries,
+      miniOrganicCore,
+      organicCoreBoundaries,
+      miniMechanicalCore,
+      mechanicalCoreBoundaries,
+      miniDividerPaths,
+    );
+    renderMiniMapDynamic(miniMapInner, miniMarkers, miniObjectNodes, miniPlayer);
+  };
+
   initMiniStaticPaths(
+    miniMapInner,
     miniRegionPaths,
     miniGeometryCore,
     geometryCoreBoundaries,
@@ -577,10 +595,57 @@ export function 建立世界地圖層(): HTMLElement {
   miniPlayer.className = "世界地圖層-小地圖玩家";
   miniMapInner.appendChild(miniPlayer);
 
+  let miniMapTeleportClicks = 0;
+  let miniMapTeleportClickAt = 0;
+  let miniMapTeleportPoint = { x: 0, y: 0 };
+  const collapseMiniMap = () => {
+    miniMap.classList.remove("世界地圖層-小地圖-放大");
+    miniMapTeleportClicks = 0;
+  };
+  const expandMiniMap = () => {
+    miniMap.classList.add("世界地圖層-小地圖-放大");
+    requestAnimationFrame(() => refreshMiniMapLayout());
+    window.setTimeout(refreshMiniMapLayout, 210);
+  };
+
   miniMapInner.addEventListener("click", (event) => {
     event.preventDefault();
-    miniMap.classList.toggle("世界地圖層-小地圖-放大");
+    event.stopPropagation();
+    if (!miniMap.classList.contains("世界地圖層-小地圖-放大")) {
+      expandMiniMap();
+      return;
+    }
+
+    const bounds = miniMapInner.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) return;
+    const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+    const now = performance.now();
+    const isSamePoint = Math.hypot(point.x - miniMapTeleportPoint.x, point.y - miniMapTeleportPoint.y) <= 18;
+    const isRapidSequence = now - miniMapTeleportClickAt <= 2200;
+    miniMapTeleportClicks = isSamePoint && isRapidSequence ? miniMapTeleportClicks + 1 : 1;
+    miniMapTeleportClickAt = now;
+    miniMapTeleportPoint = point;
+
+    if (miniMapTeleportClicks < 5) return;
+    miniMapTeleportClicks = 0;
+    playerVelocity = { x: 0, y: 0 };
+    playerPos = clampTraversablePlayerPosition({
+      x: MAP_BOUNDS.minX + (point.x / bounds.width) * (MAP_BOUNDS.maxX - MAP_BOUNDS.minX),
+      y: MAP_BOUNDS.minY + (point.y / bounds.height) * (MAP_BOUNDS.maxY - MAP_BOUNDS.minY),
+    }, playerPos);
+    if (!訓練道場中) 設定正式玩家位置(playerPos);
+    syncNearbyToState();
+    collapseMiniMap();
+    render();
   });
+
+  const onMiniMapOutsidePointerDown = (event: PointerEvent) => {
+    if (!miniMap.classList.contains("世界地圖層-小地圖-放大")) return;
+    const target = event.target;
+    if (target instanceof Node && miniMap.contains(target)) return;
+    collapseMiniMap();
+  };
+  document.addEventListener("pointerdown", onMiniMapOutsidePointerDown);
 
   const zoomControl = document.createElement("div");
   zoomControl.className = "世界地圖層-縮放控制";
@@ -1701,9 +1766,14 @@ export function 建立世界地圖層(): HTMLElement {
     });
   }
 
+  const onWindowResize = () => {
+    render();
+    if (miniMap.classList.contains("世界地圖層-小地圖-放大")) refreshMiniMapLayout();
+  };
+
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
-  window.addEventListener("resize", render);
+  window.addEventListener("resize", onWindowResize);
   root.addEventListener("wheel", onWheel, { passive: false });
 
   function cleanup(): void {
@@ -1711,7 +1781,8 @@ export function 建立世界地圖層(): HTMLElement {
     destroyed = true;
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("keyup", onKeyUp);
-    window.removeEventListener("resize", render);
+    window.removeEventListener("resize", onWindowResize);
+    document.removeEventListener("pointerdown", onMiniMapOutsidePointerDown);
     root.removeEventListener("wheel", onWheel);
     window.removeEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
     window.removeEventListener("captain-active-cast", onCaptainCast as EventListener);
@@ -2297,6 +2368,7 @@ function renderZoneLabels(
 // 之所以獨立於 renderMiniMapDynamic，是因為中央區邊界含數百個頂點，
 // 每幀重設 d 會迫使瀏覽器重建路徑幾何快取，是移動卡頓的主因。
 function initMiniStaticPaths(
+  host: HTMLElement,
   regions: Record<World, SVGPathElement>,
   geometryCore: { path: SVGPathElement; label: SVGTextElement },
   geometryCoreBoundaries: EinsteinPoint[][],
@@ -2308,10 +2380,8 @@ function initMiniStaticPaths(
   mechanicalCoreBoundaries: CairoPoint[][],
   dividers: { vertical: SVGPathElement; horizontal: SVGPathElement },
 ): void {
-  // 小地圖的內層尺寸固定為 196px - padding，這裡取一個穩定值即可；
-  // toMini 用同一個比例縮放，與舊 renderMiniMap 的行為一致。
-  const width = 176;
-  const height = 176;
+  const width = host.clientWidth || 176;
+  const height = host.clientHeight || 176;
   const toMini = (point: { x: number; y: number }) => ({
     x: ((point.x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * width,
     y: ((point.y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY)) * height,
