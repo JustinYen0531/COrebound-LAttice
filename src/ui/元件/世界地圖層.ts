@@ -140,8 +140,8 @@ const MOVE_DECELERATION = 5120;
 const VIEW_PADDING = 140;
 // 正交斜俯視：只壓縮地面縱深，場景物件與 HUD 仍保持直立比例。
 const GROUND_DEPTH_SCALE = 0.6;
-const PLAYER_SIZE_AT_REFERENCE_ZOOM = 700;
-const PLAYER_TOTEM_RENDER_SIZE = 660;
+const PLAYER_SIZE_AT_REFERENCE_ZOOM = 1400;
+const PLAYER_TOTEM_RENDER_SIZE = 1320;
 const REFERENCE_CAMERA_ZOOM = 1.0;
 const DEFAULT_CAMERA_ZOOM = 1.0;
 const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
@@ -170,11 +170,26 @@ const FAMILY_FURNACE_IMAGE: Record<Family, string> = {
 const WORKBENCH_IMAGE = "/images/props/facilities/workbenches/workbench.png";
 const SHOP_IMAGE = "/images/props/facilities/shops/shop.png";
 const STATUE_IMAGE_BY_MEMBER_NO: Partial<Record<number, string>> = {
+  1: "/images/characters/statues/geometry_statue_01_prism.png",
+  2: "/images/characters/statues/geometry_statue_02_matrix.png",
+  3: "/images/characters/statues/geometry_statue_03_vector.png",
+  4: "/images/characters/statues/geometry_statue_04_node.png",
+  5: "/images/characters/statues/geometry_statue_05_lightcone.png",
+  6: "/images/characters/statues/organic_statue_06_thorn.png",
+  7: "/images/characters/statues/organic_statue_07_spore.png",
+  8: "/images/characters/statues/organic_statue_08_vine.png",
+  9: "/images/characters/statues/organic_statue_09_fungus.png",
+  10: "/images/characters/statues/organic_statue_10_biolume.png",
   11: "/images/characters/statues/fractal_statue_11_snowglass.png",
   12: "/images/characters/statues/fractal_statue_12_bifurcation.png",
   13: "/images/characters/statues/fractal_statue_13_lightning.png",
   14: "/images/characters/statues/fractal_statue_14_abyss.png",
   15: "/images/characters/statues/fractal_statue_15_aurora.png",
+  16: "/images/characters/statues/mechanical_statue_16_gate.png",
+  17: "/images/characters/statues/mechanical_statue_17_shrapnel.png",
+  18: "/images/characters/statues/mechanical_statue_18_needle.png",
+  19: "/images/characters/statues/mechanical_statue_19_springtrap.png",
+  20: "/images/characters/statues/mechanical_statue_20_arc.png",
 };
 
 const LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE: Record<World, string> = {
