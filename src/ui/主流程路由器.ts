@@ -9,10 +9,12 @@ import { 渲染遊戲準備流程 } from "./頁面/遊戲準備流程";
 import { 渲染操作頁面 } from "./頁面/操作頁面";
 import { 渲染管理介面 } from "./頁面/管理介面";
 import { 渲染結算頁 } from "./頁面/結算頁";
+import { 建立音樂浮動面板 } from "./元件/音樂浮動面板";
 
 export function 啟動路由器(根節點: HTMLElement) {
   let lastLayer: string | null = null;
   let 頁面容器: HTMLElement | null = null;
+  let 浮動容器: HTMLElement | null = null;
 
   function 渲染() {
     const currentLayer = 應用程式狀態.畫面.層;
@@ -21,7 +23,10 @@ export function 啟動路由器(根節點: HTMLElement) {
       根節點.innerHTML = "";
       頁面容器 = document.createElement("div");
       頁面容器.className = "頁面容器";
+      浮動容器 = document.createElement("div");
+      浮動容器.className = "頁面浮動容器";
       根節點.appendChild(頁面容器);
+      根節點.appendChild(浮動容器);
       lastLayer = currentLayer;
 
       switch (currentLayer) {
@@ -50,6 +55,11 @@ export function 啟動路由器(根節點: HTMLElement) {
         else if (currentLayer === "管理介面") 渲染管理介面(頁面容器);
         else if (currentLayer === "結算頁") 渲染結算頁(頁面容器);
       }
+    }
+
+    if (浮動容器) {
+      浮動容器.innerHTML = "";
+      浮動容器.appendChild(建立音樂浮動面板());
     }
   }
 

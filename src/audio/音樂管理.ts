@@ -28,15 +28,15 @@ const VOLUME_STORAGE_KEY = "cola-music-volume";
 const MUTE_STORAGE_KEY = "cola-music-muted";
 
 const 音軌表: Record<音軌鍵, { src: string; label: string }> = {
-  lobby: { src: "/assets/audio/music/title/大廳音樂.mp3", label: "大廳音樂" },
-  early: { src: "/assets/audio/music/gameplay/遊戲初期音樂.mp3", label: "遊戲初期音樂" },
-  mid: { src: "/assets/audio/music/gameplay/遊戲中期音樂.mp3", label: "遊戲中期音樂" },
-  late: { src: "/assets/audio/music/gameplay/遊戲後期音樂.mp3", label: "遊戲後期音樂" },
-  showdown: { src: "/assets/audio/music/gameplay/遊戲大後期音樂.mp3", label: "遊戲大後期音樂" },
-  boss_geometry: { src: "/assets/audio/music/gameplay/幾何boss音樂.mp3", label: "幾何 Boss 音樂" },
-  boss_fractal: { src: "/assets/audio/music/gameplay/分形boss音樂.mp3", label: "分形 Boss 音樂" },
-  boss_mechanical: { src: "/assets/audio/music/gameplay/機械boss音樂.mp3", label: "機械 Boss 音樂" },
-  boss_cola: { src: "/assets/audio/music/gameplay/最終boss音樂.mp3", label: "最終 Boss 音樂" },
+  lobby: { src: "/assets/audio/music/title/大廳音樂.mp3", label: "Lobby Theme" },
+  early: { src: "/assets/audio/music/gameplay/遊戲初期音樂.mp3", label: "Early Battle" },
+  mid: { src: "/assets/audio/music/gameplay/遊戲中期音樂.mp3", label: "Mid Battle" },
+  late: { src: "/assets/audio/music/gameplay/遊戲後期音樂.mp3", label: "Late Battle" },
+  showdown: { src: "/assets/audio/music/gameplay/遊戲大後期音樂.mp3", label: "Showdown" },
+  boss_geometry: { src: "/assets/audio/music/gameplay/幾何boss音樂.mp3", label: "Geometry Guardian" },
+  boss_fractal: { src: "/assets/audio/music/gameplay/分形boss音樂.mp3", label: "Fractal Guardian" },
+  boss_mechanical: { src: "/assets/audio/music/gameplay/機械boss音樂.mp3", label: "Mechanical Guardian" },
+  boss_cola: { src: "/assets/audio/music/gameplay/最終boss音樂.mp3", label: "Final Boss" },
 };
 
 const audio = new Audio();
@@ -102,7 +102,10 @@ function 解析戰場音軌(): 音軌鍵 {
 
 function 解析目標音軌(): 音軌鍵 {
   const layer = 應用程式狀態.畫面.層;
-  if (layer === "操作頁面" || layer === "管理介面") return 解析戰場音軌();
+  if (layer === "操作頁面" || layer === "管理介面") {
+    return 應用程式狀態.畫面.訓練道場 ? "early" : 解析戰場音軌();
+  }
+  if (layer === "遊戲準備流程" || layer === "結算頁") return "lobby";
   return "lobby";
 }
 

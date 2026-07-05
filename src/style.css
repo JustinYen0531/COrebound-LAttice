@@ -3665,6 +3665,96 @@ button.禁用:hover {
   letter-spacing: 0.16em;
 }
 
+.頁面浮動容器 {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 90;
+}
+
+.音樂浮動面板 {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(79, 106, 149, 0.28);
+  background: rgba(248, 244, 235, 0.9);
+  box-shadow: 0 14px 32px rgba(14, 18, 31, 0.16);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+  display: grid;
+  gap: 10px;
+}
+
+.音樂浮動面板-標題 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.音樂浮動面板-標題 strong {
+  font-size: 0.9rem;
+  color: #1f2b42;
+  letter-spacing: 0.05em;
+}
+
+.音樂浮動面板-音軌 {
+  font-size: 0.72rem;
+  color: #6a7489;
+  text-align: right;
+}
+
+.音樂浮動面板-列 {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.音樂浮動面板-按鈕 {
+  border: 1px solid rgba(77, 103, 154, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #1c2740;
+  padding: 8px 12px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.音樂浮動面板-滑桿 {
+  width: 100%;
+  accent-color: #4d8dff;
+}
+
+.音樂浮動面板-數值 {
+  min-width: 48px;
+  text-align: right;
+  font-size: 0.78rem;
+  color: #43506c;
+  font-weight: 700;
+}
+
+.音樂浮動面板-提示 {
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: #6e7890;
+}
+
+@media (max-width: 720px) {
+  .音樂浮動面板 {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
+
 .世界地圖層-縮放比例,
 .世界地圖層-縮放標籤 {
   color: rgba(255, 255, 255, 0.88);
