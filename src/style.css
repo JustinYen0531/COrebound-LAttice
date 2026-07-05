@@ -1760,20 +1760,22 @@ button.禁用:hover {
   filter: drop-shadow(0 12px 6px rgba(38, 31, 23, 0.28));
 }
 .正式立會舞台-角色--高 {
-  left: 30%;
-  bottom: 92px;
+  left: 29%;
+  bottom: 88px;
   width: 42%;
   z-index: 3;
 }
 .正式立會舞台-角色--左 {
-  left: -2%;
-  width: 38%;
+  left: 9%;
+  bottom: 58px;
+  width: 34%;
   z-index: 2;
 }
 .正式立會舞台-角色--right,
 .正式立會舞台-角色--右 {
-  right: -2%;
-  width: 38%;
+  right: 9%;
+  bottom: 56px;
+  width: 34%;
   z-index: 1;
 }
 .正式立會舞台-名牌 {
@@ -1799,6 +1801,13 @@ button.禁用:hover {
   .正式隊長列,
   .正式小隊摘要列 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .正式立會舞台-角色--左 {
+    left: 4%;
+  }
+  .正式立會舞台-角色--right,
+  .正式立會舞台-角色--右 {
+    right: 4%;
   }
   .正式立會舞台-框 {
     min-height: 440px;

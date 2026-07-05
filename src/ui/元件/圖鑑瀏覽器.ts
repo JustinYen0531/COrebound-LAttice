@@ -270,13 +270,13 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent =
-      名稱 === "成員圖鑑" ? 雙語("成員圖鑑", "Member Codex") :
-      名稱 === "怪物圖鑑" ? 雙語("怪物圖鑑", "Monster Codex") :
-      名稱 === "世界圖鑑" ? 雙語("世界圖鑑", "World Codex") :
-      名稱 === "材料圖鑑" ? 雙語("材料圖鑑", "Material Codex") :
-      名稱 === "機制圖鑑" ? 雙語("機制圖鑑", "Mechanics Codex") :
-      名稱 === "Boss圖鑑" ? "Boss圖鑑 / Boss Codex" :
-      名稱 === "隊長圖鑑" ? 雙語("隊長圖鑑", "Captain Codex") :
+      名稱 === "成員圖鑑" ? 雙語("成員圖鑑", "Member") :
+      名稱 === "怪物圖鑑" ? 雙語("怪物圖鑑", "Monster") :
+      名稱 === "世界圖鑑" ? 雙語("世界圖鑑", "World") :
+      名稱 === "材料圖鑑" ? 雙語("材料圖鑑", "Material") :
+      名稱 === "機制圖鑑" ? 雙語("機制圖鑑", "Mechanics") :
+      名稱 === "Boss圖鑑" ? 雙語("Boss圖鑑", "Boss") :
+      名稱 === "隊長圖鑑" ? 雙語("隊長圖鑑", "Captain") :
       雙語("世界故事", "World Stories");
     btn.classList.toggle("作用中", 名稱 === 選中名稱);
     if (名稱 === "世界故事") btn.classList.add("圖鑑瀏覽器-世界故事按鈕");
@@ -290,13 +290,13 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
   const 標題列 = document.createElement("div");
   標題列.className = "圖鑑瀏覽器-標題列";
   const 選中名稱顯示 =
-    選中名稱 === "成員圖鑑" ? 雙語("成員圖鑑", "Member Codex") :
-    選中名稱 === "怪物圖鑑" ? 雙語("怪物圖鑑", "Monster Codex") :
-    選中名稱 === "世界圖鑑" ? 雙語("世界圖鑑", "World Codex") :
-    選中名稱 === "材料圖鑑" ? 雙語("材料圖鑑", "Material Codex") :
-    選中名稱 === "機制圖鑑" ? 雙語("機制圖鑑", "Mechanics Codex") :
-    選中名稱 === "Boss圖鑑" ? "Boss圖鑑 / Boss Codex" :
-    選中名稱 === "隊長圖鑑" ? 雙語("隊長圖鑑", "Captain Codex") :
+    選中名稱 === "成員圖鑑" ? 雙語("成員圖鑑", "Member") :
+    選中名稱 === "怪物圖鑑" ? 雙語("怪物圖鑑", "Monster") :
+    選中名稱 === "世界圖鑑" ? 雙語("世界圖鑑", "World") :
+    選中名稱 === "材料圖鑑" ? 雙語("材料圖鑑", "Material") :
+    選中名稱 === "機制圖鑑" ? 雙語("機制圖鑑", "Mechanics") :
+    選中名稱 === "Boss圖鑑" ? 雙語("Boss圖鑑", "Boss") :
+    選中名稱 === "隊長圖鑑" ? 雙語("隊長圖鑑", "Captain") :
     雙語("世界故事", "World Stories");
   標題列.innerHTML = `
     <div>

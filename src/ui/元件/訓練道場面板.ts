@@ -154,6 +154,15 @@ function 取得正式隊長立繪路徑(captainId: string, form = 1): string {
   return `/assets/transparent-portraits/captains/${captainId}_form${form}.png`;
 }
 
+function 建立職責圖例(): HTMLElement {
+  const legend = document.createElement("div");
+  legend.className = "訓練軌道編排器-圖例";
+  legend.innerHTML = (Object.values(槽位職責色票))
+    .map((item) => `<span class="訓練軌道編排器-圖例項"><i style="background:${item.color};"></i>${item.label}</span>`)
+    .join("");
+  return legend;
+}
+
 function 由正式職責轉換(role: "protect" | "firepower" | "supply"): 職責色 {
   if (role === "protect") return "保護";
   if (role === "firepower") return "火力";
@@ -386,13 +395,6 @@ function 建立正式舞台切換區(captain: (typeof 隊長清單)[number], sel
 
   root.appendChild(frame);
   root.appendChild(建立隊長核心卡(captain));
-
-  const legend = document.createElement("div");
-  legend.className = "訓練軌道編排器-圖例";
-  legend.innerHTML = (Object.values(槽位職責色票))
-    .map((item) => `<span class="訓練軌道編排器-圖例項"><i style="background:${item.color};"></i>${item.label}</span>`)
-    .join("");
-  root.appendChild(legend);
   return root;
 }
 
@@ -1119,6 +1121,7 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
     squadSummaryRow.appendChild(card);
   });
   rightPane.appendChild(squadSummaryRow);
+  rightPane.appendChild(建立職責圖例());
 
   const summaryGrid = document.createElement("div");
   summaryGrid.style.display = "grid";
