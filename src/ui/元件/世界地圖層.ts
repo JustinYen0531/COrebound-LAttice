@@ -2149,6 +2149,8 @@ function createObjectNode(object: MapObject): HTMLElement {
 
 function facilityImagePath(object: MapObject): string | null {
   if (object.kind === "熔爐" && object.family) return FAMILY_FURNACE_IMAGE[object.family];
+  if (object.kind === "合成") return WORKBENCH_IMAGE;
+  if (object.kind === "商店") return SHOP_IMAGE;
   if (object.kind === "召喚" && object.region !== "plaza") return GUARDIAN_ALTAR_IMAGE[object.region];
   return null;
 }
