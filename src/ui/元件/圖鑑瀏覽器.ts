@@ -156,6 +156,21 @@ function 建立怪物立繪HTML(條目ID: string): string {
   );
 }
 
+const BOSS立繪路徑: Record<string, string> = {
+  boss_geo: "/assets/images/enemies/bosses/幾何BOSS.png",
+  boss_org: "/assets/images/enemies/bosses/有機BOSS.png",
+  boss_fra: "/assets/images/enemies/bosses/分形BOSS.png",
+  boss_mec: "/assets/images/enemies/bosses/機械BOSS.png",
+  boss_cola: "/assets/images/enemies/bosses/最終BOSS.png",
+};
+
+function 建立Boss立繪HTML(條目ID: string): string {
+  const 立繪路徑 = BOSS立繪路徑[條目ID];
+  if (!立繪路徑) return "";
+  const 條目 = Boss圖鑑資料.find((entry) => entry.id === 條目ID);
+  return 建立圖鑑舞台立繪HTML(立繪路徑, `${條目?.名稱 ?? "Boss"} 立繪`);
+}
+
 // 隊長條目 id 格式 "captain_{captainId}"。每位隊長有 4 種形態立繪。
 function 建立隊長立繪HTML(條目ID: string): string {
   if (!條目ID.startsWith("captain_")) return "";
@@ -215,10 +230,11 @@ function 建立材料立繪HTML(條目ID: string): string {
 function 建立詳情HTML(選中條目: 圖鑑條目): string {
   const 成員立繪HTML = 建立成員立繪HTML(選中條目.id);
   const 怪物立繪HTML = 建立怪物立繪HTML(選中條目.id);
+  const Boss立繪HTML = 建立Boss立繪HTML(選中條目.id);
   const 隊長立繪HTML = 建立隊長立繪HTML(選中條目.id);
   const 材料立繪HTML = 建立材料立繪HTML(選中條目.id);
   const 立繪HTML =
-    成員立繪HTML || 怪物立繪HTML || 隊長立繪HTML || 材料立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>${雙語("這筆資料沒有立繪", "No portrait for this entry")}</span></div>`;
+    成員立繪HTML || 怪物立繪HTML || Boss立繪HTML || 隊長立繪HTML || 材料立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>${雙語("這筆資料沒有立繪", "No portrait for this entry")}</span></div>`;
   const 表格HTML =
     選中條目.表格數值 && 選中條目.表格數值.length > 0
       ? `
