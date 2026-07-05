@@ -131,10 +131,11 @@ export class Panels {
   }
 
   private renderManagement(sim: Sim, state: RunState): void {
-    const body = this.frame("管理介面", `<div class="legacy-management-host"></div>`, "Tab / Esc 關閉。");
-    const host = body.querySelector<HTMLElement>(".legacy-management-host");
+    this.overlay.innerHTML = `<div class="legacy-management-host"></div>`;
+    const host = this.overlay.querySelector<HTMLElement>(".legacy-management-host");
     if (!host) return;
-    body.style.padding = "0";
+    host.style.width = "100%";
+    host.style.height = "100%";
     掛載舊管理介面(host, sim, state, () => this.close());
   }
 
