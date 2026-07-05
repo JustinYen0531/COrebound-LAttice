@@ -50,7 +50,7 @@ export class Hud {
       </div>
       <div class="hud-prompt hidden"></div>
       <div class="hud-toasts"></div>
-      <div class="hud-keys">WASD 移動 · Space 隊長技 · E 互動 · Tab 小隊面板 · 1~4 藥水</div>
+      <div class="hud-keys">WASD 移動 · Space 隊長技 · E 互動 · Tab 管理介面 · 1~4 藥水</div>
     `;
     parent.appendChild(this.root);
     this.minimap = this.root.querySelector(".hud-minimap")!;

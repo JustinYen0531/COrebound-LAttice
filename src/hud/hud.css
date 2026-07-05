@@ -1,0 +1,770 @@
+/* ============================================================
+ * 戰鬥 HUD 樣式
+ * 對應「玩家介面_戰鬥HUD與操作骨架.md」
+ * 設計基準:1920×1080,其他解析度由 viewport 等比縮放。
+ *
+ * 視覺語言：黑白為主、線條分明，與 src/style.css 建立的世界觀美術方向
+ * （切角面板、髮絲白線、儀式金點綴、職責色只作戰術情報用）保持一致——
+ * HUD 是戰場上最常駐的介面，比起彩色面板，更需要靠線條與留白傳達秩序感。
+ * ============================================================ */
+
+:host,
+.hud-root {
+  /* 色彩變數：中性色以黑白為主，僅職責色(藍/紅/黃)與生命階梯色帶有語意，其餘一律線稿化 */
+  --c-hp-full: #e9ecf8;
+  --c-hp-warn: #e8b64d;
+  --c-hp-danger: #ff5468;
+  --c-shield: #8d93ad;
+  --c-shield-stroke: #c7cbe0;
+  --c-energy: #ffd24d;
+  --c-active: #d8b46a;
+  --c-weapon: #d8b46a;
+  --c-periodic: #6f8cff;
+  --c-auto: #6f8cff;
+  --c-ink: #e9ecf8;
+  --c-ink-dim: #8d93ad;
+  --c-line: rgba(233, 236, 248, 0.28);
+  --c-line-soft: rgba(233, 236, 248, 0.14);
+  --c-gold: #d8b46a;
+  --c-gold-soft: rgba(216, 180, 106, 0.35);
+  --c-bg-panel: rgba(6, 7, 12, 0.88);
+  --c-bg-panel-2: rgba(10, 12, 20, 0.94);
+  --c-border: rgba(233, 236, 248, 0.22);
+  --cut: 10px;
+
+  position: fixed;
+  inset: 0;
+  pointer-events: none; /* 容器不擋戰場,只有子元件可互動 */
+  font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+  color: var(--c-ink);
+  user-select: none;
+}
+
+.hud-root * {
+  box-sizing: border-box;
+}
+
+/* 共用切角面板：呼應 src/style.css 的八邊形切角語言 */
+.hud-chamfer {
+  clip-path: polygon(
+    var(--cut) 0,
+    calc(100% - var(--cut)) 0,
+    100% var(--cut),
+    100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%,
+    var(--cut) 100%,
+    0 calc(100% - var(--cut)),
+    0 var(--cut)
+  );
+}
+
+/* ============================================================
+ * 核心三件組(底部中央)— 規格 §1.2
+ * ============================================================ */
+.hud-core-host {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.core-trio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+}
+
+/* 隊長頭像：雙環線稿框，取代原本純色圓底 */
+.core-trio .avatar {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.core-trio .avatar::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 1px solid var(--c-line-soft);
+  pointer-events: none;
+}
+.core-trio .avatar.ready {
+  filter: drop-shadow(0 0 8px var(--c-gold-soft));
+  animation: readyPulse 1.8s ease-in-out infinite;
+}
+.core-trio .avatar.dim {
+  filter: brightness(0.55) saturate(0.7);
+}
+.core-trio .avatar.latency {
+  filter: brightness(0.75);
+}
+.core-trio .avatar.lethal::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--c-hp-danger);
+  animation: lethalPulse 0.8s ease-in-out infinite;
+}
+.core-trio .avatar-face {
+  position: absolute;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #05060a;
+  background: var(--c-ink) !important;
+  border: 2px solid rgba(5, 6, 10, 0.5);
+}
+.core-trio .cooldown-ring-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.core-trio .cooldown-track {
+  stroke: var(--c-line-soft) !important;
+}
+.core-trio .cooldown-ring {
+  stroke: var(--c-gold) !important;
+  filter: drop-shadow(0 0 3px var(--c-gold-soft));
+  transition: stroke-dasharray 0.12s linear;
+}
+.core-trio .energy-ready-dot {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--c-line);
+  background: transparent;
+  transition: all 0.2s;
+}
+.core-trio .energy-ready-dot.on {
+  background: var(--c-energy);
+  border-color: var(--c-energy);
+  box-shadow: 0 0 8px var(--c-energy);
+}
+
+/* 生命/能量條：切角端頭取代圓角，呼應世界地板/按鈕的切角語言 */
+.core-trio .health-bar,
+.core-trio .energy-bar {
+  overflow: visible;
+}
+.core-trio .bar-frame {
+  fill: rgba(4, 5, 9, 0.7);
+  stroke: var(--c-border);
+  stroke-width: 1.5;
+}
+.core-trio .bar-fill {
+  transition: d 0.18s ease, fill 0.25s ease;
+}
+.core-trio .bar-text {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.core-trio .health-bar.pulse-danger {
+  animation: dangerPulse 1s ease-in-out infinite;
+}
+.core-trio .energy-bar.dim {
+  filter: brightness(0.5) grayscale(0.3);
+}
+
+@keyframes readyPulse {
+  0%, 100% { filter: drop-shadow(0 0 5px var(--c-gold-soft)); }
+  50% { filter: drop-shadow(0 0 13px var(--c-gold-soft)); }
+}
+@keyframes lethalPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+@keyframes dangerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* ============================================================
+ * 同心圓(置中於頭像正上方)— 規格 §2
+ * ============================================================ */
+.hud-rings-host {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translate(-50%, 65px);
+  width: 392px;
+  height: 392px;
+  margin-bottom: 0;
+  pointer-events: auto;
+  z-index: 9;
+}
+.formation-rings {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.formation-rings .layer {
+  transition: opacity 0.25s ease;
+}
+.formation-rings .spin-group {
+  transform-origin: center;
+  animation-name: spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: 20s; /* 由 JS 個別覆蓋 */
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.formation-rings .slot {
+  transition: opacity 0.15s, filter 0.15s;
+}
+.formation-rings .slot:hover .slot-gem {
+  filter: brightness(1.4) drop-shadow(0 0 5px currentColor);
+}
+.formation-rings .slot.empty .slot-gem {
+  opacity: 0.32;
+}
+.formation-rings .slot.dead .slot-gem {
+  opacity: 0.5;
+}
+
+/* ============================================================
+ * 技能圖示列 — 規格 §4.3、§4.4
+ * ============================================================ */
+.hud-strips-host {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.skill-strips {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+}
+.weapon-strip,
+.periodic-strip {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.weapon-icon,
+.periodic-icon {
+  position: relative;
+  color: var(--c-ink);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+.weapon-icon svg .glyph,
+.periodic-icon svg .glyph {
+  color: var(--c-ink);
+}
+.weapon-icon .glyph-inline,
+.periodic-icon .glyph-inline {
+  position: absolute;
+  inset: 22%;
+  pointer-events: none;
+  color: var(--c-ink);
+}
+.weapon-icon .star {
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  font-size: 9px;
+  color: var(--c-gold);
+  background: rgba(4, 5, 9, 0.85);
+  padding: 0 3px;
+  border: 1px solid var(--c-line-soft);
+}
+.weapon-icon .lock {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  width: 12px;
+  height: 12px;
+  color: var(--c-ink-dim);
+}
+.weapon-icon.off,
+.periodic-icon.off {
+  filter: grayscale(1) brightness(0.55);
+}
+.weapon-icon.firing .cooldown {
+  animation: firingFlow 1.5s linear infinite;
+}
+@keyframes firingFlow {
+  to { stroke-dashoffset: -20; }
+}
+.periodic-icon.ready {
+  animation: readyPulse 1.2s ease-in-out infinite;
+}
+
+/* ============================================================
+ * 左右滑抽屜 — 規格 §3、§5
+ * ============================================================ */
+.hud-drawer-slot {
+  position: absolute;
+  bottom: 40px;
+  pointer-events: auto;
+  z-index: 11;
+}
+.hud-drawer-slot-left {
+  right: 50%;
+  margin-right: 320px;
+}
+.hud-drawer-slot-right {
+  left: 50%;
+  margin-left: 320px;
+}
+
+.drawer {
+  background: var(--c-bg-panel);
+  border: 1px solid var(--c-border);
+  clip-path: polygon(
+    14px 0, calc(100% - 14px) 0, 100% 14px,
+    100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%,
+    0 calc(100% - 14px), 0 14px
+  );
+  padding: 16px 16px 14px;
+  box-shadow: 0 0 0 1px rgba(216, 180, 106, 0.06) inset, 0 10px 32px rgba(0, 0, 0, 0.6);
+  width: 264px;
+  opacity: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.weapon-drawer {
+  transform: translateX(-100%);
+  margin-right: 12px;
+}
+.item-drawer {
+  transform: translateX(100%);
+  margin-left: 12px;
+}
+.drawer-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-gold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--c-line-soft);
+}
+.drawer-hint {
+  font-size: 10.5px;
+  color: var(--c-ink-dim);
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--c-line-soft);
+  line-height: 1.5;
+}
+
+/* 武器列表：切角條目取代圓角卡片 */
+.weapon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.weapon-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--c-bg-panel-2);
+  border: 1px solid var(--c-line-soft);
+  clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.weapon-item:hover {
+  border-color: var(--c-gold);
+  background: rgba(216, 180, 106, 0.06);
+}
+.weapon-item.off {
+  opacity: 0.4;
+}
+.weapon-item.locked {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.wi-glyph {
+  width: 24px;
+  height: 24px;
+  color: var(--c-ink);
+  flex-shrink: 0;
+}
+.wi-meta {
+  flex: 1;
+}
+.wi-name {
+  font-size: 12.5px;
+}
+.wi-star {
+  font-size: 11px;
+  color: var(--c-gold);
+}
+.wi-cd {
+  font-size: 10px;
+  color: var(--c-ink-dim);
+}
+.wi-state {
+  font-size: 10px;
+  color: var(--c-ink-dim);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.wi-state svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* 物品 + 隊員 */
+.id-row {
+  display: flex;
+  gap: 10px;
+}
+.potion-list {
+  flex: 0 0 76px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.roster-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.potion-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 7px 4px;
+  background: var(--c-bg-panel-2);
+  border: 1px solid var(--c-line-soft);
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px);
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.1s, transform 0.1s;
+}
+.potion-item:hover {
+  border-color: var(--c-gold);
+}
+.potion-item:active {
+  cursor: grabbing;
+  transform: scale(0.96);
+}
+.pi-glyph {
+  width: 22px;
+  height: 22px;
+  color: var(--c-ink);
+}
+.pi-name {
+  font-size: 9.5px;
+  text-align: center;
+  line-height: 1.2;
+  margin-top: 3px;
+}
+.big-tag {
+  color: var(--c-gold);
+  font-weight: 700;
+}
+.pi-count {
+  font-size: 9.5px;
+  color: var(--c-ink-dim);
+}
+
+.roster-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 7px;
+  background: var(--c-bg-panel-2);
+  border: 1px solid transparent;
+  border-left: 2px solid var(--c-line-soft);
+  transition: all 0.12s;
+}
+.roster-item.droppable {
+  border-left-color: var(--c-hp-full);
+  background: rgba(233, 236, 248, 0.05);
+}
+.roster-item.undroppable {
+  opacity: 0.3;
+}
+.roster-item.drop-hover {
+  border-color: var(--c-gold);
+  background: rgba(216, 180, 106, 0.1);
+  transform: scale(1.02);
+}
+.roster-item.dead {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+.roster-item.lethal {
+  border-left-color: var(--c-hp-danger);
+}
+.roster-item.shielded .ri-face {
+  box-shadow: 0 0 0 2px var(--c-shield-stroke);
+}
+.ri-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ri-face {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 5, 9, 0.7);
+}
+.ri-role {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.ri-bar {
+  height: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--c-line-soft);
+}
+.ri-fill {
+  height: 100%;
+  transition: width 0.2s;
+}
+.ri-foot {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--c-ink-dim);
+}
+.ail {
+  background: rgba(255, 84, 104, 0.18);
+  border: 1px solid rgba(255, 84, 104, 0.4);
+  padding: 0 3px;
+  margin-right: 2px;
+}
+.roster-more {
+  font-size: 10px;
+  color: var(--c-ink-dim);
+  text-align: center;
+  padding: 4px;
+}
+.empty-hint {
+  font-size: 11px;
+  color: var(--c-ink-dim);
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* 大藥水確認橫幅 — 規格 §6.5 */
+.big-confirm-banner {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background: rgba(6, 7, 12, 0.96);
+  color: var(--c-ink);
+  border: 1px solid var(--c-hp-danger);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  box-shadow: 0 0 20px rgba(255, 84, 104, 0.25);
+  animation: bannerIn 0.2s ease;
+}
+@keyframes bannerIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.big-confirm-banner .confirm-btn,
+.big-confirm-banner .cancel-btn {
+  border: 1px solid var(--c-line);
+  background: transparent;
+  color: var(--c-ink);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 11.5px;
+}
+.big-confirm-banner .confirm-btn {
+  border-color: var(--c-hp-danger);
+  color: var(--c-hp-danger);
+  font-weight: 700;
+}
+.big-confirm-banner .cancel-btn {
+  color: var(--c-ink-dim);
+}
+.big-confirm-banner .countdown {
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink-dim);
+}
+
+/* 拖曳鬼影 */
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  width: 30px;
+  height: 30px;
+  color: var(--c-ink);
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.7));
+}
+
+/* ============================================================
+ * 滑動提示 + 戰鬥抑制提示 — 規格 §3.2、§6.3
+ * ============================================================ */
+.hud-hint {
+  position: absolute;
+  bottom: 90px;
+  font-size: 10.5px;
+  color: var(--c-ink-dim);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  letter-spacing: 0.08em;
+  background: rgba(4, 5, 9, 0.7);
+  border: 1px solid var(--c-line-soft);
+  padding: 3px 9px;
+}
+.hud-hint-l {
+  left: calc(50% - 200px);
+  transform: translateX(-100%);
+}
+.hud-hint-r {
+  right: calc(50% - 200px);
+  transform: translateX(100%);
+}
+.hud-suppress-toast {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(4, 5, 9, 0.9);
+  color: var(--c-hp-warn);
+  border: 1px solid var(--c-hp-warn);
+  padding: 6px 14px;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.hud-suppress-toast.show {
+  opacity: 1;
+}
+
+/* ============================================================
+ * 測試殼:控制面板與戰場背景
+ * (僅 mock 階段,正式遊戲會移除)
+ * ============================================================ */
+.test-shell {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, #14161f 0%, #05060a 60%);
+  overflow: hidden;
+}
+.test-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(60deg, rgba(233,236,248,0.05) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(-60deg, rgba(233,236,248,0.05) 0 1px, transparent 1px 64px);
+  opacity: 0.6;
+}
+.test-panel {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  background: rgba(6, 7, 12, 0.9);
+  border: 1px solid var(--c-line-soft, rgba(233,236,248,0.22));
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #e9ecf8;
+  z-index: 1000;
+  max-width: 260px;
+}
+.test-panel h3 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #d8b46a;
+}
+.test-panel button {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
+  padding: 5px 8px;
+  background: rgba(216, 180, 106, 0.08);
+  border: 1px solid rgba(216, 180, 106, 0.35);
+  color: #e9ecf8;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+}
+.test-panel button:hover {
+  background: rgba(216, 180, 106, 0.18);
+}
+.test-panel .hint {
+  margin-top: 8px;
+  color: #8d93ad;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.test-panel kbd {
+  background: rgba(233, 236, 248, 0.1);
+  padding: 1px 4px;
+  font-size: 10px;
+}
+.test-log {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  background: rgba(6, 7, 12, 0.9);
+  border: 1px solid rgba(233, 236, 248, 0.22);
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #8d93ad;
+  z-index: 1000;
+  max-width: 280px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: ui-monospace, monospace;
+}
+.test-log .entry {
+  margin: 2px 0;
+}
+.test-log .entry .t {
+  color: #5b6178;
+}
