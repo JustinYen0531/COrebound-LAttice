@@ -2045,7 +2045,7 @@ button.禁用:hover {
 }
 .世界地圖層-愛因斯坦磁磚 {
   stroke: #ffeec8; /* 幾何：冷藍相反的淺黃金色 */
-  stroke-width: 1.5;
+  stroke-width: 2.4;
   fill-opacity: 0.78;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
@@ -2053,6 +2053,7 @@ button.禁用:hover {
 }
 .世界地圖層-愛因斯坦磁磚-core {
   fill-opacity: 0.92;
+  stroke-width: 3.1;
 }
 .世界地圖層-幾何中央分界線 {
   fill: none;
@@ -2067,7 +2068,7 @@ button.禁用:hover {
 }
 .世界地圖層-彭羅斯磁磚 {
   stroke: #fbc5ff; /* 分形：紫色菱形相反的淺粉紫色 */
-  stroke-width: 1.5;
+  stroke-width: 2.4;
   fill-opacity: 0.78;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
@@ -2075,17 +2076,18 @@ button.禁用:hover {
 }
 .世界地圖層-彭羅斯磁磚-core {
   fill-opacity: 0.92;
+  stroke-width: 3.1;
 }
 /* 薄菱形(銳角三角形對)畫細一點的內縫線，厚菱形正常，強化「兩種菱形」的可辨識度 */
 .世界地圖層-彭羅斯磁磚-thin {
-  stroke-width: 1.0;
+  stroke-width: 1.55;
 }
 .世界地圖層-艾雪鳥地板 {
   opacity: 1;
 }
 .世界地圖層-艾雪鳥磁磚 {
   stroke: #ffd5d5; /* 有機：草綠相反的淺洋紅粉色 */
-  stroke-width: 1.5;
+  stroke-width: 2.3;
   fill-opacity: 0.78;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
@@ -2093,13 +2095,14 @@ button.禁用:hover {
 }
 .世界地圖層-艾雪鳥磁磚-core {
   fill-opacity: 0.92;
+  stroke-width: 3.0;
 }
 .世界地圖層-開羅地板 {
   opacity: 1;
 }
 .世界地圖層-開羅磁磚 {
   stroke: #c0f0ff; /* 機械：銅黃相反的淺電路青色 */
-  stroke-width: 1.5;
+  stroke-width: 2.4;
   fill-opacity: 0.78;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
@@ -2107,6 +2110,12 @@ button.禁用:hover {
 }
 .世界地圖層-開羅磁磚-core {
   fill-opacity: 0.92;
+  stroke-width: 3.1;
+}
+.世界地圖層-高細節花紋 {
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  filter: saturate(0.94) contrast(1.02);
 }
 .世界地圖層-區域片-organic {
   fill: rgba(111, 220, 140, 0.14);
