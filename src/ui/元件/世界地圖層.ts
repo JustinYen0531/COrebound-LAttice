@@ -169,6 +169,13 @@ const FAMILY_FURNACE_IMAGE: Record<Family, string> = {
 // 工作台與流浪商店：全種類共用單張去背圖，不分家族／世界。
 const WORKBENCH_IMAGE = "/images/props/facilities/workbenches/workbench.png";
 const SHOP_IMAGE = "/images/props/facilities/shops/shop.png";
+const STATUE_IMAGE_BY_MEMBER_NO: Partial<Record<number, string>> = {
+  11: "/images/characters/statues/fractal_statue_11_snowglass.png",
+  12: "/images/characters/statues/fractal_statue_12_bifurcation.png",
+  13: "/images/characters/statues/fractal_statue_13_lightning.png",
+  14: "/images/characters/statues/fractal_statue_14_abyss.png",
+  15: "/images/characters/statues/fractal_statue_15_aurora.png",
+};
 
 const LIGHTWEIGHT_WRINKLE_FLOOR_IMAGE: Record<World, string> = {
   geometry: "/images/maps/wrinkles/geometry.png",
@@ -2121,7 +2128,7 @@ function createObjectNode(object: MapObject): HTMLElement {
 
   const beaconCore = document.createElement("div");
   beaconCore.className = "世界地圖層-物件-信標核心";
-  beaconCore.textContent = FACILITY_GLYPH[object.kind];
+  beaconCore.textContent = object.kind === "雕像" && imagePath ? "✦" : FACILITY_GLYPH[object.kind];
   beacon.appendChild(beaconCore);
 
   const visualLayer = document.createElement("div");
@@ -2173,6 +2180,7 @@ function facilityImagePath(object: MapObject): string | null {
   if (object.kind === "熔爐" && object.family) return FAMILY_FURNACE_IMAGE[object.family];
   if (object.kind === "合成") return WORKBENCH_IMAGE;
   if (object.kind === "商店") return SHOP_IMAGE;
+  if (object.kind === "雕像" && object.memberNo) return STATUE_IMAGE_BY_MEMBER_NO[object.memberNo] ?? null;
   if (object.kind === "召喚" && object.region !== "plaza") return GUARDIAN_ALTAR_IMAGE[object.region];
   return null;
 }
