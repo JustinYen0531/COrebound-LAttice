@@ -83,9 +83,6 @@ export class CoreTrio {
   private readonly periodicSummary: HTMLDivElement;
   private readonly weaponSummary: HTMLDivElement;
   private readonly energyReadyDot: HTMLDivElement;
-  private readonly tickDial: HTMLDivElement;
-  private readonly tickHand: HTMLDivElement;
-  private readonly tickLabel: HTMLDivElement;
 
   private readonly cooldownCircumference: number;
   private snapshot: HudSnapshot | null = null;
@@ -118,9 +115,6 @@ export class CoreTrio {
     this.periodicSummary = this.el.querySelector(".summary-periodic") as HTMLDivElement;
     this.weaponSummary = this.el.querySelector(".summary-weapons") as HTMLDivElement;
     this.energyReadyDot = this.el.querySelector(".energy-ready-dot") as HTMLDivElement;
-    this.tickDial = this.el.querySelector(".tick-dial") as HTMLDivElement;
-    this.tickHand = this.el.querySelector(".tick-dial-hand") as HTMLDivElement;
-    this.tickLabel = this.el.querySelector(".tick-dial-label") as HTMLDivElement;
 
     // 初始化冷卻環幾何
     this.cooldownTrack.setAttribute("stroke-dasharray", `${this.cooldownCircumference}`);
@@ -155,7 +149,6 @@ export class CoreTrio {
     this.renderEnergy(snap);
     this.renderAvatar(snap.active, snap.captainColor, snap.captainPortraitUrl, snap.captainId);
     this.renderCooldownSummary(snap);
-    this.renderTick(snap.tickProgress, snap.tickPulseAt);
   }
 
   private renderHealth(snap: HudSnapshot): void {
@@ -233,13 +226,6 @@ export class CoreTrio {
     this.weaponSummary.textContent = `武器冷卻：${this.formatWeapons(snap)}`;
   }
 
-  private renderTick(progress: number, pulseAt: number): void {
-    const clamped = Math.max(0, Math.min(1, progress));
-    this.tickHand.style.transform = `translateX(-50%) rotate(${clamped * 360}deg)`;
-    this.tickLabel.textContent = `${Math.ceil((1 - clamped) * 10) / 10}s`;
-    this.tickDial.classList.toggle("pulse", Date.now() - pulseAt < 180);
-  }
-
   /** 切換生命/能量條文字顯示(滑鼠停留 0.5s 用)— 規格 §1.3、§1.4 */
   showBarText(show: boolean): void {
     this.healthText.style.opacity = "1";
@@ -281,7 +267,6 @@ export class CoreTrio {
           <div class="stat-meta energy-meta">目前 0%</div>
         </section>
       </section>
-      <div class="tick-dial" aria-label="每秒傷害 Tick 指針"><div class="tick-dial-face"><div class="tick-dial-ring"></div><div class="tick-dial-hand"></div><div class="tick-dial-cap"></div></div><div class="tick-dial-label">1.0s</div></div>
     `;
     return wrap;
   }
@@ -306,8 +291,8 @@ export class CoreTrio {
         <path class="bar-frame" d="${chamferPath(0, 0, w, h, 6)}" />
         ${shield}
         <path class="bar-fill" d="" fill="${fillVar}" />
-        <text class="bar-text" x="${w / 2}" y="${h / 2 + 5}"
-          text-anchor="middle" font-size="14" fill="#fff"
+        <text class="bar-text" x="${w - 12}" y="${h / 2 + 5}"
+          text-anchor="end" font-size="14" fill="#fff"
           style="opacity:0; transition: opacity .15s;">0%</text>
       </svg>
     `;

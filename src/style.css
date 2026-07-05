@@ -3677,7 +3677,7 @@ button.禁用:hover {
 .音樂浮動面板 {
   position: absolute;
   top: 20px;
-  right: 20px;
+  left: 20px;
   width: min(340px, calc(100vw - 32px));
   padding: 14px 16px;
   border-radius: 18px;
@@ -3749,7 +3749,6 @@ button.禁用:hover {
 @media (max-width: 720px) {
   .音樂浮動面板 {
     top: 12px;
-    right: 12px;
     left: 12px;
     width: auto;
   }

@@ -10,7 +10,7 @@
 
 :host,
 .hud-root {
-  --hud-scale: 2;
+  --hud-scale: 1.8;
   /* 色彩變數：中性色以黑白為主，僅職責色(藍/紅/黃)與生命階梯色帶有語意，其餘一律線稿化 */
   --c-hp-full: #e9ecf8;
   --c-hp-warn: #e8b64d;
@@ -98,6 +98,7 @@
 }
 
 .core-trio .hud-energy-stack {
+  position: relative;
   display: grid;
   gap: 8px;
 }
@@ -121,24 +122,50 @@
   color: #fff;
   font-size: 11px;
   font-weight: 700;
+  min-width: 102px;
+  text-align: right;
+  font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
 .core-trio .stat-meta {
   color: var(--c-ink-dim);
   font-size: 9px;
   line-height: 1.3;
+  font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
 .core-trio .hud-summary-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
   display: grid;
   gap: 6px;
   min-height: 88px;
+  min-width: 260px;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  z-index: 3;
+}
+
+.core-trio .hud-energy-stack:hover .hud-summary-panel,
+.core-trio .hud-energy-stack:focus-within .hud-summary-panel {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .core-trio .summary-row {
   display: block;
   line-height: 1.35;
+  font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
 .core-trio .summary-active {
@@ -343,61 +370,6 @@
   border-color: var(--c-energy);
   box-shadow: 0 0 8px var(--c-energy);
 }
-.core-trio .tick-dial {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: 74px;
-  margin-bottom: 8px;
-}
-.core-trio .tick-dial-face {
-  position: relative;
-  width: 62px;
-  height: 62px;
-  border-radius: 50%;
-  background: rgba(4, 5, 9, 0.88);
-  border: 1px solid var(--c-border);
-  box-shadow: inset 0 0 0 1px var(--c-line-soft);
-}
-.core-trio .tick-dial-ring {
-  position: absolute;
-  inset: 6px;
-  border-radius: 50%;
-  border: 1px dashed var(--c-gold-soft);
-}
-.core-trio .tick-dial-hand {
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  width: 2px;
-  height: 23px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--c-energy), rgba(255, 210, 77, 0.2));
-  transform-origin: 50% calc(100% - 1px);
-  transition: transform 0.08s linear;
-}
-.core-trio .tick-dial-cap {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--c-energy);
-  box-shadow: 0 0 8px rgba(255, 210, 77, 0.45);
-}
-.core-trio .tick-dial-label {
-  color: var(--c-ink);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-.core-trio .tick-dial.pulse .tick-dial-face {
-  box-shadow: 0 0 16px rgba(255, 210, 77, 0.5), inset 0 0 0 1px var(--c-line-soft);
-}
-
 /* 生命/能量條：切角端頭取代圓角，呼應世界地板/按鈕的切角語言 */
 .core-trio .health-bar,
 .core-trio .energy-bar {
@@ -413,7 +385,9 @@
 }
 .core-trio .bar-text {
   font-weight: 600;
+  font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
   opacity: 1 !important;
 }
 .core-trio .health-bar.pulse-danger {

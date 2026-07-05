@@ -194,11 +194,22 @@ const PLAYER_RING_OUTER_RADIUS: Record<1 | 2 | 3, number> = { 1: 140, 2: 220, 3:
 const REFERENCE_CAMERA_ZOOM = 2.43;
 const DEFAULT_CAMERA_ZOOM = 2.0;
 const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
-const MIN_CAMERA_ZOOM = 0.85;
-const MAX_CAMERA_ZOOM = 4.0;
+const DEFAULT_CAMERA_ZOOM_PERCENT = 100;
+const MIN_CAMERA_ZOOM_PERCENT = 50;
+const MAX_CAMERA_ZOOM_PERCENT = 200;
+const MIN_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM * (MIN_CAMERA_ZOOM_PERCENT / DEFAULT_CAMERA_ZOOM_PERCENT);
+const MAX_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM * (MAX_CAMERA_ZOOM_PERCENT / DEFAULT_CAMERA_ZOOM_PERCENT);
 const ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS = true;
 const ENABLE_DETAILED_FLOOR_TEXTURES = false;
 let cameraZoom = DEFAULT_CAMERA_ZOOM;
+
+function cameraZoomToPercent(zoom: number): number {
+  return (zoom / DEFAULT_CAMERA_ZOOM) * DEFAULT_CAMERA_ZOOM_PERCENT;
+}
+
+function cameraPercentToZoom(percent: number): number {
+  return DEFAULT_CAMERA_ZOOM * (percent / DEFAULT_CAMERA_ZOOM_PERCENT);
+}
 
 const GUARDIAN_ALTAR_IMAGE: Record<World, string> = {
   geometry: "/images/props/facilities/altars/guardian_altar_geometry.png",
@@ -748,10 +759,10 @@ export function 建立世界地圖層(): HTMLElement {
   const zoomSlider = document.createElement("input");
   zoomSlider.className = "世界地圖層-縮放滑桿";
   zoomSlider.type = "range";
-  zoomSlider.min = String(MIN_CAMERA_ZOOM);
-  zoomSlider.max = String(MAX_CAMERA_ZOOM);
-  zoomSlider.step = "0.05";
-  zoomSlider.value = String(cameraZoom);
+  zoomSlider.min = String(MIN_CAMERA_ZOOM_PERCENT);
+  zoomSlider.max = String(MAX_CAMERA_ZOOM_PERCENT);
+  zoomSlider.step = "1";
+  zoomSlider.value = String(Math.round(cameraZoomToPercent(cameraZoom)));
   zoomSlider.setAttribute("aria-label", "鏡頭放大比例");
   zoomControl.appendChild(zoomSlider);
 
@@ -1193,8 +1204,8 @@ export function 建立世界地圖層(): HTMLElement {
     const playerSize = PLAYER_SIZE_AT_REFERENCE_ZOOM * (cameraZoom / REFERENCE_CAMERA_ZOOM);
     playerNode.style.setProperty("--player-world-size", `${playerSize.toFixed(2)}px`);
     updateStaticWorldNodePositions();
-    zoomSlider.value = cameraZoom.toFixed(2);
-    zoomRatio.value = `${Math.round(cameraZoom * 100)}%`;
+    zoomSlider.value = String(Math.round(cameraZoomToPercent(cameraZoom)));
+    zoomRatio.value = `${Math.round(cameraZoomToPercent(cameraZoom))}%`;
     render();
   }
 
@@ -1204,7 +1215,7 @@ export function 建立世界地圖層(): HTMLElement {
     setCameraZoom(cameraZoom * zoomFactor);
   }
 
-  zoomSlider.addEventListener("input", () => setCameraZoom(Number(zoomSlider.value)));
+  zoomSlider.addEventListener("input", () => setCameraZoom(cameraPercentToZoom(Number(zoomSlider.value))));
   setCameraZoom(cameraZoom);
 
   function projectedWorldPosition(point: { x: number; y: number }): { x: number; y: number } {
