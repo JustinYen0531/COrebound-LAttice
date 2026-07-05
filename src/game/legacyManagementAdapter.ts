@@ -14,6 +14,64 @@ let 已訂閱 = false;
 let 已啟動世界時鐘 = false;
 let 目前重繪: (() => void) | null = null;
 const LEGACY_STYLE_ID = "legacy-management-global-style";
+const LEGACY_MANAGEMENT_FIX_CSS = `
+.管理介面-root,
+.管理介面-內容,
+.子頁內容,
+.資料夾式版面-內容區,
+.資料夾式版面-補充區,
+.圖鑑瀏覽器-標題列,
+.圖鑑瀏覽器-展開區,
+.小隊分頁-右,
+.互動面板-區塊,
+.驗收面板,
+.子頁內容-narrow {
+  background: var(--bg-panel) !important;
+  opacity: 1 !important;
+}
+
+.管理介面-root::before,
+.管理介面-root::after,
+.管理介面-內容::before,
+.管理介面-內容::after,
+.子頁內容::before,
+.子頁內容::after,
+.資料夾式版面-內容區::before,
+.資料夾式版面-內容區::after,
+.資料夾式版面-補充區::before,
+.資料夾式版面-補充區::after,
+.圖鑑瀏覽器-標題列::before,
+.圖鑑瀏覽器-標題列::after,
+.圖鑑瀏覽器-展開區::before,
+.圖鑑瀏覽器-展開區::after,
+.小隊分頁-右::before,
+.小隊分頁-右::after,
+.互動面板-區塊::before,
+.互動面板-區塊::after,
+.驗收面板::before,
+.驗收面板::after,
+.子頁內容-narrow::before,
+.子頁內容-narrow::after {
+  content: none !important;
+}
+
+.管理介面-root {
+  border: 1px solid var(--line) !important;
+  box-shadow: inset 0 0 0 1px rgba(111, 140, 255, 0.06) !important;
+}
+
+.圖鑑瀏覽器-標題列,
+.圖鑑瀏覽器-展開區,
+.小隊分頁-右,
+.互動面板-區塊,
+.驗收面板,
+.子頁內容,
+.資料夾式版面-內容區,
+.資料夾式版面-補充區 {
+  border: 1px solid var(--line-soft) !important;
+  box-shadow: none !important;
+}
+`;
 
 const 藥水映射 = {
   hpS: "hp_small",
@@ -87,7 +145,7 @@ export function 掛載舊管理介面(host: HTMLElement, sim: Sim, state: RunSta
   if (!styleTag) {
     styleTag = document.createElement("style");
     styleTag.id = LEGACY_STYLE_ID;
-    styleTag.textContent = legacyManagementCss;
+    styleTag.textContent = `${legacyManagementCss}\n${LEGACY_MANAGEMENT_FIX_CSS}`;
     document.head.appendChild(styleTag);
   }
 
