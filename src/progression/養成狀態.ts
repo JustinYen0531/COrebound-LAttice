@@ -10,7 +10,7 @@
  */
 
 import { MEMBERS } from "../data/成員資料庫";
-import { statsAtStar, type StarLevel } from "../data/成員型別";
+import { statsAtStar, type Family, type StarLevel } from "../data/成員型別";
 import { captainStatsAtStar } from "../data/控制引擎";
 import { materialsByWorld } from "../data/素材資料庫";
 import { starUpCost } from "./角色升星";
@@ -18,6 +18,9 @@ import { captainStarFromTotal } from "./隊長進化";
 import * as 背包 from "../economy/背包狀態";
 import { 應用程式狀態 } from "../ui/應用程式狀態";
 import type { CaptainId, ControlStar } from "../data/戰鬥原語";
+import { createOwnershipTable, setMemberStar, unlockMember, type OwnershipTable } from "./成員解鎖";
+import { computeFamilyWeaponStatus } from "../skills/技能管理";
+import { upgradeWeapon } from "./工作台製作";
 
 export type 初始成員層級 = "inner" | "middle" | "outer";
 export type 初始成員職責 = "protect" | "firepower" | "supply";
@@ -29,6 +32,8 @@ interface 隊員養成 {
   role: 初始成員職責;
 }
 
+type 武器星級 = 0 | StarLevel;
+
 const 預設起始成員配置: Array<{ memberNo: number; layer: 初始成員層級; role: 初始成員職責 }> = [
   { memberNo: 1, layer: "inner", role: "protect" },
   { memberNo: 2, layer: "middle", role: "firepower" },
@@ -36,6 +41,14 @@ const 預設起始成員配置: Array<{ memberNo: number; layer: 初始成員層
 ];
 
 let 起始成員配置 = 預設起始成員配置.map((entry) => ({ ...entry }));
+const 持有狀態表: OwnershipTable = createOwnershipTable();
+const 家族武器星級: Record<Family, 武器星級> = {
+  shield: 0,
+  multishot: 0,
+  straight: 0,
+  mine: 0,
+  laser: 0,
+};
 
 // 正式上陣 = 開局選中的 3 名初始成員，各從 1★ 起步。
 const 上陣: 隊員養成[] = 起始成員配置.map((entry) => ({
@@ -44,6 +57,26 @@ const 上陣: 隊員養成[] = 起始成員配置.map((entry) => ({
   layer: entry.layer,
   role: entry.role,
 }));
+
+function 重建正式持有狀態(): void {
+  持有狀態表.clear();
+  const fresh = createOwnershipTable();
+  for (const [memberNo, state] of fresh.entries()) {
+    持有狀態表.set(memberNo, state);
+  }
+  for (const entry of 上陣) {
+    unlockMember(持有狀態表, entry.memberNo);
+    setMemberStar(持有狀態表, entry.memberNo, entry.star);
+  }
+}
+
+function 重置家族武器星級(): void {
+  (Object.keys(家族武器星級) as Family[]).forEach((family) => {
+    家族武器星級[family] = 0;
+  });
+}
+
+重建正式持有狀態();
 
 const 預設隊長: CaptainId = "conductor";
 
@@ -109,6 +142,66 @@ export function 套用起始成員配置(): void {
       role: entry.role,
     });
   }
+  重建正式持有狀態();
+  重置家族武器星級();
+}
+
+export function 成員是否已初始化(memberNo: number): boolean {
+  return 持有狀態表.get(memberNo)?.owned ?? false;
+}
+
+export function 取得全成員初始化狀態(): Array<{
+  memberNo: number;
+  owned: boolean;
+  star: 0 | StarLevel;
+}> {
+  return MEMBERS.map((member) => {
+    const state = 持有狀態表.get(member.no);
+    return {
+      memberNo: member.no,
+      owned: state?.owned ?? false,
+      star: state?.star ?? 0,
+    };
+  });
+}
+
+export function 初始化解鎖成員(memberNo: number): { ok: boolean; reason?: string } {
+  const ok = unlockMember(持有狀態表, memberNo);
+  return ok ? { ok: true } : { ok: false, reason: "成員已初始化或資料不存在" };
+}
+
+export function 取得家族武器升級狀態(): Array<{
+  family: Family;
+  currentStar: 武器星級;
+  unlockedStar: 0 | StarLevel;
+  memberCount: number;
+  totalStar: number;
+}> {
+  const deployed = 取得上陣養成().map((member) => ({ family: member.family as Family, star: member.star }));
+  return computeFamilyWeaponStatus(deployed).map((entry) => ({
+    family: entry.family as Family,
+    currentStar: 家族武器星級[entry.family as Family],
+    unlockedStar: entry.unlockedStar,
+    memberCount: entry.memberCount,
+    totalStar: entry.totalStar,
+  }));
+}
+
+export function 升級家族武器(family: Family): { ok: boolean; reason?: string; newStar?: StarLevel } {
+  const familyStatus = 取得家族武器升級狀態().find((entry) => entry.family === family);
+  if (!familyStatus) return { ok: false, reason: "找不到家族武器狀態" };
+  const result = upgradeWeapon(
+    familyStatus.currentStar,
+    familyStatus.unlockedStar,
+    { shards: 背包.取碎片(family), gems: 背包.取原石() },
+  );
+  if (!result.ok || !result.newStar || !result.remaining) {
+    return { ok: false, reason: result.reason ?? "無法升級武器" };
+  }
+  背包.花費碎片(family, 背包.取碎片(family) - result.remaining.shards);
+  背包.花費原石(背包.取原石() - result.remaining.gems);
+  家族武器星級[family] = result.newStar;
+  return { ok: true, newStar: result.newStar };
 }
 
 /** 全隊屬性摘要（隊長@進化星級 + 8 隊員@各自星級）。 */
@@ -167,6 +260,7 @@ export function 升星上陣隊員(index: number): 升星回報 {
   }
 
   e.star = target;
+  setMemberStar(持有狀態表, e.memberNo, target);
   return { ok: true, newStar: target };
 }
 

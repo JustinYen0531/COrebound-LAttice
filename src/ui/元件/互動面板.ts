@@ -15,7 +15,7 @@ import { 應用程式狀態 } from "../應用程式狀態";
 import type { 互動設施 } from "../共用型別";
 import { FAMILY_LABEL, type Family } from "../../data/成員型別";
 import { STAR_RECIPE, MEMBERS } from "../../data/成員資料庫";
-import { MATERIALS, sellPriceOfMaterial, shardFromMaterial } from "../../data/素材資料庫";
+import { MATERIALS, materialsByWorld, sellPriceOfMaterial, shardFromMaterial } from "../../data/素材資料庫";
 import { MATERIAL_RARITY_LABEL, SHARD_YIELD, type MaterialStar } from "../../data/戰鬥原語";
 import type { World } from "../../data/成員型別";
 import {
@@ -30,21 +30,15 @@ import { MAP_OBJECTS } from "../../data/地圖物件資料";
 import { smelt } from "../../economy/熔爐熔煉";
 import * as 背包 from "../../economy/背包狀態";
 import { buyPotion, POTIONS, type PotionId } from "../../economy/流浪商店";
-import { 取得上陣養成, 升星上陣隊員 } from "../../progression/養成狀態";
+import {
+  取得上陣養成,
+  取得全成員初始化狀態,
+  取得家族武器升級狀態,
+  初始化解鎖成員,
+  升星上陣隊員,
+  升級家族武器,
+} from "../../progression/養成狀態";
 import { 刷新正式最大生命 } from "../正式對局小隊狀態";
-
-// ============================================================
-// 尚未完全接入正式持有清單的互動進度；資源交易已走正式背包。
-// ============================================================
-interface 互動進度 {
-  unlockedMembers: Set<number>;
-  skills: Record<string, number>; // 紀錄技能等級
-}
-
-const interactionProgress: 互動進度 = {
-  unlockedMembers: new Set([1, 2, 3, 6, 11, 16]), // 預設解鎖幾位
-  skills: { shield: 1, multishot: 1, straight: 1, mine: 1, laser: 1 },
-};
 
 // ============================================================
 // 推斷玩家目前所在世界(供地緣 +20% 加成提示用)
@@ -52,6 +46,10 @@ const interactionProgress: 互動進度 = {
 function regionNearby(): import("../../data/成員型別").World {
   const object = MAP_OBJECTS.find((entry) => entry.id === 應用程式狀態.額外.靠近的地圖物件ID);
   return object && object.region !== "plaza" ? object.region : "geometry";
+}
+
+function 設施已連線(設施: 互動設施): boolean {
+  return 應用程式狀態.額外.靠近的互動設施 === 設施;
 }
 
 // 現場/遠端狀態 Banner
@@ -92,6 +90,8 @@ function 合成面板(): HTMLElement {
   wrap.appendChild(建立狀態警示條("合成"));
   const inventory = 背包.背包快照();
   const squad = 取得上陣養成();
+  const online = 設施已連線("合成");
+  const weaponStatus = 取得家族武器升級狀態();
 
   const container = document.createElement("div");
   container.className = "面板內部區塊";
@@ -138,17 +138,17 @@ function 合成面板(): HTMLElement {
         <h4 style="margin: 0 0 8px; color: #ff8a3b;">🔮 技能武器升級 (不需怪物材料)</h4>
         <p style="font-size: 0.75rem; color: #8d93ad; margin-bottom: 10px;">直接消耗對應的家族碎片與原石提升局內威力。</p>
         <div style="display: flex; flex-direction: column; gap: 6px;">
-          ${(Object.keys(inventory.碎片) as Family[]).map((f) => {
-            const currentLvl = interactionProgress.skills[f] ?? 1;
+          ${weaponStatus.map((status) => {
+            const currentLvl = status.currentStar;
             const isMax = currentLvl >= 3;
-            const nextCost = currentLvl === 1 ? 10 : currentLvl === 2 ? 30 : 90;
-            const gemsCost = currentLvl === 1 ? 100 : currentLvl === 2 ? 400 : 1200;
+            const nextCost = currentLvl === 0 ? 10 : currentLvl === 1 ? 30 : 90;
+            const gemsCost = currentLvl === 0 ? 100 : currentLvl === 1 ? 400 : 1200;
             return `
               <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 4px;">
-                <span>${FAMILY_LABEL[f]}技能 (Lv.${currentLvl})</span>
+                <span>${FAMILY_LABEL[status.family]}技能 (Lv.${currentLvl}) / 已解鎖至 ${status.unlockedStar}★</span>
                 ${isMax 
                   ? `<span style="color: #ffd24d; font-size: 0.75rem;">MAX</span>` 
-                  : `<button class="三級按鈕" data-upgrade-skill="${f}" style="font-size: 0.7rem; padding: 2px 6px;">升級 (需:${nextCost}碎片/${gemsCost}原石)</button>`
+                  : `<button class="三級按鈕" data-upgrade-skill="${status.family}" style="font-size: 0.7rem; padding: 2px 6px;" ${online ? "" : "disabled"}>升級 (需:${nextCost}碎片/${gemsCost}原石)</button>`
                 }
               </div>
             `;
@@ -174,7 +174,7 @@ function 合成面板(): HTMLElement {
                 return `
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(0,0,0,0.16); padding: 4px 6px; border-radius: 4px;">
                     <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.nameZh} <b style="color:#ffd24d;">${m.star}★</b></span>
-                    <button class="三級按鈕 上陣升星-btn" data-squad-index="${index}" style="font-size: 0.68rem; padding: 1px 6px;" ${canUpgrade ? "" : "disabled"}>${canUpgrade ? "升星" : "MAX"}</button>
+                    <button class="三級按鈕 上陣升星-btn" data-squad-index="${index}" style="font-size: 0.68rem; padding: 1px 6px;" ${canUpgrade && online ? "" : "disabled"}>${canUpgrade ? "升星" : "MAX"}</button>
                   </div>
                 `;
               }).join("")}
@@ -193,25 +193,26 @@ function 合成面板(): HTMLElement {
   container.querySelectorAll("[data-upgrade-skill]").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const f = (e.currentTarget as HTMLElement).dataset.upgradeSkill as Family;
-      const currentLvl = interactionProgress.skills[f] ?? 1;
-      const cost = currentLvl === 1 ? 10 : currentLvl === 2 ? 30 : 90;
-      const gemsCost = currentLvl === 1 ? 100 : currentLvl === 2 ? 400 : 1200;
-
-      if (背包.取碎片(f) < cost || 背包.取原石() < gemsCost) {
-        alert(`升級失敗！材料不足。\n需要 ${cost} ${FAMILY_LABEL[f]}碎片 及 ${gemsCost} 原石。\n當前僅有：${背包.取碎片(f)} 碎片 / ${背包.取原石()} 原石。`);
+      if (!online) {
+        alert("需要站在工作台旁邊，才能真正進行升級。");
         return;
       }
-
-      背包.花費碎片(f, cost);
-      背包.花費原石(gemsCost);
-      interactionProgress.skills[f] = currentLvl + 1;
-      alert(`🎉 升級成功！${FAMILY_LABEL[f]}技能已提升至 Lv.${currentLvl + 1}。`);
+      const result = 升級家族武器(f);
+      if (!result.ok) {
+        alert(`升級失敗：${result.reason ?? "資源或家族條件不足"}`);
+        return;
+      }
+      alert(`🎉 升級成功！${FAMILY_LABEL[f]}技能已提升至 Lv.${result.newStar}。`);
       應用程式狀態.進入管理介面("互動");
     });
   });
 
   container.querySelectorAll(".上陣升星-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
+      if (!online) {
+        alert("需要站在工作台旁邊，才能真正替上陣成員升星。");
+        return;
+      }
       const index = Number((e.currentTarget as HTMLElement).dataset.squadIndex);
       const result = 升星上陣隊員(index);
       if (!result.ok) {
@@ -367,6 +368,8 @@ function 雕像面板(): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "互動面板 互動面板-雕像";
   wrap.appendChild(建立狀態警示條("雕像"));
+  const online = 設施已連線("雕像");
+  const ownership = new Map(取得全成員初始化狀態().map((entry) => [entry.memberNo, entry]));
 
   const container = document.createElement("div");
   container.className = "面板內部區塊";
@@ -393,7 +396,10 @@ function 雕像面板(): HTMLElement {
   const scrollArea = container.querySelector(".雕像成員列表-滾動") as HTMLElement;
 
   for (const m of MEMBERS) {
-    const isUnlocked = interactionProgress.unlockedMembers.has(m.no);
+    const isUnlocked = ownership.get(m.no)?.owned ?? false;
+    const unlockMaterials = materialsByWorld(m.world).filter((material) => material.use === "unlock_0to1");
+    const commonUnlock = unlockMaterials.find((material) => material.rarity === "common");
+    const fineUnlock = unlockMaterials.find((material) => material.rarity === "fine");
     const row = document.createElement("div");
     row.style.display = "flex";
     row.style.alignItems = "center";
@@ -418,21 +424,42 @@ function 雕像面板(): HTMLElement {
         </span>
         ${isUnlocked 
           ? "" 
-          : `<button class="三級按鈕 雕像-解鎖鈕" style="padding: 2px 8px; font-size: 0.72rem;">進行解鎖</button>`
+          : `<button class="三級按鈕 雕像-解鎖鈕" style="padding: 2px 8px; font-size: 0.72rem;" ${online ? "" : "disabled"}>進行解鎖</button>`
         }
       </div>
     `;
 
     if (!isUnlocked) {
       row.querySelector(".雕像-解鎖鈕")!.addEventListener("click", () => {
-        // 檢查碎片是否滿 10 個
+        if (!online) {
+          alert("需要站在對應雕像旁邊，才能真正完成初始化儀式。");
+          return;
+        }
+        if (!commonUnlock || !fineUnlock) {
+          alert("解鎖失敗：找不到對應世界的初始化素材定義。");
+          return;
+        }
         if (背包.取碎片(m.family) < 10) {
           alert(`解鎖失敗！需要 10 個 ${FAMILY_LABEL[m.family]}碎片。當前僅有：${背包.取碎片(m.family)} 個。`);
           return;
         }
+        if (背包.取材料(commonUnlock.no) < 3) {
+          alert(`解鎖失敗！需要 3 個 ${commonUnlock.nameZh}。當前僅有：${背包.取材料(commonUnlock.no)} 個。`);
+          return;
+        }
+        if (背包.取材料(fineUnlock.no) < 1) {
+          alert(`解鎖失敗！需要 1 個 ${fineUnlock.nameZh}。當前僅有：${背包.取材料(fineUnlock.no)} 個。`);
+          return;
+        }
 
+        const unlockResult = 初始化解鎖成員(m.no);
+        if (!unlockResult.ok) {
+          alert(`解鎖失敗：${unlockResult.reason ?? "成員已初始化"}`);
+          return;
+        }
+        背包.花費材料(commonUnlock.no, 3);
+        背包.花費材料(fineUnlock.no, 1);
         背包.花費碎片(m.family, 10);
-        interactionProgress.unlockedMembers.add(m.no);
         alert(`🗿 儀式完成！[${m.nameZh}] 雕像破繭而化為純白光芒！\n小隊已成功解鎖該角色 (0 ➔ 1★)！`);
         應用程式狀態.進入管理介面("互動");
       });
@@ -453,6 +480,7 @@ function 商店面板(): HTMLElement {
   wrap.className = "互動面板 互動面板-商店";
   wrap.appendChild(建立狀態警示條("商店"));
   const inventory = 背包.背包快照();
+  const online = 設施已連線("商店");
 
   const container = document.createElement("div");
   container.className = "面板內部區塊";
@@ -492,25 +520,25 @@ function 商店面板(): HTMLElement {
               <td style="padding: 6px 0; font-weight: bold;">生命藥水 (小)</td>
               <td>HP +20%</td>
               <td style="color:#ffd24d;">${POTIONS.hp_small.price}</td>
-              <td><button class="三級按鈕 商店-買" data-potion-id="hp_small" data-name="生命藥水 (小)">買</button></td>
+              <td><button class="三級按鈕 商店-買" data-potion-id="hp_small" data-name="生命藥水 (小)" ${online ? "" : "disabled"}>買</button></td>
             </tr>
             <tr>
               <td style="padding: 6px 0; font-weight: bold;">生命藥水 (大)</td>
               <td>HP +50%</td>
               <td style="color:#ffd24d;">${POTIONS.hp_big.price}</td>
-              <td><button class="三級按鈕 商店-買" data-potion-id="hp_big" data-name="生命藥水 (大)">買</button></td>
+              <td><button class="三級按鈕 商店-買" data-potion-id="hp_big" data-name="生命藥水 (大)" ${online ? "" : "disabled"}>買</button></td>
             </tr>
             <tr>
               <td style="padding: 6px 0; font-weight: bold;">能量藥水 (小)</td>
               <td>能量 +30%</td>
               <td style="color:#ffd24d;">${POTIONS.energy_small.price}</td>
-              <td><button class="三級按鈕 商店-買" data-potion-id="energy_small" data-name="能量藥水 (小)">買</button></td>
+              <td><button class="三級按鈕 商店-買" data-potion-id="energy_small" data-name="能量藥水 (小)" ${online ? "" : "disabled"}>買</button></td>
             </tr>
             <tr>
               <td style="padding: 6px 0; font-weight: bold;">能量藥水 (大)</td>
               <td>能量 +75%</td>
               <td style="color:#ffd24d;">${POTIONS.energy_big.price}</td>
-              <td><button class="三級按鈕 商店-買" data-potion-id="energy_big" data-name="能量藥水 (大)">買</button></td>
+              <td><button class="三級按鈕 商店-買" data-potion-id="energy_big" data-name="能量藥水 (大)" ${online ? "" : "disabled"}>買</button></td>
             </tr>
           </tbody>
         </table>
@@ -536,6 +564,10 @@ function 商店面板(): HTMLElement {
   // 購買藥水綁定
   container.querySelectorAll(".商店-買").forEach((btn) => {
     btn.addEventListener("click", (e) => {
+      if (!online) {
+        alert("需要站在商店旁邊，才能真正完成交易。");
+        return;
+      }
       const potionId = (e.currentTarget as HTMLElement).dataset.potionId as PotionId;
       const name = (e.currentTarget as HTMLElement).dataset.name;
       const result = buyPotion(potionId, 背包.取原石());
@@ -577,11 +609,15 @@ function 商店面板(): HTMLElement {
         <span>${m.nameZh} (×${count})</span>
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="color: #ffd24d;">+${price} 原石</span>
-          <button class="三級按鈕 出售鈕" style="padding: 1px 6px; font-size: 0.65rem;">出售</button>
+          <button class="三級按鈕 出售鈕" style="padding: 1px 6px; font-size: 0.65rem;" ${online ? "" : "disabled"}>出售</button>
         </div>
       `;
 
       row.querySelector(".出售鈕")!.addEventListener("click", () => {
+        if (!online) {
+          alert("需要站在商店旁邊，才能真正完成交易。");
+          return;
+        }
         if (!背包.花費材料(m.no, 1)) return;
         背包.加入原石(price);
         alert(`💰 出售成功！\n將 1 個 [${m.nameZh}] 出售，換得 ${price} 原石。`);

@@ -282,9 +282,9 @@ export function 由正式成員陣容建立圖騰小隊(
     })
     .filter((entry): entry is 插槽 => entry !== null);
 
-  const 最大展開層級: 1 | 2 | 3 = roster.some((member) => member.star >= 3)
+  const 最大展開層級: 1 | 2 | 3 = 小隊.some((slot) => slot.大環 === "外")
     ? 3
-    : roster.some((member) => member.star >= 2)
+    : 小隊.some((slot) => slot.大環 === "中")
       ? 2
       : 1;
 
