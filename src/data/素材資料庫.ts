@@ -131,6 +131,9 @@ export function findMaterial(no: number): MaterialDef | undefined {
 export function findMaterialById(id: string): MaterialDef | undefined {
   return MATERIALS.find((m) => m.id === id);
 }
+export function materialImagePath(no: number): string {
+  return `/assets/images/materials/icons/${String(no).padStart(2, "0")}.png`;
+}
 export function materialsByWorld(world: World): MaterialDef[] {
   return MATERIALS.filter((m) => m.world === world);
 }

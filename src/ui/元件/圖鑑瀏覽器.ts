@@ -6,6 +6,7 @@
 import { 應用程式狀態, 圖鑑資料查詢類分頁 } from "../應用程式狀態";
 import { MEMBERS } from "../../data/成員資料庫";
 import { findMonster } from "../../data/怪物資料庫";
+import { findMaterial, materialImagePath } from "../../data/素材資料庫";
 import {
   成員圖鑑資料,
   怪物圖鑑資料,
@@ -188,12 +189,36 @@ function 建立隊長立繪HTML(條目ID: string): string {
   );
 }
 
+function 建立材料立繪HTML(條目ID: string): string {
+  const match = 條目ID.match(/^mat_(\d{2})$/);
+  if (!match) return "";
+  const materialNo = Number(match[1]);
+  const material = findMaterial(materialNo);
+  if (!material) return "";
+
+  return 建立圖鑑舞台立繪HTML(
+    materialImagePath(materialNo),
+    `${material.nameZh} 材料立繪`,
+    `
+      <div class="圖鑑詳情-星級列">
+        <div class="圖鑑星級按鈕 作用中" style="pointer-events:none;">
+          <span class="圖鑑星級頭像框">
+            <img class="圖鑑隊長形態頭像圖" src="${materialImagePath(materialNo)}" alt="" draggable="false" />
+          </span>
+          <span class="圖鑑星級文字">${material.star}★ · ${material.rarity === "fine" ? 雙語("高級", "Fine") : 雙語("普通", "Common")}</span>
+        </div>
+      </div>
+    `,
+  );
+}
+
 function 建立詳情HTML(選中條目: 圖鑑條目): string {
   const 成員立繪HTML = 建立成員立繪HTML(選中條目.id);
   const 怪物立繪HTML = 建立怪物立繪HTML(選中條目.id);
   const 隊長立繪HTML = 建立隊長立繪HTML(選中條目.id);
+  const 材料立繪HTML = 建立材料立繪HTML(選中條目.id);
   const 立繪HTML =
-    成員立繪HTML || 怪物立繪HTML || 隊長立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>${雙語("這筆資料沒有立繪", "No portrait for this entry")}</span></div>`;
+    成員立繪HTML || 怪物立繪HTML || 隊長立繪HTML || 材料立繪HTML || `<div class="圖鑑詳情-佔位圖"><span>${雙語("這筆資料沒有立繪", "No portrait for this entry")}</span></div>`;
   const 表格HTML =
     選中條目.表格數值 && 選中條目.表格數值.length > 0
       ? `

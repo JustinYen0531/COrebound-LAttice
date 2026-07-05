@@ -10,6 +10,7 @@ import { 重置世界寶箱 } from "./世界寶箱狀態";
 import { 重置對局進度 } from "./對局進度狀態";
 import { 重置正式戰場 } from "./正式戰場狀態";
 import { 重置死亡遺落物 } from "./死亡遺落狀態";
+import { 重置資源掉落物 } from "./資源掉落狀態";
 import { 重置Boss召喚佇列 } from "./Boss召喚佇列";
 import { 確保初始補給 } from "../economy/背包狀態";
 import { 套用起始成員配置 } from "../progression/養成狀態";
@@ -187,6 +188,7 @@ class 應用程式狀態機 {
       重置對局進度();
       重置正式戰場();
       重置死亡遺落物();
+      重置資源掉落物();
       重置Boss召喚佇列();
     }
     window.dispatchEvent(new CustomEvent("combat-run-reset", { detail: { mode: 訓練道場 ? "dojo" : "formal" } }));

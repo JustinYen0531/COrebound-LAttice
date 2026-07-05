@@ -10,7 +10,7 @@ import { 建立互動面板 } from "../元件/互動面板";
 import { 讀取玩家位置 } from "../元件/世界地圖層";
 import { 建立正式小隊編輯器, 建立訓練召喚面板, 建立訓練小隊編輯器 } from "../元件/訓練道場面板";
 import type { 互動設施, 管理介面分頁 } from "../共用型別";
-import { MATERIALS } from "../../data/素材資料庫";
+import { MATERIALS, materialImagePath } from "../../data/素材資料庫";
 import { MATERIAL_RARITY_LABEL } from "../../data/戰鬥原語";
 import * as 背包 from "../../economy/背包狀態";
 import { POTIONS } from "../../economy/流浪商店";
@@ -132,6 +132,7 @@ function 背包分頁內容(): HTMLElement {
     .map(({ no, count }) => {
       const def = MATERIALS.find((m) => m.no === no);
       return def ? {
+        no,
         id: def.id,
         name: def.nameZh,
         star: def.star,
@@ -139,6 +140,7 @@ function 背包分頁內容(): HTMLElement {
         rarity: def.rarity,
         info: def.visual,
         world: def.world,
+        image: materialImagePath(def.no),
       } : null;
     })
     .filter((item): item is NonNullable<typeof item> => item !== null && item.count > 0);
@@ -190,13 +192,16 @@ function 背包分頁內容(): HTMLElement {
       cell.style.transition = "background 0.15s";
       
       let badge = "📦";
-      if (activeTab === "材料") badge = "🧬";
-      else if (activeTab === "消耗品") badge = "🧪";
+      if (activeTab === "消耗品") badge = "🧪";
       else if (activeTab === "任務物") badge = "🔑";
       else if (activeTab === "追蹤中") badge = "📌";
 
+      const 視覺HTML = activeTab === "材料" && item.image
+        ? `<div style="height:52px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;"><img src="${item.image}" alt="${item.name}" style="max-width:52px;max-height:52px;object-fit:contain;filter:drop-shadow(0 5px 8px rgba(0,0,0,0.28));" draggable="false" /></div>`
+        : `<div style="font-size: 1.5rem; margin-bottom: 4px;">${badge}</div>`;
+
       cell.innerHTML = `
-        <div style="font-size: 1.5rem; margin-bottom: 4px;">${badge}</div>
+        ${視覺HTML}
         <div style="font-size: 0.7rem; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</div>
         <span style="position: absolute; bottom: 4px; right: 6px; background: rgba(0,0,0,0.6); color: #ffd24d; font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; font-weight: bold;">
           ${item.count !== undefined ? `×${item.count}` : `${item.current}/${item.target}`}
@@ -238,6 +243,9 @@ function 背包分頁內容(): HTMLElement {
       }[選中背包物品.world as "geometry" | "organic" | "fractal" | "mechanical" | "core"] ?? "幾何世界";
       
       specDetails = `
+        <div style="display:flex;justify-content:center;margin: 0 0 12px;">
+          <img src="${選中背包物品.image}" alt="${選中背包物品.name}" style="max-width:160px;max-height:160px;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(0,0,0,0.24));" draggable="false" />
+        </div>
         <div style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; line-height: 1.6;">
           <div>${雙語("地緣出處", "World Origin")}：<span style="color:#ffd24d;">${worldName}</span></div>
           <div>${雙語("星級星等", "Star Rating")}：<span style="color:#ffd24d;">${選中背包物品.star}★</span></div>

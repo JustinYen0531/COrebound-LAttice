@@ -34,6 +34,7 @@ import { STAR_MULTIPLIER, type StarLevel } from "../../data/成員型別";
 import { computeFamilyWeaponStatus, type DeployedMember } from "../../skills/技能管理";
 import { MEMBERS } from "../../data/成員資料庫";
 import { findMonster } from "../../data/怪物資料庫";
+import { materialImagePath } from "../../data/素材資料庫";
 import { rollMonsterDrop } from "../../economy/資源掉落系統";
 import * as 背包 from "../../economy/背包狀態";
 import {
@@ -118,6 +119,12 @@ import {
   新增死亡遺落物,
   type 死亡遺落物,
 } from "../死亡遺落狀態";
+import {
+  取得資源掉落物,
+  拾取資源掉落物,
+  新增資源掉落物,
+  type 資源掉落物,
+} from "../資源掉落狀態";
 import { 取出Boss召喚 } from "../Boss召喚佇列";
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
@@ -416,12 +423,19 @@ export function 建立世界地圖層(): HTMLElement {
   zoneLayer.className = "世界地圖層-區域底色";
   canvas.appendChild(zoneLayer);
 
+  // 鏡頭平移全靠外層 div 的 CSS transform（GPU 合成），SVG 本身不逐幀改動，
+  // 內容就不會每幀重新光柵化——這正是高細節地板閃爍/掉幀的根源。
+  // transform 必須掛在 HTML div 而不是 <svg> 上：Blink 對 SVG 根元素的
+  // transform 變更仍會走重繪路徑，掛在 div 上才是純合成器平移。
+  // viewBox 只在玩家接近涵蓋範圍邊緣時重新錨定（見 updateMapCameraTransform）。
+  const zonePan = document.createElement("div");
+  zonePan.className = "世界地圖層-地圖平移層";
   const zoneSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   zoneSvg.setAttribute("class", "世界地圖層-區域圖");
-  zoneSvg.setAttribute("width", "100%");
-  zoneSvg.setAttribute("height", "100%");
   zoneSvg.setAttribute("preserveAspectRatio", "none");
-  zoneLayer.appendChild(zoneSvg);
+  initStaticMapViewBox(zoneSvg, zonePan);
+  zonePan.appendChild(zoneSvg);
+  zoneLayer.appendChild(zonePan);
 
   // 環境物件層放在功能設施層「下面」：障礙物/資源礦/機關是場景裝飾與地形，
   // 熔爐/雕像/商店等互動設施圖示要疊在它們之上，不能被擋住。
@@ -466,6 +480,8 @@ export function 建立世界地圖層(): HTMLElement {
   let lastChestSyncSecond = -1;
   const deathDropNodes = new Map<string, HTMLElement>();
   let deathDrops: 死亡遺落物[] = [];
+  const resourceDropNodes = new Map<string, HTMLElement>();
+  let resourceDrops: 資源掉落物[] = [];
 
   const envNodes = new Map<string, HTMLElement>();
   for (const env of ENV_OBJECTS) {
@@ -855,6 +871,25 @@ export function 建立世界地圖層(): HTMLElement {
     }
   }
 
+  function syncResourceDrops(): void {
+    if (訓練道場中) return;
+    resourceDrops = 取得資源掉落物();
+    const liveIds = new Set(resourceDrops.map((drop) => drop.id));
+    for (const drop of resourceDrops) {
+      if (resourceDropNodes.has(drop.id)) continue;
+      const node = createResourceDropNode(drop);
+      setProjectedNodePosition(node, drop);
+      node.addEventListener("click", () => 嘗試拾取資源掉落(drop));
+      objectLayer.appendChild(node);
+      resourceDropNodes.set(drop.id, node);
+    }
+    for (const [id, node] of resourceDropNodes) {
+      if (liveIds.has(id)) continue;
+      node.remove();
+      resourceDropNodes.delete(id);
+    }
+  }
+
   function 嘗試拾取死亡遺落(drop: 死亡遺落物): void {
     if (Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) > 190) {
       顯示技能提示("靠近遺落材料後按 E 取回");
@@ -868,8 +903,47 @@ export function 建立世界地圖層(): HTMLElement {
     顯示技能提示(`已取回遺落材料 ×${count}`);
   }
 
+  function 嘗試拾取資源掉落(drop: 資源掉落物): boolean {
+    if (Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) > 190) return false;
+    const picked = 拾取資源掉落物(drop.id);
+    if (!picked) return false;
+    for (const material of picked.materials) 背包.加入材料(material.no, material.count);
+    if (picked.gems > 0) 背包.加入原石(picked.gems);
+    記錄對局掉落(picked.gems, picked.materials.reduce((sum, item) => sum + item.count, 0));
+    syncResourceDrops();
+    return true;
+  }
+
+  function 拾取附近所有資源(): { materials: number; gems: number; deathPiles: number; resourcePiles: number } {
+    let materials = 0;
+    let gems = 0;
+    let deathPiles = 0;
+    let resourcePiles = 0;
+
+    for (const drop of [...resourceDrops]) {
+      if (!嘗試拾取資源掉落(drop)) continue;
+      materials += drop.materials.reduce((sum, item) => sum + item.count, 0);
+      gems += drop.gems;
+      resourcePiles += 1;
+    }
+
+    for (const drop of [...deathDrops]) {
+      if (Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) > 190) continue;
+      const picked = 拾取死亡遺落物(drop.id);
+      if (!picked) continue;
+      背包.取回遺落材料(picked.materials);
+      materials += picked.materials.reduce((sum, item) => sum + item.count, 0);
+      deathPiles += 1;
+    }
+
+    if (deathPiles > 0) syncDeathDrops();
+    if (resourcePiles > 0) syncResourceDrops();
+    return { materials, gems, deathPiles, resourcePiles };
+  }
+
   syncWorldChests(true);
   syncDeathDrops();
+  syncResourceDrops();
 
   const projectilePool = new ProjectilePool();
   const projectileNodes = new Map<number, HTMLElement>();
@@ -951,11 +1025,11 @@ export function 建立世界地圖層(): HTMLElement {
       }
       const enraged = def.world !== "core" && 世界已狂暴查詢(def.world);
       const drop = rollMonsterDrop(def, enraged);
-      for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count);
-      背包.加入原石(drop.gems);
-      if (!訓練道場中) {
-        記錄對局掉落(drop.gems, drop.materials.reduce((total, entry) => total + entry.count, 0));
-      }
+      新增資源掉落物(m.pos.x, m.pos.y, {
+        gems: drop.gems,
+        materials: drop.materials.map((entry) => ({ no: entry.material.no, count: entry.count })),
+      });
+      syncResourceDrops();
     }
   }
 
@@ -1125,6 +1199,10 @@ export function 建立世界地圖層(): HTMLElement {
       const node = chestNodes.get(chest.id);
       if (node) setProjectedNodePosition(node, chest);
     }
+    for (const drop of resourceDrops) {
+      const node = resourceDropNodes.get(drop.id);
+      if (node) setProjectedNodePosition(node, drop);
+    }
     for (const drop of deathDrops) {
       const node = deathDropNodes.get(drop.id);
       if (node) setProjectedNodePosition(node, drop);
@@ -1139,8 +1217,8 @@ export function 建立世界地圖層(): HTMLElement {
     playerNode.style.setProperty("--x", `${playerScreen.x}px`);
     playerNode.style.setProperty("--y", `${playerScreen.y}px`);
 
-    // 區域/分界線/地板的 d 已在建圖時固定，這裡只要平移鏡頭 viewBox。
-    updateMapViewBox(zoneSvg, viewport);
+    // 區域/分界線/地板的 d 與 viewBox 都已在建圖時固定，這裡只平移 CSS transform。
+    updateMapCameraTransform(zoneSvg, zonePan, viewport);
     renderZoneLabels(zoneLabels, viewport);
     updateWorldLayerOffsets(viewport);
 
@@ -1186,6 +1264,14 @@ export function 建立世界地圖層(): HTMLElement {
       const screenPos = worldToScreen(chest, playerPos, viewport);
       node.style.display = isVisible(screenPos, viewport) ? "grid" : "none";
       node.style.filter = Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) <= 190 ? "brightness(1.35)" : "none";
+    }
+
+    for (const drop of resourceDrops) {
+      const node = resourceDropNodes.get(drop.id);
+      if (!node) continue;
+      const screenPos = worldToScreen(drop, playerPos, viewport);
+      node.style.display = isVisible(screenPos, viewport) ? "grid" : "none";
+      node.style.filter = Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) <= 190 ? "brightness(1.4)" : "none";
     }
 
     for (const drop of deathDrops) {
@@ -1799,20 +1885,19 @@ export function 建立世界地圖層(): HTMLElement {
         }
       }
       if (!event.repeat && !訓練道場中) {
+        const nearbyPickup = 拾取附近所有資源();
+        if (nearbyPickup.materials > 0 || nearbyPickup.gems > 0) {
+          顯示技能提示(`已拾取附近資源｜材料 ${nearbyPickup.materials}｜原石 ${nearbyPickup.gems}`);
+          return;
+        }
         const nearestChest = worldChests
           .map((chest) => ({ chest, distance: Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) }))
           .filter((entry) => entry.distance <= 190)
           .sort((a, b) => a.distance - b.distance)[0];
-        const nearestDrop = deathDrops
-          .map((drop) => ({ drop, distance: Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) }))
-          .filter((entry) => entry.distance <= 190)
-          .sort((a, b) => a.distance - b.distance)[0];
-        if (nearestDrop && (!nearestChest || nearestDrop.distance <= nearestChest.distance)) {
-          嘗試拾取死亡遺落(nearestDrop.drop);
-        } else if (nearestChest) {
+        if (nearestChest) {
           嘗試開啟寶箱(nearestChest.chest);
         } else {
-          顯示技能提示("靠近傳送門、寶箱或遺落材料後按 E");
+          顯示技能提示("靠近資源、寶箱或傳送門後按 E");
         }
       }
       return;
@@ -2440,6 +2525,42 @@ function createWorldChestNode(chest: WorldChestInstance): HTMLElement {
   return node;
 }
 
+function createResourceDropNode(drop: 資源掉落物): HTMLElement {
+  const node = document.createElement("button");
+  node.type = "button";
+  const materialCount = drop.materials.reduce((sum, item) => sum + item.count, 0);
+  const totalCount = materialCount + drop.gems;
+  const leadMaterial = drop.materials[0];
+  const titleParts: string[] = [];
+  if (materialCount > 0) titleParts.push(`材料 ×${materialCount}`);
+  if (drop.gems > 0) titleParts.push(`原石 ×${drop.gems}`);
+  node.title = `${titleParts.join("｜")}｜靠近後按 E 一次拾取附近全部資源`;
+  node.setAttribute("aria-label", `地面資源 ${totalCount} 份`);
+  Object.assign(node.style, {
+    position: "absolute",
+    left: "0",
+    top: "0",
+    width: "68px",
+    height: "68px",
+    transform: "translate(var(--x, 0px), var(--y, 0px)) translate(-50%, -72%) rotate(-3deg)",
+    display: "grid",
+    placeItems: "center",
+    border: "1px solid rgba(255, 244, 212, 0.9)",
+    borderRadius: "22px",
+    background: "radial-gradient(circle at 50% 40%, rgba(255,255,255,0.22), rgba(16,19,29,0.92) 72%)",
+    boxShadow: "0 10px 18px rgba(0,0,0,0.42), 0 0 18px rgba(255, 223, 146, 0.28)",
+    cursor: "pointer",
+    zIndex: "4",
+    overflow: "hidden",
+    padding: "0",
+  });
+  node.innerHTML = `
+    ${leadMaterial ? `<img src="${materialImagePath(leadMaterial.no)}" alt="" draggable="false" style="width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.28));" />` : `<span style="font:700 20px Georgia, serif;color:#ffe7aa;">✦</span>`}
+    <span style="position:absolute;right:4px;bottom:4px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:rgba(9,11,18,0.88);border:1px solid rgba(255,230,168,0.45);color:#ffe8a8;font:700 12px Georgia, serif;display:flex;align-items:center;justify-content:center;">${totalCount}</span>
+  `;
+  return node;
+}
+
 function createDeathDropNode(drop: 死亡遺落物): HTMLElement {
   const node = document.createElement("button");
   node.type = "button";
@@ -2688,60 +2809,47 @@ function defineSquareTilePattern(
   defs.appendChild(pattern);
 }
 
-function defineWorldFloorPattern(
-  defs: SVGDefsElement,
-  patternId: string,
+// 核心區覆蓋圖：以「單張裁切圖 + 核心磁磚聯集剪裁」呈現地板圖右半的材質。
+// 舊作法是逐核心磁磚各鋪一個 <pattern> 填色，而 pattern 的圖樣尺寸等於整個
+// 核心矩形——瀏覽器每次重繪都得先把巨大的圖樣光柵化，實測正是高細節模式
+// 地圖與物件閃爍、掉幀的主因（與世界條紋覆蓋層同一問題）。
+function appendCoreOverlayImage(
+  host: SVGGElement,
+  definitions: SVGDefsElement,
   world: World,
-  half: "left" | "right",
-  width: number,
-  height: number,
+  coreRect: { minX: number; minY: number; maxX: number; maxY: number },
+  coreBoundaries: Array<Array<{ x: number; y: number }>>,
+  svgNamespace: string,
 ): void {
-  const svgNamespace = "http://www.w3.org/2000/svg";
-  const pattern = document.createElementNS(svgNamespace, "pattern");
-  pattern.setAttribute("id", patternId);
-  pattern.setAttribute("patternUnits", "userSpaceOnUse");
-  pattern.setAttribute("width", String(width));
-  pattern.setAttribute("height", String(height));
-  pattern.setAttribute("viewBox", `${half === "left" ? 0 : 887} 0 887 887`);
-  pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
+  if (coreBoundaries.length === 0) return;
+  const clipId = `${world}-core-overlay-clip`;
+  const clipPath = document.createElementNS(svgNamespace, "clipPath");
+  clipPath.setAttribute("id", clipId);
+  const clipShape = document.createElementNS(svgNamespace, "path");
+  clipShape.setAttribute("d", coreBoundaries.map((boundary) => polygonToPath(boundary, (point) => point)).join(" "));
+  clipPath.appendChild(clipShape);
+  definitions.appendChild(clipPath);
 
+  const holder = document.createElementNS(svgNamespace, "g");
+  holder.setAttribute("class", `世界地圖層-核心覆蓋圖 世界地圖層-核心覆蓋圖-${world}`);
+  holder.setAttribute("clip-path", `url(#${clipId})`);
+  holder.setAttribute("opacity", "0.3");
+  const crop = document.createElementNS(svgNamespace, "svg");
+  crop.setAttribute("x", String(coreRect.minX));
+  crop.setAttribute("y", String(coreRect.minY));
+  crop.setAttribute("width", String(coreRect.maxX - coreRect.minX));
+  crop.setAttribute("height", String(coreRect.maxY - coreRect.minY));
+  crop.setAttribute("viewBox", "887 0 887 887");
+  crop.setAttribute("preserveAspectRatio", "xMidYMid slice");
   const image = document.createElementNS(svgNamespace, "image");
   image.setAttribute("href", WORLD_FLOOR_IMAGE[world]);
   image.setAttribute("width", "1774");
   image.setAttribute("height", "887");
   image.setAttribute("x", "0");
   image.setAttribute("y", "0");
-  pattern.appendChild(image);
-
-  defs.appendChild(pattern);
-}
-
-function defineCornerCoreTilePattern(
-  defs: SVGDefsElement,
-  patternId: string,
-  world: World,
-  rect: { minX: number; minY: number; maxX: number; maxY: number },
-): void {
-  const svgNamespace = "http://www.w3.org/2000/svg";
-  const pattern = document.createElementNS(svgNamespace, "pattern");
-  pattern.setAttribute("id", patternId);
-  pattern.setAttribute("patternUnits", "userSpaceOnUse");
-  pattern.setAttribute("x", String(rect.minX));
-  pattern.setAttribute("y", String(rect.minY));
-  pattern.setAttribute("width", String(rect.maxX - rect.minX));
-  pattern.setAttribute("height", String(rect.maxY - rect.minY));
-  pattern.setAttribute("viewBox", "887 0 887 887");
-  pattern.setAttribute("preserveAspectRatio", "xMidYMid slice");
-
-  const image = document.createElementNS(svgNamespace, "image");
-  image.setAttribute("href", WORLD_FLOOR_IMAGE[world]);
-  image.setAttribute("width", "1774");
-  image.setAttribute("height", "887");
-  image.setAttribute("x", "0");
-  image.setAttribute("y", "0");
-  pattern.appendChild(image);
-
-  defs.appendChild(pattern);
+  crop.appendChild(image);
+  holder.appendChild(crop);
+  host.appendChild(holder);
 }
 
 function createWorldSquareTileFloors(host: SVGSVGElement, includeStripeOverlay: boolean): void {
@@ -2939,8 +3047,6 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
   const sourceCenter = pointAtCenter(sourceBounds);
   const targetCenter = pointAtCenter(targetBounds);
   const coreRect = coreRectForWorld("geometry", targetBounds);
-  const corePatternId = "geometry-corner-core-tiles";
-  defineCornerCoreTilePattern(definitions, corePatternId, "geometry", coreRect);
   const initialScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
   // 保持單一合法超級拼塊，不複製、不疊放；把它放大到整個幾何區都落在外框內。
   const scale = findCoveringScale(
@@ -2996,15 +3102,8 @@ function createGeometryEinsteinFloor(host: SVGSVGElement): EinsteinPoint[][] {
     applyDetailedTileFill(path, definitions, "geometry", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("class", `世界地圖層-愛因斯坦磁磚 世界地圖層-愛因斯坦磁磚-${floorZone}`);
     tileGroup.appendChild(path);
-    if (floorZone === "core") {
-      const overlay = document.createElementNS(svgNamespace, "path");
-      overlay.setAttribute("d", tilePath);
-      overlay.setAttribute("fill", `url(#${corePatternId})`);
-      overlay.setAttribute("opacity", "0.3");
-      tileGroup.appendChild(overlay);
-    }
-
   }
+  appendCoreOverlayImage(tileGroup, definitions, "geometry", coreRect, coreBoundaries, svgNamespace);
 
   const coreDivider = document.createElementNS(svgNamespace, "path");
   coreDivider.setAttribute("class", "世界地圖層-幾何中央分界線");
@@ -3108,8 +3207,6 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
   const sourceCenter = pointAtCenter(sourceBounds);
   const targetCenter = pointAtCenter(targetBounds);
   const coreRect = coreRectForWorld("fractal", targetBounds);
-  const corePatternId = "fractal-corner-core-tiles";
-  defineCornerCoreTilePattern(definitions, corePatternId, "fractal", coreRect);
   const initialScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
   const scale = findCoveringScale(
     supertile.boundary,
@@ -3167,15 +3264,8 @@ function createFractalPenroseFloor(host: SVGSVGElement): PenrosePoint[][] {
       `世界地圖層-彭羅斯磁磚 世界地圖層-彭羅斯磁磚-${floorZone} 世界地圖層-彭羅斯磁磚-${tile.kind}`,
     );
     tileGroup.appendChild(path);
-    if (floorZone === "core") {
-      const overlay = document.createElementNS(svgNamespace, "path");
-      overlay.setAttribute("d", tilePath);
-      overlay.setAttribute("fill", `url(#${corePatternId})`);
-      overlay.setAttribute("opacity", "0.3");
-      tileGroup.appendChild(overlay);
-    }
-
   }
+  appendCoreOverlayImage(tileGroup, definitions, "fractal", coreRect, coreBoundaries, svgNamespace);
 
   host.appendChild(tileGroup);
   return coreBoundaries;
@@ -3266,8 +3356,6 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
 
   const targetBounds = boundsOf(organicPolygon);
   const coreRect = coreRectForWorld("organic", targetBounds);
-  const corePatternId = "organic-corner-core-tiles";
-  defineCornerCoreTilePattern(definitions, corePatternId, "organic", coreRect);
   const field = buildEscherBirdField(targetBounds, 520);
 
   const coreTiles = field.tiles.filter((tile) =>
@@ -3310,15 +3398,8 @@ function createOrganicBirdFloor(host: SVGSVGElement): EscherPoint[][] {
     applyDetailedTileFill(path, definitions, "organic", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("class", `世界地圖層-艾雪鳥磁磚 世界地圖層-艾雪鳥磁磚-${floorZone}`);
     tileGroup.appendChild(path);
-    if (floorZone === "core") {
-      const overlay = document.createElementNS(svgNamespace, "path");
-      overlay.setAttribute("d", tilePath);
-      overlay.setAttribute("fill", `url(#${corePatternId})`);
-      overlay.setAttribute("opacity", "0.3");
-      tileGroup.appendChild(overlay);
-    }
-
   }
+  appendCoreOverlayImage(tileGroup, definitions, "organic", coreRect, coreBoundaries, svgNamespace);
 
   host.appendChild(tileGroup);
   return coreBoundaries;
@@ -3411,9 +3492,7 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
 
   const targetBounds = boundsOf(mechanicalPolygon);
   const coreRect = coreRectForWorld("mechanical", targetBounds);
-  const corePatternId = "mechanical-corner-core-tiles";
-  defineCornerCoreTilePattern(definitions, corePatternId, "mechanical", coreRect);
-  
+
   // 建立正六邊形平鋪蜂巢網格
   const R = 300; // 六角形半徑加大，保留開羅磁磚語言但減少 DOM path 數量。
   const dx = 1.5 * R;
@@ -3476,15 +3555,8 @@ function createMechanicalCairoFloor(host: SVGSVGElement): EinsteinPoint[][] {
     applyDetailedTileFill(path, definitions, "mechanical", floorZone, variant, index, tile.center, svgNamespace);
     path.setAttribute("class", `世界地圖層-開羅磁磚 世界地圖層-開羅磁磚-${floorZone}`);
     tileGroup.appendChild(path);
-    if (floorZone === "core") {
-      const overlay = document.createElementNS(svgNamespace, "path");
-      overlay.setAttribute("d", tilePath);
-      overlay.setAttribute("fill", `url(#${corePatternId})`);
-      overlay.setAttribute("opacity", "0.3");
-      tileGroup.appendChild(overlay);
-    }
-
   }
+  appendCoreOverlayImage(tileGroup, definitions, "mechanical", coreRect, coreBoundaries, svgNamespace);
 
   host.appendChild(tileGroup);
   return coreBoundaries;
@@ -3752,11 +3824,9 @@ function createWorldStripeOverlays(host: SVGSVGElement): void {
   group.setAttribute("class", "世界地圖層-世界條紋群");
 
   (["geometry", "organic", "fractal", "mechanical"] as World[]).forEach((world) => {
-    const patternId = `world-stripe-${world}`;
     const bounds = boundsOf(polygons[world]);
     const width = bounds.maxX - bounds.minX;
     const height = bounds.maxY - bounds.minY;
-    defineWorldFloorPattern(defs, patternId, world, "left", width, height);
     const clipId = `world-stripe-clip-${world}`;
     const coreRect = coreRectForWorld(world, bounds);
     const clipPath = document.createElementNS(svgNamespace, "clipPath");
@@ -3773,15 +3843,29 @@ function createWorldStripeOverlays(host: SVGSVGElement): void {
     clipShape.setAttribute("clip-rule", "evenodd");
     clipPath.appendChild(clipShape);
     defs.appendChild(clipPath);
-    const node = document.createElementNS(svgNamespace, "rect");
+    // 不用 <pattern> 填色：pattern 圖樣尺寸等於整個象限，瀏覽器每次重繪
+    // 都得先把巨大的圖樣光柵化一次，正是高細節模式閃爍/掉幀的元凶。
+    // 改用巢狀 <svg> 的 viewBox 直接裁切地板圖左半（與原 pattern 視覺相同），
+    // 讓瀏覽器直接以快取的解碼圖片繪製。
+    const node = document.createElementNS(svgNamespace, "g");
     node.setAttribute("class", `世界地圖層-世界條紋 世界地圖層-世界條紋-${world}`);
-    node.setAttribute("x", String(bounds.minX));
-    node.setAttribute("y", String(bounds.minY));
-    node.setAttribute("width", String(width));
-    node.setAttribute("height", String(height));
-    node.setAttribute("fill", `url(#${patternId})`);
     node.setAttribute("clip-path", `url(#${clipId})`);
     node.setAttribute("opacity", "0.42");
+    const crop = document.createElementNS(svgNamespace, "svg");
+    crop.setAttribute("x", String(bounds.minX));
+    crop.setAttribute("y", String(bounds.minY));
+    crop.setAttribute("width", String(width));
+    crop.setAttribute("height", String(height));
+    crop.setAttribute("viewBox", "0 0 887 887");
+    crop.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    const image = document.createElementNS(svgNamespace, "image");
+    image.setAttribute("href", WORLD_FLOOR_IMAGE[world]);
+    image.setAttribute("width", "1774");
+    image.setAttribute("height", "887");
+    image.setAttribute("x", "0");
+    image.setAttribute("y", "0");
+    crop.appendChild(image);
+    node.appendChild(crop);
     group.appendChild(node);
   });
 
@@ -4048,17 +4132,90 @@ function initRegionPaths(
   dividers.horizontal.setAttribute("d", polylineToPath(MAP_HORIZONTAL_DIVIDER, (point) => point));
 }
 
-// 每幀只平移鏡頭：靠 viewBox 把固定幾何平移到玩家所在位置，
-// 不再重設任何 path 的 d，避免觸發瀏覽器重算路徑幾何快取。
-function updateMapViewBox(
+// 地圖 SVG 改成「視窗式」渲染：元素只涵蓋玩家周圍約 3×3 個視口大小，
+// viewBox 錨定在該範圍後就不動，鏡頭每幀只靠 translate3d 平移（純合成器操作，
+// 不觸發 SVG 重繪）。玩家快走出涵蓋範圍時才重新錨定一次（單幀重繪）。
+// 之前把整張世界（上萬 px）放進一個元素會超過合成器的圖層快取上限，
+// 光柵磚被反覆淘汰、重算，正是高細節模式地圖與物件閃爍的根源。
+const MAP_VIEW_WINDOW_FACTOR = 3;
+// 視窗邊緣預留：鏡頭邊界距離涵蓋範圍邊緣少於 0.35 個視口時重新錨定。
+const MAP_REANCHOR_MARGIN = 0.35;
+
+let mapViewWindow: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  zoom: number;
+  viewportW: number;
+  viewportH: number;
+} | null = null;
+// 上次套用的 transform 字串快取。不能回讀 style.transform 來比對：
+// CSSOM 會正規化數字格式（如去掉尾零），字串永遠不相等，
+// 造成每幀重寫樣式、逼瀏覽器整個 SVG 重繪。
+let mapAppliedTransform = "";
+
+function initStaticMapViewBox(host: SVGSVGElement, pan: HTMLElement): void {
+  host.style.display = "block";
+  pan.style.position = "absolute";
+  pan.style.left = "0";
+  pan.style.top = "0";
+  pan.style.transformOrigin = "0 0";
+  pan.style.willChange = "transform";
+  pan.style.pointerEvents = "none";
+  mapViewWindow = null;
+  mapAppliedTransform = "";
+}
+
+function updateMapCameraTransform(
   host: SVGSVGElement,
+  pan: HTMLElement,
   viewport: { w: number; h: number },
 ): void {
-  const projectedWorldWidth = viewport.w / cameraZoom;
-  const projectedWorldHeight = viewport.h / (GROUND_DEPTH_SCALE * cameraZoom);
-  const viewLeft = playerPos.x - projectedWorldWidth / 2;
-  const viewTop = playerPos.y - projectedWorldHeight / 2;
-  host.setAttribute("viewBox", `${viewLeft} ${viewTop} ${projectedWorldWidth} ${projectedWorldHeight}`);
+  const spanW = (viewport.w * MAP_VIEW_WINDOW_FACTOR) / cameraZoom;
+  const spanH = (viewport.h * MAP_VIEW_WINDOW_FACTOR) / (GROUND_DEPTH_SCALE * cameraZoom);
+  const halfViewW = viewport.w / 2 / cameraZoom;
+  const halfViewH = viewport.h / 2 / (GROUND_DEPTH_SCALE * cameraZoom);
+  const marginW = (viewport.w * MAP_REANCHOR_MARGIN) / cameraZoom;
+  const marginH = (viewport.h * MAP_REANCHOR_MARGIN) / (GROUND_DEPTH_SCALE * cameraZoom);
+
+  const current = mapViewWindow;
+  const staleWindow =
+    !current ||
+    current.zoom !== cameraZoom ||
+    current.viewportW !== viewport.w ||
+    current.viewportH !== viewport.h ||
+    playerPos.x - halfViewW < current.x + marginW ||
+    playerPos.x + halfViewW > current.x + current.w - marginW ||
+    playerPos.y - halfViewH < current.y + marginH ||
+    playerPos.y + halfViewH > current.y + current.h - marginH;
+
+  if (staleWindow) {
+    mapViewWindow = {
+      x: playerPos.x - spanW / 2,
+      y: playerPos.y - spanH / 2,
+      w: spanW,
+      h: spanH,
+      zoom: cameraZoom,
+      viewportW: viewport.w,
+      viewportH: viewport.h,
+    };
+    host.setAttribute(
+      "viewBox",
+      `${mapViewWindow.x} ${mapViewWindow.y} ${mapViewWindow.w} ${mapViewWindow.h}`,
+    );
+    host.style.width = `${(viewport.w * MAP_VIEW_WINDOW_FACTOR).toFixed(2)}px`;
+    host.style.height = `${(viewport.h * MAP_VIEW_WINDOW_FACTOR).toFixed(2)}px`;
+  }
+
+  const anchor = mapViewWindow!;
+  const tx = viewport.w / 2 + (anchor.x - playerPos.x) * cameraZoom;
+  const ty = viewport.h / 2 + (anchor.y - playerPos.y) * GROUND_DEPTH_SCALE * cameraZoom;
+  const transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0)`;
+  if (mapAppliedTransform !== transform) {
+    pan.style.transform = transform;
+    mapAppliedTransform = transform;
+  }
 }
 
 function buildRegionPolygons(): Record<World, Array<{ x: number; y: number }>> {
