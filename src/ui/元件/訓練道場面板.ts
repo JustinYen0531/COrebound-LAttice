@@ -150,6 +150,16 @@ function 轉換圖騰職責(role: 職責色): "藍" | "紅" | "黃" {
   return "黃";
 }
 
+function 建立隊長舞台立繪(captain: (typeof 隊長清單)[number]): HTMLElement {
+  const figure = document.createElement("div");
+  figure.className = "正式立會舞台-隊長";
+  figure.innerHTML = `
+    <img src="${取得正式隊長立繪路徑(captain.id, 1)}" alt="${captain.名稱}" />
+    <span class="正式立會舞台-名牌 正式立會舞台-名牌--隊長">${captain.名稱}</span>
+  `;
+  return figure;
+}
+
 function 取得正式隊長立繪路徑(captainId: string, form = 1): string {
   return `/assets/transparent-portraits/captains/${captainId}_form${form}.png`;
 }
@@ -250,7 +260,7 @@ function 建立正式對局圖騰預覽(): HTMLElement {
   return root;
 }
 
-function 建立正式小隊立繪舞台(): HTMLElement {
+function 建立正式小隊立繪舞台(captain: (typeof 隊長清單)[number]): HTMLElement {
   const roster = 取得上陣養成();
   const root = document.createElement("div");
   root.className = "正式立會舞台";
@@ -261,6 +271,7 @@ function 建立正式小隊立繪舞台(): HTMLElement {
 
   const stage = document.createElement("div");
   stage.className = "正式立會舞台-框";
+  stage.appendChild(建立隊長舞台立繪(captain));
 
   const positions: Array<{ layer: 初始成員層級; className: string }> = [
     { layer: "middle", className: "正式立會舞台-角色 正式立會舞台-角色--高" },
@@ -387,7 +398,7 @@ function 建立正式舞台切換區(captain: (typeof 隊長清單)[number], sel
 
   const body =
     正式舞台視圖 === "stage"
-      ? 建立正式小隊立繪舞台()
+      ? 建立正式小隊立繪舞台(captain)
       : 正式舞台視圖 === "orbit"
         ? 建立正式軌道預覽(selectedSlotId, 刷新)
         : 建立正式對局圖騰預覽();
@@ -395,6 +406,7 @@ function 建立正式舞台切換區(captain: (typeof 隊長清單)[number], sel
 
   root.appendChild(frame);
   root.appendChild(建立隊長核心卡(captain));
+  root.appendChild(建立職責圖例());
   return root;
 }
 
@@ -1121,8 +1133,6 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
     squadSummaryRow.appendChild(card);
   });
   rightPane.appendChild(squadSummaryRow);
-  rightPane.appendChild(建立職責圖例());
-
   const summaryGrid = document.createElement("div");
   summaryGrid.style.display = "grid";
   summaryGrid.style.gridTemplateColumns = "repeat(5, minmax(0, 1fr))";

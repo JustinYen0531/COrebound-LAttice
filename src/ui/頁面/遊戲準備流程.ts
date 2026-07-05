@@ -18,10 +18,10 @@ function 雙語(中文: string, 英文: string): string {
 }
 
 const 隊長立繪來源: Record<string, string> = {
-  conductor: "/assets/images/characters/captains/Conductor立繪與頭像.png",
-  operator: "/assets/images/characters/captains/Operator立繪與頭像.png",
-  launcher: "/assets/images/characters/captains/Launcher立繪與頭像.png",
-  architect: "/assets/images/characters/captains/Architect立繪與頭像.png",
+  conductor: "/assets/transparent-portraits/captains/conductor_form1.png",
+  operator: "/assets/transparent-portraits/captains/operator_form1.png",
+  launcher: "/assets/transparent-portraits/captains/launcher_form1.png",
+  architect: "/assets/transparent-portraits/captains/architect_form1.png",
 };
 
 export function 渲染遊戲準備流程(容器: HTMLElement) {
