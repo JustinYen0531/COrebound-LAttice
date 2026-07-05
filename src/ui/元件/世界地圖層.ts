@@ -510,6 +510,34 @@ export function 建立世界地圖層(): HTMLElement {
   miniPlayer.className = "世界地圖層-小地圖玩家";
   miniMapInner.appendChild(miniPlayer);
 
+  // Hidden test shortcut: click nearly the same minimap point five times to teleport there.
+  let miniMapTestClicks = 0;
+  let miniMapTestClickAt = 0;
+  let miniMapTestPoint = { x: 0, y: 0 };
+  miniMapInner.addEventListener("click", (event) => {
+    const bounds = miniMapInner.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) return;
+
+    const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+    const now = performance.now();
+    const isSamePoint = Math.hypot(point.x - miniMapTestPoint.x, point.y - miniMapTestPoint.y) <= 12;
+    const isRapidSequence = now - miniMapTestClickAt <= 2000;
+    miniMapTestClicks = isSamePoint && isRapidSequence ? miniMapTestClicks + 1 : 1;
+    miniMapTestClickAt = now;
+    miniMapTestPoint = point;
+
+    if (miniMapTestClicks < 5) return;
+    miniMapTestClicks = 0;
+    playerVelocity = { x: 0, y: 0 };
+    playerPos = clampTraversablePlayerPosition({
+      x: MAP_BOUNDS.minX + (point.x / bounds.width) * (MAP_BOUNDS.maxX - MAP_BOUNDS.minX),
+      y: MAP_BOUNDS.minY + (point.y / bounds.height) * (MAP_BOUNDS.maxY - MAP_BOUNDS.minY),
+    }, playerPos);
+    if (!訓練道場中) 設定正式玩家位置(playerPos);
+    syncNearbyToState();
+    render();
+  });
+
   const zoomControl = document.createElement("div");
   zoomControl.className = "世界地圖層-縮放控制";
   zoomControl.title = "滑鼠滾輪或拖曳滑桿調整鏡頭距離";
