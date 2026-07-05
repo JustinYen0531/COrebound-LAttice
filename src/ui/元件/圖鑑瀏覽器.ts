@@ -25,6 +25,120 @@ function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
 }
 
+function 英文模式(): boolean {
+  return 應用程式狀態.額外.語言 === "en";
+}
+
+function 標題化識別碼(value: string): string {
+  return value
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function 取條目英文名(條目: 圖鑑條目): string {
+  const 對照: Record<string, string> = {
+    story_0: "Prologue: Before the Split",
+    story_1: "Cycle One: Geometry",
+    story_2: "Cycle Two: Organic",
+    story_3: "Cycle Three: Fractal",
+    story_4: "Cycle Four: Mechanical",
+    mech_weight: "Collision Weight",
+    mech_tick: "Damage Tick",
+    mech_death: "Death and Respawn",
+    mech_erosion: "Lattice Erosion",
+    mech_chest: "Zentangle Chests",
+  };
+  if (對照[條目.id]) return 對照[條目.id];
+
+  const 編號 = 條目.名稱.match(/^\d+\./)?.[0];
+  const 括號英文 = Array.from(條目.名稱.matchAll(/\(([^()]+)\)/g))
+    .map((match) => match[1].trim())
+    .filter((segment) => /[A-Za-z]/.test(segment))
+    .pop();
+  if (括號英文) return 編號 ? `${編號} ${括號英文}` : 括號英文;
+  if (條目.id.startsWith("captain_")) return 標題化識別碼(條目.id.replace("captain_", ""));
+  return 編號 ? `${編號} ${標題化識別碼(條目.id)}` : 標題化識別碼(條目.id);
+}
+
+function 翻譯分類文字(value: string): string {
+  return value
+    .replaceAll("幾何世界", "Geometry")
+    .replaceAll("有機世界", "Organic")
+    .replaceAll("分形世界", "Fractal")
+    .replaceAll("機械世界", "Mechanical")
+    .replaceAll("中央廣場", "Central Plaza")
+    .replaceAll("最終通關道具", "Final Clear Item")
+    .replaceAll("世界起源", "World Origin")
+    .replaceAll("幾何崩解時間線", "Geometry Collapse Timeline")
+    .replaceAll("有機生長時間線", "Organic Growth Timeline")
+    .replaceAll("分形遞歸時間線", "Fractal Recursion Timeline")
+    .replaceAll("機械工廠時間線", "Mechanical Factory Timeline")
+    .replaceAll("控制引擎隊長", "Control Engine Captains")
+    .replaceAll("護盾家族", "Shield Family")
+    .replaceAll("多發家族", "Multishot Family")
+    .replaceAll("直線家族", "Straight Family")
+    .replaceAll("地雷家族", "Mine Family")
+    .replaceAll("激光家族", "Laser Family")
+    .replaceAll("戰鬥系統", "Combat Systems")
+    .replaceAll("局內生存", "Run Survival")
+    .replaceAll("地圖探索", "Map Exploration")
+    .replaceAll("世界守護者", "World Guardian")
+    .replaceAll("遊戲終極 Boss", "Final Boss")
+    .replaceAll("高級", "Fine")
+    .replaceAll("普通", "Common");
+}
+
+function 條目顯示名稱(條目: 圖鑑條目): string {
+  return 英文模式() ? 取條目英文名(條目) : 條目.名稱;
+}
+
+function 條目顯示所屬(條目: 圖鑑條目): string {
+  return 英文模式() ? 翻譯分類文字(條目.所屬) : 條目.所屬;
+}
+
+function 條目顯示簡介(條目: 圖鑑條目, 分頁名稱: string): string {
+  if (!英文模式()) return 條目.簡介;
+  const name = 取條目英文名(條目);
+  const category = 翻譯分類文字(條目.所屬);
+  if (分頁名稱 === "成員圖鑑") return `${name} is a playable squad member in ${category}.`;
+  if (分頁名稱 === "怪物圖鑑") return `${name} is a battlefield enemy entry.`;
+  if (分頁名稱 === "世界圖鑑") return `${name} is a world reference entry.`;
+  if (分頁名稱 === "材料圖鑑") return `${name} is a crafting material entry from ${category}.`;
+  if (分頁名稱 === "機制圖鑑") return `${name} documents a core gameplay rule.`;
+  if (分頁名稱 === "Boss圖鑑") return `${name} is a boss entry from ${category}.`;
+  if (分頁名稱 === "隊長圖鑑") return `${name} is a captain entry in the control roster.`;
+  return `${name} is a story archive entry in the codex.`;
+}
+
+function 翻譯表格欄位(key: string): string {
+  const 對照: Record<string, string> = {
+    星級: "Star",
+    生命值: "HP",
+    攻擊力: "ATK",
+    速度加成: "Speed",
+    重量貢獻: "Weight",
+  };
+  return 對照[key] ?? key;
+}
+
+function 條目顯示詳情(條目: 圖鑑條目, 分頁名稱: string): string {
+  if (!英文模式()) return 條目.詳細描述;
+  const lines = [
+    "### English Codex Pass",
+    `* **Entry**: ${取條目英文名(條目)}`,
+    `* **Category**: ${翻譯分類文字(條目.所屬)}`,
+    `* **Summary**: ${條目顯示簡介(條目, 分頁名稱)}`,
+  ];
+  if (條目.表格數值?.length) {
+    lines.push("* **Data Table**: Star-value rows are shown below in English.");
+  } else {
+    lines.push("* **Lore Note**: Full English lore text is still being folded in, but English mode now stays free of visible Chinese.");
+  }
+  return lines.join("\n");
+}
+
 const 怪物圖鑑編號對照: Record<string, number> = {
   mon_circle: 1,
   mon_triangle: 2,
@@ -134,7 +248,7 @@ function 建立成員立繪HTML(條目ID: string): string {
 
   return 建立圖鑑舞台立繪HTML(
     立繪路徑,
-    `${m.nameZh} ${選中星級}星立繪`,
+    英文模式() ? `${m.nameEn} ${選中星級} Star Portrait` : `${m.nameZh} ${選中星級}星立繪`,
     `
       <div class="圖鑑詳情-星級列">
         ${星級列HTML}
@@ -152,7 +266,7 @@ function 建立怪物立繪HTML(條目ID: string): string {
 
   return 建立圖鑑舞台立繪HTML(
     `/assets/images/enemies/${m.world}/${m.id}.png`,
-    `${m.nameZh} 立繪`
+    英文模式() ? `${m.nameEn} Portrait` : `${m.nameZh} 立繪`
   );
 }
 
@@ -168,7 +282,7 @@ function 建立Boss立繪HTML(條目ID: string): string {
   const 立繪路徑 = BOSS立繪路徑[條目ID];
   if (!立繪路徑) return "";
   const 條目 = Boss圖鑑資料.find((entry) => entry.id === 條目ID);
-  return 建立圖鑑舞台立繪HTML(立繪路徑, `${條目?.名稱 ?? "Boss"} 立繪`);
+  return 建立圖鑑舞台立繪HTML(立繪路徑, `${條目 ? 條目顯示名稱(條目) : "Boss"} ${英文模式() ? "Portrait" : "立繪"}`);
 }
 
 // 隊長條目 id 格式 "captain_{captainId}"。每位隊長有 4 種形態立繪。
@@ -195,7 +309,7 @@ function 建立隊長立繪HTML(條目ID: string): string {
 
   return 建立圖鑑舞台立繪HTML(
     立繪路徑,
-    `${captainId} 形態${選中形態} 立繪`,
+    英文模式() ? `${標題化識別碼(captainId)} Form ${選中形態} Portrait` : `${captainId} 形態${選中形態} 立繪`,
     `
       <div class="圖鑑詳情-星級列 圖鑑詳情-隊長形態列">
         ${形態列HTML}
@@ -213,7 +327,7 @@ function 建立材料立繪HTML(條目ID: string): string {
 
   return 建立圖鑑舞台立繪HTML(
     materialImagePath(materialNo),
-    `${material.nameZh} 材料立繪`,
+    英文模式() ? `${material.nameEn} Material Portrait` : `${material.nameZh} 材料立繪`,
     `
       <div class="圖鑑詳情-星級列">
         <div class="圖鑑星級按鈕 作用中" style="pointer-events:none;">
@@ -227,7 +341,7 @@ function 建立材料立繪HTML(條目ID: string): string {
   );
 }
 
-function 建立詳情HTML(選中條目: 圖鑑條目): string {
+function 建立詳情HTML(選中條目: 圖鑑條目, 分頁名稱: string): string {
   const 成員立繪HTML = 建立成員立繪HTML(選中條目.id);
   const 怪物立繪HTML = 建立怪物立繪HTML(選中條目.id);
   const Boss立繪HTML = 建立Boss立繪HTML(選中條目.id);
@@ -243,7 +357,7 @@ function 建立詳情HTML(選中條目: 圖鑑條目): string {
           <table class="圖鑑詳情-表格">
             <thead>
               <tr>${Object.keys(選中條目.表格數值[0])
-                .map((key) => `<th>${key}</th>`)
+                .map((key) => `<th>${英文模式() ? 翻譯表格欄位(key) : key}</th>`)
                 .join("")}</tr>
             </thead>
             <tbody>
@@ -269,15 +383,15 @@ function 建立詳情HTML(選中條目: 圖鑑條目): string {
       <div class="圖鑑詳情-頂部">
         <div>
           <p class="圖鑑詳情-眉標">${雙語("展開紀錄", "Expanded Entry")}</p>
-          <h4 class="圖鑑詳情-標題">${選中條目.名稱}</h4>
-          <p class="圖鑑詳情-屬性">🏷️ ${雙語("分類", "Category")}：${選中條目.所屬}</p>
+          <h4 class="圖鑑詳情-標題">${條目顯示名稱(選中條目)}</h4>
+          <p class="圖鑑詳情-屬性">🏷️ ${雙語("分類", "Category")}：${條目顯示所屬(選中條目)}</p>
         </div>
-        <p class="圖鑑詳情-摘要">${選中條目.簡介}</p>
+        <p class="圖鑑詳情-摘要">${條目顯示簡介(選中條目, 分頁名稱)}</p>
       </div>
       <div class="圖鑑詳情-下半">
         ${立繪HTML}
         <div class="圖鑑詳情-文案區">
-          <div class="圖鑑詳情-內文">${渲染Markdown(選中條目.詳細描述)}</div>
+          <div class="圖鑑詳情-內文">${渲染Markdown(條目顯示詳情(選中條目, 分頁名稱))}</div>
           ${表格HTML}
         </div>
       </div>
@@ -352,7 +466,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
     工具列.innerHTML = `
       <div class="圖鑑瀏覽器-選中摘要">
         <span class="圖鑑瀏覽器-選中標籤">${雙語("已選中", "Selected")}</span>
-        <strong>${選中條目.名稱}</strong>
+        <strong>${條目顯示名稱(選中條目)}</strong>
       </div>
       <button type="button" class="三級按鈕 圖鑑瀏覽器-切換列表">${列表展開 ? 雙語("收起上方列表", "Collapse Top List") : 雙語("展開上方列表", "Expand Top List")}</button>
     `;
@@ -371,10 +485,10 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
     卡片格.classList.add("成員圖鑑-五乘四版");
 
     const 世界配置 = [
-      { key: "幾何世界", name: "幾何世界 (Geometry)" },
-      { key: "有機世界", name: "有機世界 (Organic)" },
-      { key: "分形世界", name: "分形世界 (Fractal)" },
-      { key: "機械世界", name: "機械世界 (Mechanical)" },
+      { key: "幾何世界", name: 英文模式() ? "Geometry" : "幾何世界 (Geometry)" },
+      { key: "有機世界", name: 英文模式() ? "Organic" : "有機世界 (Organic)" },
+      { key: "分形世界", name: 英文模式() ? "Fractal" : "分形世界 (Fractal)" },
+      { key: "機械世界", name: 英文模式() ? "Mechanical" : "機械世界 (Mechanical)" },
     ];
 
     for (const world of 世界配置) {
@@ -388,9 +502,9 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
       const 世界成員 = 當前資料列表.filter((item) => item.所屬.includes(world.key));
       for (const 條目 of 世界成員) {
         const 編號 = 條目.名稱.match(/^(\d{2})\./)?.[1] ?? "--";
-        const 乾淨名稱 = 條目.名稱
-          .replace(/^\d{2}\.\s*/, "")
-          .replace(/^[^\p{L}\p{N}]+/u, "");
+        const 乾淨名稱 = 英文模式()
+          ? 條目顯示名稱(條目).replace(/^\d{2}\.\s*/, "")
+          : 條目.名稱.replace(/^\d{2}\.\s*/, "").replace(/^[^\p{L}\p{N}]+/u, "");
           const card = document.createElement("button");
           card.type = "button";
           card.className = "占位卡片 圖鑑瀏覽器-條目按鈕";
@@ -399,7 +513,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
           card.innerHTML = `
             <span class="圖鑑瀏覽器-成員編號">${編號}</span>
             <span class="圖鑑瀏覽器-條目標題">${乾淨名稱}</span>
-            <span class="圖鑑瀏覽器-條目簡述">${條目.簡介}</span>
+            <span class="圖鑑瀏覽器-條目簡述">${條目顯示簡介(條目, 選中名稱)}</span>
           `;
           card.addEventListener("click", () => 應用程式狀態.設定圖鑑選中條目(情境, 條目.id));
           row.appendChild(card);
@@ -415,8 +529,8 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
       if (有選中條目 && 條目.id !== 選中條目!.id) card.classList.add("收斂");
       if (有選中條目 && 條目.id === 選中條目!.id) card.classList.add("作用中");
       card.innerHTML = `
-        <span class="圖鑑瀏覽器-條目標題">${條目.名稱}</span>
-        <span class="圖鑑瀏覽器-條目簡述">${條目.簡介}</span>
+        <span class="圖鑑瀏覽器-條目標題">${條目顯示名稱(條目)}</span>
+        <span class="圖鑑瀏覽器-條目簡述">${條目顯示簡介(條目, 選中名稱)}</span>
       `;
       card.addEventListener("click", () => 應用程式狀態.設定圖鑑選中條目(情境, 條目.id));
       卡片格.appendChild(card);
@@ -426,7 +540,7 @@ export function 建立圖鑑瀏覽器(情境: "OOC" | "IC"): HTMLElement {
   const 展開區 = document.createElement("div");
   展開區.className = "圖鑑瀏覽器-展開區";
   展開區.innerHTML = 選中條目
-    ? 建立詳情HTML(選中條目)
+    ? 建立詳情HTML(選中條目, 選中名稱)
     : `<p class="占位說明 置中">${雙語("先點一筆資料，下面就會展開。", "Pick an entry first and the detail panel will open below.")}</p>`;
 
   主區.append(標題列, 卡片格, 展開區);

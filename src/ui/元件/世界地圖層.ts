@@ -90,6 +90,7 @@ import {
   記錄驗收擊殺,
   設定驗收事件,
 } from "../驗收場狀態";
+import { 選文 } from "../語系";
 import type { CaptainId } from "../../data/戰鬥原語";
 import { 計算主動技能效果, type 主動技能情境 } from "../../captain/主動技能效果";
 import {
@@ -129,6 +130,24 @@ import {
 import { 取出Boss召喚 } from "../Boss召喚佇列";
 import { currentSafeRadius } from "../../world/網格侵蝕";
 import { 更新戰場音樂情境 } from "../../audio/音樂管理";
+
+function 雙語(中文: string, 英文: string): string {
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
+}
+
+function 世界顯示名(world: World | "core"): string {
+  return {
+    geometry: 雙語("幾何世界", "Geometry"),
+    organic: 雙語("有機世界", "Organic"),
+    fractal: 雙語("分形世界", "Fractal"),
+    mechanical: 雙語("機械世界", "Mechanical"),
+    core: "COLA",
+  }[world];
+}
+
+function 怪物顯示名(inst: 可見怪物實例): string {
+  return 應用程式狀態.額外.語言 === "zh" ? inst.nameZh : inst.nameEn;
+}
 
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
@@ -753,10 +772,10 @@ export function 建立世界地圖層(): HTMLElement {
   managementButton.className = "世界地圖層-管理按鈕";
   managementButton.type = "button";
   managementButton.innerHTML = `
-    <span class="世界地圖層-管理按鈕-時間">世界時間 0s</span>
-    <span class="世界地圖層-管理按鈕-主標">管理介面</span>
+    <span class="世界地圖層-管理按鈕-時間">${雙語("世界時間 0s", "World Time 0s")}</span>
+    <span class="世界地圖層-管理按鈕-主標">${雙語("管理介面", "Management")}</span>
   `;
-  managementButton.title = "打開管理介面";
+  managementButton.title = 雙語("打開管理介面", "Open Management");
   managementButton.onclick = () => 應用程式狀態.進入管理介面("小隊");
   canvas.appendChild(managementButton);
 
@@ -1040,7 +1059,10 @@ export function 建立世界地圖層(): HTMLElement {
       const def = findMonster(m.inst.monsterNo);
       if (!def) continue;
       擊殺統計[`${def.world}_T${def.tier}`] = (擊殺統計[`${def.world}_T${def.tier}`] ?? 0) + 1;
-      記錄驗收擊殺(`${def.world}_T${def.tier}`, `${def.nameZh} 已被擊殺。`);
+      記錄驗收擊殺(
+        `${def.world}_T${def.tier}`,
+        應用程式狀態.額外.語言 === "zh" ? `${def.nameZh} 已被擊殺。` : `${def.nameEn} was defeated.`,
+      );
       if (訓練道場中) continue;
       if (def.world !== "core") {
         記錄世界擊殺(def.world, def.tier, def.id, 進度模式); // 累計守護者召喚進度
@@ -1314,7 +1336,7 @@ export function 建立世界地圖層(): HTMLElement {
       exclaim.style.display = "flex";
       exclaim.style.setProperty("--x", `${playerScreen.x + 26}px`);
       exclaim.style.setProperty("--y", `${playerScreen.y - 36}px`);
-      exclaim.title = `靠近後按 E 傳送到「${nearestPortal.portalTargetNameZh}」`;
+      exclaim.title = 雙語(`靠近後按 E 傳送到「${nearestPortal.portalTargetNameZh}」`, `Press E nearby to warp to "${nearestPortal.portalTargetNameEn}"`);
     } else {
       exclaim.style.display = "none";
     }
@@ -1662,7 +1684,7 @@ export function 建立世界地圖層(): HTMLElement {
 
       設定訓練碰撞接觸中(
         contacts.map((monster) => monster.inst.id),
-        contacts.map((monster) => monster.inst.nameZh),
+        contacts.map((monster) => 怪物顯示名(monster.inst)),
       );
 
       collisionTickCarry += dt;
@@ -1700,7 +1722,7 @@ export function 建立世界地圖層(): HTMLElement {
         記錄訓練碰撞({
           atMs: Date.now(),
           enemyIds: contacts.map((monster) => monster.inst.id),
-          enemyNames: contacts.map((monster) => monster.inst.nameZh),
+          enemyNames: contacts.map((monster) => 怪物顯示名(monster.inst)),
           squadWeight: summary.totalWeight,
           enemyWeight,
           squadDamage: dealtTotal,
@@ -1873,7 +1895,7 @@ export function 建立世界地圖層(): HTMLElement {
     const clockEl = document.querySelector(".世界時鐘");
     if (clockEl) {
       const 額外 = 應用程式狀態.額外;
-      clockEl.textContent = `世界時間：${額外.世界時鐘秒數}s${額外.縮圈警戒 ? " ⚠" : ""}`;
+      clockEl.textContent = 雙語("世界時間", "World Time") + `: ${額外.世界時鐘秒數}s${額外.縮圈警戒 ? " ⚠" : ""}`;
       if (額外.縮圈警戒) {
         clockEl.classList.add("警戒");
       } else {
@@ -1883,7 +1905,7 @@ export function 建立世界地圖層(): HTMLElement {
     const managementClockEl = managementButton.querySelector<HTMLElement>(".世界地圖層-管理按鈕-時間");
     if (managementClockEl) {
       const 額外 = 應用程式狀態.額外;
-      managementClockEl.textContent = `世界時間 ${額外.世界時鐘秒數}s${額外.縮圈警戒 ? " ⚠" : ""}`;
+      managementClockEl.textContent = `${雙語("世界時間", "World Time")} ${額外.世界時鐘秒數}s${額外.縮圈警戒 ? " ⚠" : ""}`;
     }
 
     rafId = window.requestAnimationFrame(tick);
@@ -2029,7 +2051,7 @@ export function 建立世界地圖層(): HTMLElement {
       const def = worldGuardian(request.world);
       if (!def) continue;
       生成Boss到場(def, "guardian", request.world);
-      設定驗收事件(`${REGION_LABEL[request.world]}守護者已由祭壇召喚至場上。`);
+      設定驗收事件(雙語(`${REGION_LABEL[request.world]}守護者已由祭壇召喚至場上。`, `${世界顯示名(request.world)} guardian summoned from the altar.`));
     }
   }
 
@@ -2045,7 +2067,7 @@ export function 建立世界地圖層(): HTMLElement {
   function 傳送到對應門(portal: EnvObjectInstance): void {
     const target = ENV_OBJECTS.find((entry) => entry.id === portal.portalTargetId);
     if (!target) {
-      顯示技能提示("這座傳送門暫時沒有對應出口");
+      顯示技能提示(雙語("這座傳送門暫時沒有對應出口", "This gate currently has no linked exit"));
       return;
     }
 
@@ -2062,7 +2084,7 @@ export function 建立世界地圖層(): HTMLElement {
     }, playerPos);
     if (!訓練道場中) 設定正式玩家位置(playerPos);
     syncNearbyToState();
-    顯示技能提示(`已傳送到 ${target.nameZh}`);
+    顯示技能提示(雙語(`已傳送到 ${target.nameZh}`, `Warped to ${target.nameEn}`));
     render();
   }
 
@@ -2190,7 +2212,7 @@ function 建立驗收面板(cb: 驗收面板回呼): HTMLElement {
       <div>碎片：${碎片列}</div>
       <div>全隊 ATK <b>${squad.totalAtk}</b> ｜ HP <b>${squad.totalHp}</b> ｜ 隊長 ${當前隊長星級()}★（累計 ${隊員累計總星級()}★）</div>
       <div class="驗收面板-隊員">${roster
-        .map((r) => `${r.nameZh}${r.star}★`)
+        .map((r) => `${應用程式狀態.額外.語言 === "zh" ? r.nameZh : r.nameEn}${r.star}★`)
         .join("、")}</div>
     `;
     panel.appendChild(info);
@@ -2402,20 +2424,20 @@ function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
   const img = document.createElement("img");
   img.className = "世界地圖層-環境物件-image";
   img.src = env.iconPath;
-  img.alt = env.nameZh;
+  img.alt = env.nameEn;
   img.width = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM;
   img.height = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM;
   img.draggable = false;
 
   const centerLabel = document.createElement("div");
   centerLabel.className = "世界地圖層-環境物件-傳送目的";
-  centerLabel.textContent = env.portalTargetNameZh;
+  centerLabel.textContent = env.portalTargetNameEn;
 
   const interactHint = document.createElement("div");
   interactHint.className = "世界地圖層-環境物件-互動提示";
-  interactHint.textContent = "按 E 傳送";
+  interactHint.textContent = 雙語("按 E 傳送", "Press E to Warp");
 
-  node.title = `${env.nameZh}\n${env.portalLabel}\n${env.mechanicText}`;
+  node.title = `${env.nameEn}\n${env.portalLabelEn}\n${env.mechanicTextEn}`;
   shadowLayer.appendChild(shadowMask);
   visualLayer.append(shadowLayer, img, centerLabel, interactHint);
   node.appendChild(visualLayer);
@@ -2459,13 +2481,13 @@ function miniMarkerForObject(object: MapObject): MiniMapMarker {
   const shortLabel = (() => {
     if (object.kind === "合成") {
       const match = object.id.match(/_(\d+)$/);
-      return `工作台${match?.[1] ?? ""}`;
+      return 雙語(`工作台${match?.[1] ?? ""}`, `Workbench ${match?.[1] ?? ""}`);
     }
-    if (object.kind === "雕像") return object.label.replace(" 雕像", "");
-    if (object.kind === "商店") return "商店";
-    if (object.kind === "熔爐") return object.label;
+    if (object.kind === "雕像") return object.memberNo ? MEMBERS.find((member) => member.no === object.memberNo)?.nameEn ?? "Statue" : "Statue";
+    if (object.kind === "商店") return 雙語("商店", "Shop");
+    if (object.kind === "熔爐") return 雙語(object.label, "Forge");
     if (object.summonType === "cola") return "COLA";
-    return "守護祭壇";
+    return 雙語("守護祭壇", "Guardian Altar");
   })();
 
   return {
@@ -2474,7 +2496,7 @@ function miniMarkerForObject(object: MapObject): MiniMapMarker {
     y: object.y,
     icon: FACILITY_GLYPH[object.kind],
     label: shortLabel,
-    title: object.detail ?? object.label,
+    title: 應用程式狀態.額外.語言 === "zh" ? (object.detail ?? object.label) : shortLabel,
   };
 }
 
@@ -2486,8 +2508,8 @@ function miniMarkerForEnvObject(env: EnvObjectInstance): MiniMapMarker {
     x: env.x,
     y: env.y,
     icon,
-    label: env.nameZh,
-    title: `${env.nameZh}｜${env.portalLabel}`,
+    label: env.nameEn,
+    title: `${env.nameEn} | ${env.portalLabelEn}`,
   };
 }
 
@@ -2507,7 +2529,7 @@ function createMonsterNode(inst: 可見怪物實例): HTMLElement {
   const img = document.createElement("img");
   img.className = "世界地圖層-怪物-image";
   img.src = inst.spritePath;
-  img.alt = inst.nameZh;
+  img.alt = 怪物顯示名(inst);
   img.draggable = false;
 
   // 血條常駐顯示，讓玩家在接觸前就能辨識目標生命與威脅。
@@ -2520,7 +2542,7 @@ function createMonsterNode(inst: 可見怪物實例): HTMLElement {
   hpLabel.textContent = "100%";
   hpBar.append(hpFill, hpLabel);
 
-  node.title = `${inst.nameZh}（T${inst.tier}）`;
+  node.title = `${怪物顯示名(inst)} (T${inst.tier})`;
   node.append(shadow, img, hpBar);
   return node;
 }
@@ -2528,8 +2550,8 @@ function createMonsterNode(inst: 可見怪物實例): HTMLElement {
 function createWorldChestNode(chest: WorldChestInstance): HTMLElement {
   const node = document.createElement("button");
   node.type = "button";
-  node.title = "禪繞寶箱｜靠近後按 E，消耗最大能量 50% 開啟";
-  node.setAttribute("aria-label", `${chest.world} 禪繞寶箱`);
+  node.title = 雙語("禪繞寶箱｜靠近後按 E，消耗最大能量 50% 開啟", "Zen Chest | Press E nearby to open and spend 50% max Energy");
+  node.setAttribute("aria-label", `${世界顯示名(chest.world)} Chest`);
   Object.assign(node.style, {
     position: "absolute",
     left: "0",
@@ -2558,10 +2580,10 @@ function createResourceDropNode(drop: 資源掉落物): HTMLElement {
   const totalCount = materialCount + drop.gems;
   const leadMaterial = drop.materials[0];
   const titleParts: string[] = [];
-  if (materialCount > 0) titleParts.push(`材料 ×${materialCount}`);
-  if (drop.gems > 0) titleParts.push(`原石 ×${drop.gems}`);
-  node.title = `${titleParts.join("｜")}｜靠近後按 E 一次拾取附近全部資源`;
-  node.setAttribute("aria-label", `地面資源 ${totalCount} 份`);
+  if (materialCount > 0) titleParts.push(雙語(`材料 ×${materialCount}`, `Materials x${materialCount}`));
+  if (drop.gems > 0) titleParts.push(雙語(`原石 ×${drop.gems}`, `Gems x${drop.gems}`));
+  node.title = `${titleParts.join(" | ")} | ${雙語("靠近後按 E 一次拾取附近全部資源", "Press E nearby to collect every nearby resource")}`;
+  node.setAttribute("aria-label", `${雙語("地面資源", "Ground Resources")} ${totalCount}`);
   Object.assign(node.style, {
     position: "absolute",
     left: "0",
@@ -2632,8 +2654,8 @@ function createDeathDropNode(drop: 死亡遺落物): HTMLElement {
   const node = document.createElement("button");
   node.type = "button";
   const count = drop.materials.reduce((sum, item) => sum + item.count, 0);
-  node.title = `死亡遺落材料 ×${count}｜靠近後按 E 取回`;
-  node.setAttribute("aria-label", `死亡遺落材料 ${count} 份`);
+  node.title = `${雙語("死亡遺落材料", "Dropped Materials")} x${count} | ${雙語("靠近後按 E 取回", "Press E nearby to reclaim")}`;
+  node.setAttribute("aria-label", `${雙語("死亡遺落材料", "Dropped Materials")} ${count}`);
   Object.assign(node.style, {
     position: "absolute",
     left: "0",
@@ -2658,7 +2680,10 @@ function createDeathDropNode(drop: 死亡遺落物): HTMLElement {
 function createZoneLabel(zone: MapZone, host: HTMLElement) {
   const label = document.createElement("div");
   label.className = `世界地圖層-區域標籤 世界地圖層-區域標籤-${zone.region}`;
-  label.textContent = REGION_LABEL[zone.region];
+  label.textContent =
+    zone.region === "plaza"
+      ? 雙語("中央廣場", "Central Plaza")
+      : 世界顯示名(zone.region);
   host.appendChild(label);
 
   return { zone, label };
@@ -4097,7 +4122,7 @@ function createMiniPlaza(host: SVGSVGElement): { rect: SVGRectElement; label: SV
   label.setAttribute("class", "世界地圖層-小地圖中央廣場標籤");
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "middle");
-  label.textContent = "中央廣場";
+  label.textContent = 雙語("中央廣場", "Central Plaza");
   host.appendChild(label);
   return { rect, label };
 }
@@ -4126,7 +4151,7 @@ function createMiniGeometryCore(host: SVGSVGElement): { path: SVGPathElement; la
   label.setAttribute("class", "世界地圖層-小地圖中央區標籤");
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "middle");
-  label.textContent = "中央區";
+  label.textContent = 雙語("中央區", "Core Zone");
   host.appendChild(label);
   return { path, label };
 }
@@ -4140,7 +4165,7 @@ function createMiniFractalCore(host: SVGSVGElement): { path: SVGPathElement; lab
   label.setAttribute("class", "世界地圖層-小地圖中央區標籤 世界地圖層-小地圖中央區標籤-fractal");
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "middle");
-  label.textContent = "中央區";
+  label.textContent = 雙語("中央區", "Core Zone");
   host.appendChild(label);
   return { path, label };
 }
@@ -4154,7 +4179,7 @@ function createMiniOrganicCore(host: SVGSVGElement): { path: SVGPathElement; lab
   label.setAttribute("class", "世界地圖層-小地圖中央區標籤 世界地圖層-小地圖中央區標籤-organic");
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "middle");
-  label.textContent = "中央區";
+  label.textContent = 雙語("中央區", "Core Zone");
   host.appendChild(label);
   return { path, label };
 }
@@ -4168,7 +4193,7 @@ function createMiniMechanicalCore(host: SVGSVGElement): { path: SVGPathElement; 
   label.setAttribute("class", "世界地圖層-小地圖中央區標籤 世界地圖層-小地圖中央區標籤-mechanical");
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "middle");
-  label.textContent = "中央區";
+  label.textContent = 雙語("中央區", "Core Zone");
   host.appendChild(label);
   return { path, label };
 }
