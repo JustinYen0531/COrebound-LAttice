@@ -44,6 +44,7 @@ import {
 
 type 職責色 = "保護" | "火力" | "補給";
 type 左側視圖模式 = "編排" | "預覽";
+type 正式舞台模式 = "stage" | "orbit" | "totem";
 
 const 槽位職責色票: Record<職責色, { label: string; color: string }> = {
   保護: { label: "保護位", color: "#4d8dff" },
@@ -66,6 +67,7 @@ const 軌道槽位配置: Array<{ slotId: number; layer: "外" | "中" | "內"; 
 const 軌道半徑: Record<"外" | "中" | "內", number> = { 外: 140, 中: 98, 內: 60 };
 let 正在編輯槽位: number | null = null;
 let 左側模式: 左側視圖模式 = "編排";
+let 正式舞台視圖: 正式舞台模式 = "stage";
 const 全部圖騰角色 = [...幾何世界圖騰清單, ...有機世界圖騰清單, ...分形世界圖騰清單, ...機械世界圖騰清單];
 const 成員圖騰索引 = new Map(全部圖騰角色.map((entry) => [entry.名稱, entry]));
 const 隊長圖騰索引 = new Map(隊長圖騰清單.map((entry) => [entry.id, entry]));
@@ -262,6 +264,125 @@ function 建立正式小隊立繪舞台(): HTMLElement {
   });
 
   root.appendChild(stage);
+  return root;
+}
+
+function 建立正式軌道預覽(selectedSlotId: number, 刷新: () => void): HTMLElement {
+  const slots = 取得正式編隊資料();
+  const slotMap = new Map(slots.map((slot) => [slot.slotId, slot]));
+  const stage = document.createElement("div");
+  stage.className = "訓練軌道編排器-舞台";
+
+  const orbit = document.createElement("div");
+  orbit.className = "訓練軌道編排器-軌道";
+
+  (["外", "中", "內"] as const).forEach((layer, idx) => {
+    const ring = document.createElement("div");
+    ring.className = `訓練軌道編排器-環 訓練軌道編排器-環-${layer}`;
+    ring.style.setProperty("--ring-duration", idx === 0 ? "30s" : idx === 1 ? "22s" : "16s");
+    ring.style.setProperty("--ring-direction", idx === 1 ? "reverse" : "normal");
+    const duration = idx === 0 ? 30 : idx === 1 ? 22 : 16;
+    ring.style.animationDelay = `-${(Date.now() / 1000) % duration}s`;
+
+    正式槽位配置
+      .filter((item) => item.ring === layer)
+      .forEach((item) => {
+        const slot = slotMap.get(item.slotId);
+        if (!slot) return;
+        const role = 槽位職責色票[item.role];
+        const node = document.createElement("button");
+        node.type = "button";
+        node.className = `訓練軌道編排器-槽位${selectedSlotId === item.slotId ? " 作用中" : ""}`;
+        node.style.setProperty("--slot-angle", `${item.angle}deg`);
+        node.style.setProperty("--slot-radius", `${軌道半徑[item.ring]}px`);
+        node.style.setProperty("--slot-color", role.color);
+        node.title = `${取得層級標籤(item.ring)}｜${slot.member ? slot.member.nameZh : "未配置"}`;
+        node.onclick = () => {
+          應用程式狀態.額外.選中的小隊成員展示位 = item.slotId;
+          刷新();
+        };
+
+        const num = document.createElement("span");
+        num.className = "訓練軌道編排器-編號";
+        num.textContent = String(item.slotId + 1);
+
+        const initial = document.createElement("span");
+        initial.className = "訓練軌道編排器-縮寫";
+        initial.textContent = slot.member ? slot.member.nameZh.slice(0, 1) : "空";
+
+        node.append(num, initial);
+        ring.appendChild(node);
+      });
+
+    orbit.appendChild(ring);
+  });
+
+  stage.appendChild(orbit);
+  return stage;
+}
+
+function 建立正式舞台切換區(captain: (typeof 隊長清單)[number], selectedSlotId: number, 刷新: () => void): HTMLElement {
+  const root = document.createElement("section");
+  root.className = "正式舞台切換區";
+
+  const frame = document.createElement("div");
+  frame.className = "正式舞台切換區-框";
+
+  const header = document.createElement("div");
+  header.className = "正式舞台切換區-標題列";
+  const title = document.createElement("div");
+  title.className = "訓練軌道編排器-視圖標題";
+  title.textContent =
+    正式舞台視圖 === "stage" ? "小隊立會舞台" :
+    正式舞台視圖 === "orbit" ? "軌道預覽" :
+    "圖騰預覽";
+  const hint = document.createElement("div");
+  hint.className = "正式舞台切換區-說明";
+  hint.textContent =
+    正式舞台視圖 === "stage" ? "像合照一樣看三名上陣成員的站位。" :
+    正式舞台視圖 === "orbit" ? "切回原本的軌道視圖，看圈層與位置。" :
+    "查看目前正式上陣對應的圖騰樣貌。";
+  header.append(title, hint);
+  frame.appendChild(header);
+
+  const prev = document.createElement("button");
+  prev.type = "button";
+  prev.className = "正式舞台切換區-箭頭 正式舞台切換區-箭頭--左";
+  prev.textContent = "←";
+  prev.title = "切到前一種預覽";
+  prev.onclick = () => {
+    正式舞台視圖 = 正式舞台視圖 === "stage" ? "orbit" : 正式舞台視圖 === "orbit" ? "totem" : "stage";
+    刷新();
+  };
+
+  const next = document.createElement("button");
+  next.type = "button";
+  next.className = "正式舞台切換區-箭頭 正式舞台切換區-箭頭--右";
+  next.textContent = "→";
+  next.title = "切到下一種預覽";
+  next.onclick = () => {
+    正式舞台視圖 = 正式舞台視圖 === "stage" ? "totem" : 正式舞台視圖 === "totem" ? "orbit" : "stage";
+    刷新();
+  };
+  frame.append(prev, next);
+
+  const body =
+    正式舞台視圖 === "stage"
+      ? 建立正式小隊立繪舞台()
+      : 正式舞台視圖 === "orbit"
+        ? 建立正式軌道預覽(selectedSlotId, 刷新)
+        : 建立正式對局圖騰預覽();
+  frame.appendChild(body);
+
+  root.appendChild(frame);
+  root.appendChild(建立隊長核心卡(captain));
+
+  const legend = document.createElement("div");
+  legend.className = "訓練軌道編排器-圖例";
+  legend.innerHTML = (Object.values(槽位職責色票))
+    .map((item) => `<span class="訓練軌道編排器-圖例項"><i style="background:${item.color};"></i>${item.label}</span>`)
+    .join("");
+  root.appendChild(legend);
   return root;
 }
 
@@ -660,15 +781,7 @@ function 建立正式例會預覽(captain: (typeof 隊長清單)[number], select
   });
 
   stage.appendChild(fan);
-
-  const legend = document.createElement("div");
-  legend.className = "訓練軌道編排器-圖例";
-  legend.innerHTML = (Object.values(槽位職責色票))
-    .map((item) => `<span class="訓練軌道編排器-圖例項"><i style="background:${item.color};"></i>${item.label}</span>`)
-    .join("");
-  stage.appendChild(legend);
-
-  root.append(stage, 建立隊長核心卡(captain), 建立正式槽位格(selectedSlotId, 刷新));
+  root.append(stage);
   return root;
 }
 
@@ -944,14 +1057,12 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   leftPane.style.display = "flex";
   leftPane.style.flexDirection = "column";
   leftPane.style.gap = "14px";
-  leftPane.appendChild(建立正式小隊立繪舞台());
+  leftPane.appendChild(建立正式舞台切換區(captain, selectedSlotId, 刷新));
 
   const rightPane = document.createElement("div");
   rightPane.style.display = "flex";
   rightPane.style.flexDirection = "column";
   rightPane.style.gap = "14px";
-
-  rightPane.appendChild(建立正式例會預覽(captain, selectedSlotId, 刷新));
 
   const captainRow = document.createElement("div");
   captainRow.style.display = "grid";

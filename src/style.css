@@ -1572,6 +1572,52 @@ button.禁用:hover {
   flex-direction: column;
   gap: 10px;
 }
+.正式舞台切換區 {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.正式舞台切換區-框 {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.正式舞台切換區-標題列 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.正式舞台切換區-說明 {
+  font-size: 0.72rem;
+  color: #8d93ad;
+}
+.正式舞台切換區-箭頭 {
+  position: absolute;
+  top: 34px;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(17, 21, 33, 0.76);
+  color: #f0ead8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.正式舞台切換區-箭頭--左 {
+  left: 10px;
+}
+.正式舞台切換區-箭頭--右 {
+  right: 10px;
+}
+.正式舞台切換區-箭頭:hover {
+  border-color: rgba(216, 180, 106, 0.45);
+  background: rgba(27, 32, 48, 0.9);
+}
 .正式立會舞台-框 {
   position: relative;
   min-height: 500px;
@@ -1642,6 +1688,9 @@ button.禁用:hover {
   }
   .正式例會-列 {
     width: 100% !important;
+  }
+  .正式舞台切換區-箭頭 {
+    top: 30px;
   }
   .正式立會舞台-框 {
     min-height: 440px;
@@ -3007,23 +3056,39 @@ button.禁用:hover {
 .世界地圖層-怪物-T2 .世界地圖層-怪物-image {
   filter: drop-shadow(0 0 6px rgba(216, 180, 106, 0.4));
 }
-/* 怪物血條（佔位）：受傷後浮現在 token 上方 */
+/* 怪物血條：常駐、粗體、高對比，接觸傷害能立刻被看見。 */
 .世界地圖層-怪物-血條 {
   position: absolute;
   left: 50%;
-  top: 6%;
+  top: 1%;
   transform: translateX(-50%);
-  width: 44px;
-  height: 5px;
-  background: rgba(6, 7, 12, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  z-index: 4;
+  width: 92px;
+  height: 12px;
+  overflow: hidden;
+  background: #171018;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px rgba(36, 10, 16, 0.72), 0 4px 10px rgba(0, 0, 0, 0.48);
+  z-index: 6;
 }
 .世界地圖層-怪物-血條填充 {
+  position: absolute;
+  inset: 0 auto 0 0;
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #ff5468, #ffd24d);
+  background: linear-gradient(90deg, #d91f3d 0%, #ff4f62 58%, #ffb238 100%);
+  box-shadow: inset 0 2px rgba(255, 255, 255, 0.28);
   transition: width 0.12s linear;
+}
+.世界地圖層-怪物-血條文字 {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font: 800 9px/1 Georgia, serif;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px #000, 0 0 2px #000;
 }
 
 /* Batch 2 驗收面板（佔位 UI：右下角資源/戰力/擊殺 + 驅動按鈕） */
