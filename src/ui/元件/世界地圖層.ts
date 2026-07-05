@@ -783,7 +783,6 @@ export function 建立世界地圖層(): HTMLElement {
   managementButton.className = "世界地圖層-管理按鈕";
   managementButton.type = "button";
   managementButton.innerHTML = `
-    <span class="世界地圖層-管理按鈕-時間">${雙語("世界時間 0s", "World Time 0s")}</span>
     <span class="世界地圖層-管理按鈕-主標">${雙語("管理介面", "Management")}</span>
   `;
   managementButton.title = 雙語("打開管理介面", "Open Management");
@@ -1913,12 +1912,6 @@ export function 建立世界地圖層(): HTMLElement {
         clockEl.classList.remove("警戒");
       }
     }
-    const managementClockEl = managementButton.querySelector<HTMLElement>(".世界地圖層-管理按鈕-時間");
-    if (managementClockEl) {
-      const 額外 = 應用程式狀態.額外;
-      managementClockEl.textContent = `${雙語("世界時間", "World Time")} ${額外.世界時鐘秒數}s${額外.縮圈警戒 ? " ⚠" : ""}`;
-    }
-
     rafId = window.requestAnimationFrame(tick);
   }
 
