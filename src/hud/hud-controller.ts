@@ -167,10 +167,12 @@ export class HudController {
     this.core.render(snap);
     this.memberStatus.render(snap);
     this.rings.render(snap);
-    this.skillStrips.renderWeapons(snap.weapons);
-    this.skillStrips.renderPeriodics(snap.periodics);
-    if (this.state === "right_open") this.itemDrawer.render(snap);
-    if (this.state === "left_open") this.weaponDrawer.render(snap.weapons);
+    if (!HudController.永久雙面板) {
+      this.skillStrips.renderWeapons(snap.weapons);
+      this.skillStrips.renderPeriodics(snap.periodics);
+    }
+    if (HudController.永久雙面板 || this.state === "right_open") this.itemDrawer.render(snap);
+    if (HudController.永久雙面板 || this.state === "left_open") this.weaponDrawer.render(snap.weapons);
     this.refreshQuickPanel();
     // 處理自動收回(移動 / 離開)
     this.handleAutoDismissTriggers(snap);
