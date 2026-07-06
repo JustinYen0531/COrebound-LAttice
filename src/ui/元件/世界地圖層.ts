@@ -1373,7 +1373,7 @@ export function 建立世界地圖層(): HTMLElement {
     const target = event.target;
     if (
       target instanceof Element &&
-      target.closest(".Showcase控制台, .資料夾式版面-補充區, .Showcase背包編輯器, select, input, textarea, button")
+      target.closest(".Showcase控制台, .資料夾式版面-補充區, .Showcase背包編輯器, select, input, textarea, button, [data-enemy]")
     ) {
       return;
     }

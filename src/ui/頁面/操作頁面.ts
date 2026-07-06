@@ -90,6 +90,7 @@ function 建立Showcase快捷面板(): HTMLElement {
   panel.className = "Showcase控制台";
   let 收合 = false;
   let 已選Showcase怪物Id: string | null = null;
+  let Showcase怪物清單捲動 = 0;
 
   const render = () => {
     const hp = 取得正式小隊摘要();
@@ -128,6 +129,12 @@ function 建立Showcase快捷面板(): HTMLElement {
     enemySelect.style.minHeight = "220px";
     enemySelect.style.maxHeight = "280px";
     enemySelect.style.overflowY = "auto";
+    enemySelect.addEventListener("wheel", (event) => {
+      event.stopPropagation();
+    });
+    enemySelect.addEventListener("scroll", () => {
+      Showcase怪物清單捲動 = enemySelect.scrollTop;
+    });
     for (const monster of catalog) {
       const option = document.createElement("option");
       option.value = monster.id;
@@ -146,6 +153,9 @@ function 建立Showcase快捷面板(): HTMLElement {
       已選Showcase怪物Id = enemySelect.value;
       設定訓練預選怪物(enemySelect.value);
     };
+    requestAnimationFrame(() => {
+      enemySelect.scrollTop = Showcase怪物清單捲動;
+    });
     panel.querySelectorAll<HTMLButtonElement>("[data-spawn]").forEach((button) => {
       button.onclick = () => {
         已選Showcase怪物Id = enemySelect.value;

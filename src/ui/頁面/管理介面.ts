@@ -31,6 +31,16 @@ function 世界顯示名(world: string): string {
   }[world] ?? world;
 }
 
+function 家族顯示名(family: string): string {
+  return {
+    shield: 雙語("護盾", "Shield"),
+    multishot: 雙語("多發", "Multishot"),
+    straight: 雙語("直線", "Straight"),
+    mine: 雙語("地雷", "Mine"),
+    laser: 雙語("雷射", "Laser"),
+  }[family] ?? family;
+}
+
 const 分頁清單: 管理介面分頁[] = ["小隊", "背包", "互動", "圖鑑", "地圖"];
 const 互動設施清單: 互動設施[] = ["合成", "熔爐", "雕像", "商店", "召喚"];
 
@@ -187,7 +197,8 @@ function 背包分頁內容(): HTMLElement {
     mine: "💣",
     laser: "🔦",
   };
-  const realShards = (Object.entries(inventory.碎片) as Array<[keyof typeof inventory.碎片, number]>)
+  const shardInventory = inventory.碎片 ?? { shield: 0, multishot: 0, straight: 0, mine: 0, laser: 0 };
+  const realShards = (Object.entries(shardInventory) as Array<[keyof typeof shardInventory, number]>)
     .map(([family, count]) => ({
       id: `shard_${family}`,
       name: `${家族顯示名(family)} ${雙語("碎片", "Shards")}`,
