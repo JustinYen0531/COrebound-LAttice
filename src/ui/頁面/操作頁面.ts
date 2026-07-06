@@ -196,8 +196,8 @@ function 建立訓練道場快捷面板(): HTMLElement {
       .map((entry) => {
         const label = 世界顯示名(entry.world);
         if (entry.defeated) return `${label}✓`;
-        if (entry.ready) return `${label}可召`;
-        return `${label}${entry.readiness.eliteKills}/3精`;
+        if (entry.ready) return `${label} ${雙語("可召喚", "Ready")}`;
+        return `${label} T2 ${entry.readiness.eliteKills}/3`;
       })
       .join(" ｜ ");
     const killSummary = Object.entries(acceptance.killBreakdown)
