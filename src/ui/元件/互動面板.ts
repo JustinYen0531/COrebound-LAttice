@@ -406,20 +406,32 @@ function 熔爐面板(): HTMLElement {
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="color: #ffd24d; font-weight: bold;">×${count}</span>
-          <button class="三級按鈕 熔化-單個" style="padding: 2px 8px; font-size: 0.72rem;" ${furnaceContext ? "" : "disabled"}>${雙語("熔化 1 個", "Smelt 1")}</button>
+          <input class="熔化-數量" type="number" min="1" max="${count}" value="1" style="width: 58px; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.16); background: rgba(0,0,0,0.2); color: #fff; font-size: 0.72rem;" ${furnaceContext ? "" : "disabled"} />
+          <button class="三級按鈕 熔化-批量" style="padding: 2px 8px; font-size: 0.72rem;" ${furnaceContext ? "" : "disabled"}>${雙語("批量熔化", "Batch Smelt")}</button>
         </div>
       `;
 
-      row.querySelector(".熔化-單個")!.addEventListener("click", () => {
-        if (!furnaceContext?.family || furnaceContext.region === "plaza" || 背包.取材料(m.no) <= 0) return;
-        if (!背包.花費材料(m.no, 1)) return;
+      row.querySelector(".熔化-批量")!.addEventListener("click", () => {
+        const amountInput = row.querySelector<HTMLInputElement>(".熔化-數量");
+        const amount = Math.floor(Number(amountInput?.value ?? 1));
+        const available = 背包.取材料(m.no);
+        if (!furnaceContext?.family || furnaceContext.region === "plaza" || available <= 0) return;
+        if (!Number.isFinite(amount) || amount <= 0) {
+          alert(雙語("請輸入大於 0 的熔化數量。", "Enter a smelt amount greater than 0."));
+          return;
+        }
+        if (amount > available) {
+          alert(雙語(`目前只有 ${available} 個，不能超量熔化。`, `You only have ${available}, so that amount is too high.`));
+          return;
+        }
+        if (!背包.花費材料(m.no, amount)) return;
         const result = smelt({
           furnace: { family: furnaceContext.family, world: furnaceContext.region },
-          inputs: [{ materialNo: m.no, count: 1 }],
+          inputs: [{ materialNo: m.no, count: amount }],
         });
         背包.加入碎片(result.family, result.shards);
         播放音效("熔煉完成");
-        alert(`${雙語("熔煉成功", "Smelt successful")}: ${應用程式狀態.額外.語言 === "zh" ? m.nameZh : m.nameEn} → ${result.shards} ${家族顯示名(result.family)} ${雙語("碎片", "shards")}.`);
+        alert(`${雙語("熔煉成功", "Smelt successful")}: ${應用程式狀態.額外.語言 === "zh" ? m.nameZh : m.nameEn} ×${amount} → ${result.shards} ${家族顯示名(result.family)} ${雙語("碎片", "shards")}.`);
         應用程式狀態.進入管理介面("互動");
       });
 
