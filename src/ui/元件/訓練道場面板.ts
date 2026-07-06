@@ -15,6 +15,9 @@ import {
   取得上陣養成,
   設定正式小隊成員,
   設定正式小隊星級,
+  確保Showcase九宮格,
+  設定Showcase槽位成員,
+  設定Showcase槽位星級,
   當前隊長星級,
   type 初始成員層級,
 } from "../../progression/養成狀態";
@@ -69,17 +72,33 @@ const 軌道槽位配置: Array<{ slotId: number; layer: "外" | "中" | "內"; 
 const 軌道半徑: Record<"外" | "中" | "內", number> = { 外: 140, 中: 98, 內: 60 };
 let 正在編輯槽位: number | null = null;
 let 正在編輯正式槽位: number | null = null;
+const 正式編輯草稿 = new Map<number, { memberNo: string; star: 1 | 2 | 3 }>();
 let 左側模式: 左側視圖模式 = "編排";
 let 正式舞台視圖: 正式舞台模式 = "stage";
 const 全部圖騰角色 = [...幾何世界圖騰清單, ...有機世界圖騰清單, ...分形世界圖騰清單, ...機械世界圖騰清單];
 const 成員圖騰索引 = new Map(全部圖騰角色.map((entry) => [entry.名稱, entry]));
 const 隊長圖騰索引 = new Map(隊長圖騰清單.map((entry) => [entry.id, entry]));
 const 訓練世界選項: World[] = ["geometry", "organic", "fractal", "mechanical"];
-const 正式槽位配置: Array<{ slotId: number; layer: 初始成員層級; ring: "外" | "中" | "內"; angle: number; role: 職責色 }> = [
+const 一般正式槽位配置: Array<{ slotId: number; layer: 初始成員層級; ring: "外" | "中" | "內"; angle: number; role: 職責色 }> = [
   { slotId: 0, layer: "inner", ring: "內", angle: 0, role: "保護" },
-  { slotId: 1, layer: "middle", ring: "中", angle: 0, role: "火力" },
-  { slotId: 2, layer: "outer", ring: "外", angle: 0, role: "補給" },
+  { slotId: 4, layer: "middle", ring: "中", angle: 0, role: "火力" },
+  { slotId: 8, layer: "outer", ring: "外", angle: 0, role: "補給" },
 ];
+const Showcase正式槽位配置: typeof 一般正式槽位配置 = [
+  { slotId: 0, layer: "inner", ring: "內", angle: -30, role: "保護" },
+  { slotId: 1, layer: "inner", ring: "內", angle: 90, role: "火力" },
+  { slotId: 2, layer: "inner", ring: "內", angle: 210, role: "補給" },
+  { slotId: 3, layer: "middle", ring: "中", angle: -30, role: "保護" },
+  { slotId: 4, layer: "middle", ring: "中", angle: 90, role: "火力" },
+  { slotId: 5, layer: "middle", ring: "中", angle: 210, role: "補給" },
+  { slotId: 6, layer: "outer", ring: "外", angle: -30, role: "保護" },
+  { slotId: 7, layer: "outer", ring: "外", angle: 90, role: "火力" },
+  { slotId: 8, layer: "outer", ring: "外", angle: 210, role: "補給" },
+];
+
+function 取得正式槽位配置() {
+  return 應用程式狀態.額外.Showcase模式 ? Showcase正式槽位配置 : 一般正式槽位配置;
+}
 
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
@@ -285,7 +304,7 @@ function 建立正式對局圖騰預覽(): HTMLElement {
   const roster = 取得上陣養成();
   const totemSquad = roster
     .map((entry) => {
-      const layout = 正式槽位配置.find((item) => item.layer === entry.layer);
+      const layout = 取得正式槽位配置().find((item) => item.slotId === entry.slotId);
       const totemRole = 成員圖騰索引.get(entry.nameZh);
       if (!layout || !totemRole) return null;
       return {
@@ -373,7 +392,7 @@ function 建立正式軌道預覽(selectedSlotId: number, 刷新: () => void): H
     const duration = idx === 0 ? 30 : idx === 1 ? 22 : 16;
     ring.style.animationDelay = `-${(Date.now() / 1000) % duration}s`;
 
-    正式槽位配置
+    取得正式槽位配置()
       .filter((item) => item.ring === layer)
       .forEach((item) => {
         const slot = slotMap.get(item.slotId);
@@ -710,8 +729,8 @@ function 建立訓練圖騰預覽面板(captain: (typeof 隊長清單)[number], 
 
 function 取得正式編隊資料() {
   const roster = 取得上陣養成();
-  return 正式槽位配置.map((layout) => {
-    const member = roster.find((entry) => entry.layer === layout.layer) ?? null;
+  return 取得正式槽位配置().map((layout) => {
+    const member = roster.find((entry) => entry.slotId === layout.slotId) ?? null;
     return {
       slotId: layout.slotId,
       layer: layout.layer,
@@ -836,7 +855,7 @@ function 建立正式例會預覽(captain: (typeof 隊長清單)[number], select
     tag.textContent = layer.label;
     row.appendChild(tag);
 
-    正式槽位配置
+    取得正式槽位配置()
       .filter((item) => item.ring === layer.ring)
       .forEach((item) => {
         const slot = slots.find((entry) => entry.slotId === item.slotId);
@@ -1118,6 +1137,7 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   root.style.flexDirection = "column";
   root.style.gap = "14px";
 
+  if (應用程式狀態.額外.Showcase模式) 確保Showcase九宮格();
   const captain = 隊長清單.find((entry) => entry.id === (應用程式狀態.額外.選中隊長 ?? 隊長清單[0].id)) ?? 隊長清單[0];
   const squad = 取得正式編隊資料();
   const selectedSlotId = squad.some((slot) => slot.slotId === 應用程式狀態.額外.選中的小隊成員展示位)
@@ -1168,7 +1188,7 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   rightPane.appendChild(captainRow);
 
   const squadSummaryRow = document.createElement("div");
-  squadSummaryRow.className = "正式小隊摘要列";
+  squadSummaryRow.className = `正式小隊摘要列${應用程式狀態.額外.Showcase模式 ? " 正式小隊摘要列--Showcase" : ""}`;
   squad.forEach((slot, index) => {
     const role = 槽位職責色票[slot.role];
     const member = slot.member ? MEMBERS.find((entry) => entry.no === slot.member?.memberNo) ?? null : null;
@@ -1189,7 +1209,7 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
         <span>${取得正式層級短標(slot.layer)}</span>
       </div>
       <div class="正式小隊摘要卡-名稱">${member ? `${member.no.toString().padStart(2, "0")} ${成員顯示名(member)}` : 雙語("未配置", "Unassigned")}</div>
-      <div class="正式小隊摘要卡-副文">${member ? `${家族顯示名(member.family)} | ${星節點顯示名(member, 1)}` : 雙語("請從下方成員庫指派", "Assign a member from the library below.")}</div>
+      <div class="正式小隊摘要卡-副文">${member ? `${家族顯示名(member.family)} | ${slot.member?.star ?? 1}★ ${星節點顯示名(member, slot.member?.star ?? 1)}` : 雙語("請從下方成員庫指派", "Assign a member from the library below.")}</div>
     `;
     cardWrap.appendChild(card);
 
@@ -1202,6 +1222,12 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
       editButton.onclick = (event) => {
         event.stopPropagation();
         正在編輯正式槽位 = 正在編輯正式槽位 === slot.slotId ? null : slot.slotId;
+        if (正在編輯正式槽位 !== null && !正式編輯草稿.has(slot.slotId)) {
+          正式編輯草稿.set(slot.slotId, {
+            memberNo: String(slot.member?.memberNo ?? 1),
+            star: (slot.member?.star ?? 1) as 1 | 2 | 3,
+          });
+        }
         應用程式狀態.額外.選中的小隊成員展示位 = slot.slotId;
         刷新();
       };
@@ -1209,17 +1235,22 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
     }
     squadSummaryRow.appendChild(cardWrap);
   });
-  rightPane.appendChild(squadSummaryRow);
+  const squadHost = 應用程式狀態.額外.Showcase模式 ? leftPane : rightPane;
+  squadHost.appendChild(squadSummaryRow);
 
   if (應用程式狀態.額外.Showcase模式 && 正在編輯正式槽位 !== null) {
     const editingSlot = squad.find((slot) => slot.slotId === 正在編輯正式槽位);
     if (editingSlot) {
       const member = editingSlot.member ? MEMBERS.find((entry) => entry.no === editingSlot.member?.memberNo) : null;
+      const draft = 正式編輯草稿.get(editingSlot.slotId) ?? {
+        memberNo: String(member?.no ?? 1),
+        star: (editingSlot.member?.star ?? 1) as 1 | 2 | 3,
+      };
       const editor = document.createElement("div");
       editor.className = "正式Showcase編輯列";
       editor.innerHTML = `
         <div><small>SHOWCASE EDIT</small><strong>${取得層級標籤(editingSlot.ring)}</strong></div>
-        <label>${雙語("成員編號", "Member No.")}<input type="number" min="1" max="${MEMBERS.length}" value="${member?.no ?? 1}" data-member-no /></label>
+        <label>${雙語("成員編號", "Member No.")}<input type="number" min="1" max="${MEMBERS.length}" value="${draft.memberNo}" data-member-no /></label>
         <label>${雙語("星級", "Star Level")}<select data-star><option value="1">1★</option><option value="2">2★</option><option value="3">3★</option></select></label>
         <button type="button" class="一級按鈕" data-apply>${雙語("套用", "Apply")}</button>
         <button type="button" class="二級按鈕" data-cancel>${雙語("取消", "Cancel")}</button>
@@ -1227,7 +1258,15 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
       `;
       const numberInput = editor.querySelector<HTMLInputElement>("[data-member-no]")!;
       const starSelect = editor.querySelector<HTMLSelectElement>("[data-star]")!;
-      starSelect.value = String(editingSlot.member?.star ?? 1);
+      starSelect.value = String(draft.star);
+      numberInput.oninput = () => {
+        draft.memberNo = numberInput.value;
+        正式編輯草稿.set(editingSlot.slotId, draft);
+      };
+      starSelect.onchange = () => {
+        draft.star = Number(starSelect.value) as 1 | 2 | 3;
+        正式編輯草稿.set(editingSlot.slotId, draft);
+      };
       editor.querySelector<HTMLButtonElement>("[data-apply]")!.onclick = () => {
         const memberNo = Number(numberInput.value);
         const targetMember = MEMBERS.find((entry) => entry.no === memberNo);
@@ -1235,9 +1274,10 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
           editor.querySelector<HTMLElement>("[data-error]")!.textContent = 雙語("找不到這個成員編號", "Member number not found");
           return;
         }
-        套用正式槽位成員(editingSlot.layer, memberNo);
-        設定正式小隊星級(editingSlot.layer, Number(starSelect.value) as 1 | 2 | 3);
+        設定Showcase槽位成員(editingSlot.slotId, memberNo);
+        設定Showcase槽位星級(editingSlot.slotId, Number(starSelect.value) as 1 | 2 | 3);
         刷新正式最大生命();
+        正式編輯草稿.delete(editingSlot.slotId);
         正在編輯正式槽位 = null;
         刷新();
       };
@@ -1245,10 +1285,11 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
         if (event.key === "Enter") editor.querySelector<HTMLButtonElement>("[data-apply]")!.click();
       };
       editor.querySelector<HTMLButtonElement>("[data-cancel]")!.onclick = () => {
+        正式編輯草稿.delete(editingSlot.slotId);
         正在編輯正式槽位 = null;
         刷新();
       };
-      rightPane.appendChild(editor);
+      squadHost.appendChild(editor);
     }
   }
   const summaryGrid = document.createElement("div");
@@ -1256,7 +1297,7 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   summaryGrid.style.gridTemplateColumns = "repeat(5, minmax(0, 1fr))";
   summaryGrid.style.gap = "8px";
   summaryGrid.innerHTML = [
-    建立資料膠囊(雙語("上陣隊員", "Deployed"), `${squad.filter((slot) => slot.member).length} / 3`),
+    建立資料膠囊(雙語("上陣隊員", "Deployed"), `${squad.filter((slot) => slot.member).length} / ${應用程式狀態.額外.Showcase模式 ? 9 : 3}`),
     建立資料膠囊(雙語("隊長階段", "Captain Tier"), `${當前隊長星級()}★`),
     建立資料膠囊(雙語("總生命", "Total HP"), `${summary.playerHp} / ${summary.playerMaxHp}`),
     建立資料膠囊(雙語("總攻擊", "Total ATK"), `${summary.totalAtk}`),
@@ -1315,7 +1356,12 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
       <div style="font-size:0.68rem;color:${assignedLayer ? "#ffd24d" : "#8d93ad"};margin-top:4px;">${assignedLayer ? `${雙語("目前在", "Currently in")} ${assignedLayer === "inner" ? 雙語("最內層", "Inner Ring") : assignedLayer === "middle" ? 雙語("中層", "Middle Ring") : 雙語("最外層", "Outer Ring")}` : 雙語("可指派到目前圈層", "Can be assigned to the current ring")}</div>
     `;
     btn.onclick = () => {
-      套用正式槽位成員(selectedSlot.layer, member.no);
+      if (應用程式狀態.額外.Showcase模式) {
+        設定Showcase槽位成員(selectedSlot.slotId, member.no);
+        刷新正式最大生命();
+      } else {
+        套用正式槽位成員(selectedSlot.layer, member.no);
+      }
       刷新();
     };
     library.appendChild(btn);

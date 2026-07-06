@@ -26,6 +26,7 @@ export type 初始成員層級 = "inner" | "middle" | "outer";
 export type 初始成員職責 = "protect" | "firepower" | "supply";
 
 interface 隊員養成 {
+  slotId: number;
   memberNo: number;
   star: StarLevel;
   layer: 初始成員層級;
@@ -51,7 +52,8 @@ const 家族武器星級: Record<Family, 武器星級> = {
 };
 
 // 正式上陣 = 開局選中的 3 名初始成員，各從 1★ 起步。
-const 上陣: 隊員養成[] = 起始成員配置.map((entry) => ({
+const 上陣: 隊員養成[] = 起始成員配置.map((entry, index) => ({
+  slotId: [0, 4, 8][index],
   memberNo: entry.memberNo,
   star: 1 as StarLevel,
   layer: entry.layer,
@@ -98,6 +100,7 @@ export function 當前隊長星級(): ControlStar {
 
 /** 供 HUD/名單顯示的上陣清單。 */
 export function 取得上陣養成(): Array<{
+  slotId: number;
   memberNo: number;
   nameZh: string;
   family: string;
@@ -108,6 +111,7 @@ export function 取得上陣養成(): Array<{
   return 上陣.map((e) => {
     const def = MEMBERS.find((m) => m.no === e.memberNo)!;
     return {
+      slotId: e.slotId,
       memberNo: e.memberNo,
       nameZh: def.nameZh,
       family: def.family,
@@ -142,6 +146,57 @@ export function 設定正式小隊成員(layer: 初始成員層級, memberNo: nu
   setMemberStar(持有狀態表, memberNo, target.star);
 }
 
+/** Showcase 專用：把正式三人隊擴成每層三人的九個真實戰鬥槽位。 */
+export function 確保Showcase九宮格(): void {
+  if (!應用程式狀態.額外.Showcase模式 || 上陣.length >= 9) return;
+  const used = new Set(上陣.map((entry) => entry.memberNo));
+  const layouts: Array<{ slotId: number; layer: 初始成員層級; role: 初始成員職責 }> = [
+    { slotId: 0, layer: "inner", role: "protect" }, { slotId: 1, layer: "inner", role: "firepower" }, { slotId: 2, layer: "inner", role: "supply" },
+    { slotId: 3, layer: "middle", role: "protect" }, { slotId: 4, layer: "middle", role: "firepower" }, { slotId: 5, layer: "middle", role: "supply" },
+    { slotId: 6, layer: "outer", role: "protect" }, { slotId: 7, layer: "outer", role: "firepower" }, { slotId: 8, layer: "outer", role: "supply" },
+  ];
+  for (const layout of layouts) {
+    const existing = 上陣.find((entry) => entry.slotId === layout.slotId);
+    if (existing) {
+      existing.layer = layout.layer;
+      existing.role = layout.role;
+      continue;
+    }
+    const member = MEMBERS.find((entry) => !used.has(entry.no));
+    if (!member) continue;
+    used.add(member.no);
+    上陣.push({ ...layout, memberNo: member.no, star: 1 });
+    unlockMember(持有狀態表, member.no);
+    setMemberStar(持有狀態表, member.no, 1);
+  }
+  上陣.sort((a, b) => a.slotId - b.slotId);
+}
+
+export function 設定Showcase槽位成員(slotId: number, memberNo: number): void {
+  if (!應用程式狀態.額外.Showcase模式 || !MEMBERS.some((entry) => entry.no === memberNo)) return;
+  const target = 上陣.find((entry) => entry.slotId === slotId);
+  if (!target) return;
+  const existing = 上陣.find((entry) => entry.memberNo === memberNo);
+  if (existing && existing.slotId !== slotId) {
+    const previous = target.memberNo;
+    target.memberNo = memberNo;
+    existing.memberNo = previous;
+  } else {
+    target.memberNo = memberNo;
+  }
+  target.star = 1;
+  unlockMember(持有狀態表, target.memberNo);
+  setMemberStar(持有狀態表, target.memberNo, target.star);
+}
+
+export function 設定Showcase槽位星級(slotId: number, star: StarLevel): void {
+  if (!應用程式狀態.額外.Showcase模式) return;
+  const target = 上陣.find((entry) => entry.slotId === slotId);
+  if (!target) return;
+  target.star = Math.max(1, Math.min(3, star)) as StarLevel;
+  setMemberStar(持有狀態表, target.memberNo, target.star);
+}
+
 /** Showcase 專用：不消耗素材，直接指定正式上陣成員星級。 */
 export function 設定正式小隊星級(layer: 初始成員層級, star: StarLevel): void {
   const target = 上陣.find((entry) => entry.layer === layer);
@@ -155,6 +210,7 @@ export function 套用起始成員配置(): void {
   上陣.length = 0;
   for (const entry of 起始成員配置) {
     上陣.push({
+      slotId: entry.layer === "inner" ? 0 : entry.layer === "middle" ? 4 : 8,
       memberNo: entry.memberNo,
       star: 1 as StarLevel,
       layer: entry.layer,

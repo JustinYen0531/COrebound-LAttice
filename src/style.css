@@ -3366,6 +3366,16 @@ button.禁用:hover {
   will-change: transform;
   transition: filter 180ms ease;
 }
+.正式小隊摘要列--Showcase {
+  padding: 10px;
+  border: 1px solid rgba(121, 90, 43, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 250, 231, 0.34);
+}
+.正式小隊摘要列--Showcase .正式小隊摘要卡 { min-height: 104px; padding: 10px 8px 9px; }
+.正式小隊摘要列--Showcase .正式小隊摘要卡-標頭 { padding-left: 20px; font-size: 0.66rem; }
+.正式小隊摘要列--Showcase .正式小隊摘要卡-名稱 { font-size: 0.72rem; }
+.正式小隊摘要列--Showcase .正式小隊摘要卡-副文 { font-size: 0.6rem; }
 
 .正式小隊摘要卡框 { position: relative; min-width: 0; }
 .正式小隊摘要卡框 > .正式小隊摘要卡 { width: 100%; height: 100%; }
