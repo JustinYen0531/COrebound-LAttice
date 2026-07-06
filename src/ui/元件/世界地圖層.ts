@@ -169,6 +169,18 @@ function 發送戰鬥Tick脈衝(): void {
   window.dispatchEvent(new CustomEvent("combat-tick-pulse"));
 }
 
+function Boss生命倍率(def: MonsterDef): number {
+  return def.tier >= 3 ? BOSS_HP_MULTIPLIER : 1;
+}
+
+function Boss速度倍率(def: MonsterDef): number {
+  return def.tier >= 3 ? BOSS_SPEED_MULTIPLIER : 1;
+}
+
+function 怪物尺寸倍率(inst: 可見怪物實例): number {
+  return inst.monsterNo === finalBoss().no ? 0.7 : 1;
+}
+
 function 訓練槽位圈層(slotId: number): 玩家戰鬥圈層 {
   if (slotId <= 2) return "inner";
   if (slotId <= 5) return "middle";
@@ -206,6 +218,8 @@ const BOSS_BATTLE_SPRITE: Record<"geometry" | "organic" | "fractal" | "mechanica
   mechanical: "/images/enemies/bosses/機械BOSS.png",
   core: "/images/enemies/bosses/最終BOSS.png",
 };
+const BOSS_HP_MULTIPLIER = 1.5;
+const BOSS_SPEED_MULTIPLIER = 2;
 // 怪物 CombatStats.speed（約 200~300）換算成世界座標移動速度的比例，使其與玩家步速相當。
 const MONSTER_SPEED_SCALE = 0.16;
 // 只有距離玩家這麼近的怪物才跑 AI／移動，遠處待命，避免全圖 200 隻同時朝玩家聚集。
@@ -773,10 +787,31 @@ export function 建立世界地圖層(): HTMLElement {
     requestAnimationFrame(() => refreshMiniMapLayout());
     window.setTimeout(refreshMiniMapLayout, 210);
   };
+
+  function 找到涵蓋目標點的守護者Boss(target: { x: number; y: number }): MonsterRuntime | null {
+    for (const monster of monsters) {
+      if (monster.inst.hp <= 0 || monster.bossKind !== "guardian" || !monster.bossWorld) continue;
+      const arena = 取得守護者核心戰區(monster.bossWorld);
+      if (點在矩形內(target, arena)) return monster;
+    }
+    return null;
+  }
+
+  function 傳送落點貼近Boss(target: { x: number; y: number }): { x: number; y: number } {
+    const guardianBoss = 找到涵蓋目標點的守護者Boss(target);
+    if (!guardianBoss) return target;
+    const arena = 取得守護者核心戰區(guardianBoss.bossWorld!);
+    return 夾回Boss戰區({
+      x: guardianBoss.pos.x,
+      y: guardianBoss.pos.y + 420,
+    }, arena);
+  }
+
   const teleportPlayerTo = (target: { x: number; y: number }) => {
     playerVelocity = { x: 0, y: 0 };
     playerMoving = false;
-    playerPos = clampTraversablePlayerPosition(target, playerPos);
+    const landingTarget = 應用程式狀態.額外.Showcase模式 ? 傳送落點貼近Boss(target) : target;
+    playerPos = clampTraversablePlayerPosition(landingTarget, playerPos);
     if (!訓練道場中) 設定正式玩家位置(playerPos);
     syncNearbyToState();
   };
@@ -1318,6 +1353,7 @@ export function 建立世界地圖層(): HTMLElement {
     const spawnX = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, spawnPoint.x));
     const spawnY = Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, spawnPoint.y));
     const spritePath = BOSS_BATTLE_SPRITE[def.world];
+    const hp = def.stats.hp * Boss生命倍率(def);
     const inst: MonsterInstance = {
       id: `boss_${def.id}_${Date.now()}`,
       monsterNo: def.no,
@@ -1328,11 +1364,11 @@ export function 建立世界地圖層(): HTMLElement {
       spritePath,
       x: spawnX,
       y: spawnY,
-      hp: def.stats.hp,
-      maxHp: def.stats.hp,
+      hp,
+      maxHp: hp,
       atk: def.stats.atk,
       weight: def.stats.weight,
-      speed: def.stats.speed,
+      speed: def.stats.speed * Boss速度倍率(def),
       ranged: true,
       attackRange: 620,
       nonHostileInitially: false,
@@ -1389,17 +1425,23 @@ export function 建立世界地圖層(): HTMLElement {
 
   /** 找最近的存活怪物（限指定武器的實際射程內）。 */
   function 最近怪物(withinRange: number): MonsterRuntime | null {
+    let bossBest: MonsterRuntime | null = null;
+    let bossBestD = withinRange;
     let best: MonsterRuntime | null = null;
     let bestD = withinRange;
     for (const m of monsters) {
       if (m.inst.hp <= 0) continue;
       const d = Math.hypot(m.pos.x - playerPos.x, m.pos.y - playerPos.y);
+      if (m.bossKind && d <= bossBestD) {
+        bossBestD = d;
+        bossBest = m;
+      }
       if (d <= bestD) {
         bestD = d;
         best = m;
       }
     }
-    return best;
+    return bossBest ?? best;
   }
 
   function setCameraZoom(nextZoom: number): void {
@@ -1420,7 +1462,7 @@ export function 建立世界地圖層(): HTMLElement {
     }
     for (const m of monsters) {
       const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[m.inst.tier];
-      const size = baseSize * (cameraZoom / WORLD_OBJECT_REFERENCE_CAMERA_ZOOM);
+      const size = baseSize * 怪物尺寸倍率(m.inst) * (cameraZoom / WORLD_OBJECT_REFERENCE_CAMERA_ZOOM);
       m.node.style.setProperty("--monster-size", `${size.toFixed(2)}px`);
     }
     const playerSize = PLAYER_SIZE_AT_REFERENCE_ZOOM * (cameraZoom / REFERENCE_CAMERA_ZOOM);
@@ -2133,6 +2175,7 @@ export function 建立世界地圖層(): HTMLElement {
       const distance = 420 + (index % 2) * 120;
       const x = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, playerPos.x + Math.cos(angle) * distance));
       const y = Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, playerPos.y + Math.sin(angle) * distance));
+      const hp = def.stats.hp * Boss生命倍率(def);
       const inst: MonsterInstance = {
         id: `showcase_${def.id}_${Date.now()}_${index}`,
         monsterNo: def.no,
@@ -2142,11 +2185,11 @@ export function 建立世界地圖層(): HTMLElement {
         nameEn: def.nameEn,
         spritePath: def.tier >= 3 ? BOSS_BATTLE_SPRITE[def.world] : `/images/enemies/${def.world}/${def.id}.png`,
         x, y,
-        hp: def.stats.hp,
-        maxHp: def.stats.hp,
+        hp,
+        maxHp: hp,
         atk: def.stats.atk,
         weight: def.stats.weight,
-        speed: def.stats.speed,
+        speed: def.stats.speed * Boss速度倍率(def),
         ranged: def.armament.weapons.length > 0,
         attackRange: def.tier === 0 ? 0 : def.tier === 1 ? 320 : def.tier === 2 ? 460 : 620,
         nonHostileInitially: false,
@@ -2966,7 +3009,7 @@ function miniMarkerForEnvObject(env: EnvObjectInstance): MiniMapMarker {
 function createMonsterNode(inst: 可見怪物實例): HTMLElement {
   const node = document.createElement("div");
   node.className = `世界地圖層-怪物 世界地圖層-怪物-T${inst.tier}`;
-  const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[inst.tier];
+  const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[inst.tier] * 怪物尺寸倍率(inst);
   node.style.setProperty("--monster-size", `${baseSize}px`);
 
   // 小怪腳下的灰色圓形接地陰影（取代原本的剪影投影）。
