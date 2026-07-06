@@ -97,8 +97,10 @@ export class MemberStatusRow {
 
   private handleClick(event: Event): void {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    const button = target.closest(".hud-member-cycle");
+    if (!(target instanceof Node)) return;
+    const origin = target instanceof Element ? target : target.parentElement;
+    if (!origin) return;
+    const button = origin.closest(".hud-member-cycle");
     if (!(button instanceof HTMLButtonElement)) return;
     const layer = button.dataset.layer as Layer | undefined;
     const dir = Number(button.dataset.dir) as -1 | 1;

@@ -13,7 +13,8 @@
   --hud-scale: 1.8;
   --hud-core-scale: calc(var(--hud-scale) * 0.8);
   --hud-core-bottom: 92px;
-  --hud-strips-bottom: 186px;
+  --hud-strips-top: 314px;
+  --hud-strips-right: 20px;
   --hud-core-rest-opacity: 0.68;
   /* 色彩變數：中性色以黑白為主，僅職責色(藍/紅/黃)與生命階梯色帶有語意，其餘一律線稿化 */
   --c-hp-full: #e9ecf8;
@@ -199,7 +200,7 @@
   bottom: -8px;
   transform: translateX(-50%) scale(var(--hud-scale));
   transform-origin: center bottom;
-  z-index: 11;
+  z-index: 18;
   pointer-events: auto;
 }
 .hud-member-status-row {
@@ -256,6 +257,7 @@
   pointer-events: auto;
   display: grid;
   place-items: center;
+  z-index: 4;
 }
 .hud-member-cycle:hover {
   background: color-mix(in srgb, var(--member-accent) 18%, rgba(8, 9, 16, 0.88));
@@ -618,12 +620,14 @@
  * ============================================================ */
 .hud-strips-host {
   position: absolute;
-  bottom: var(--hud-strips-bottom);
-  left: 50%;
-  transform: translateX(-50%) scale(var(--hud-scale));
-  transform-origin: center bottom;
+  top: var(--hud-strips-top);
+  right: var(--hud-strips-right);
+  left: auto;
+  bottom: auto;
+  transform: scale(1);
+  transform-origin: top right;
   pointer-events: auto;
-  z-index: 10;
+  z-index: 26;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -636,12 +640,12 @@
 }
 .skill-strips {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   position: relative;
-  padding: 7px 12px;
-  border-radius: 18px;
+  padding: 9px 8px;
+  border-radius: 22px;
   background: linear-gradient(180deg, rgba(8, 10, 17, 0.94), rgba(8, 10, 17, 0.78));
   border: 1px solid rgba(233, 236, 248, 0.14);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
@@ -649,22 +653,25 @@
 .weapon-strip,
 .periodic-strip {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
+  min-height: 0;
+  flex-wrap: wrap;
+  width: 56px;
 }
 .periodic-strip {
   position: relative;
-  padding-left: 10px;
+  padding-top: 8px;
+  padding-left: 0;
 }
 .periodic-strip::before {
   content: "";
   position: absolute;
-  left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 1px;
+  left: 6px;
+  right: 6px;
+  top: 0;
+  height: 1px;
   background: rgba(233, 236, 248, 0.16);
 }
 .periodic-strip:empty {
@@ -680,12 +687,22 @@
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
 }
 .weapon-icon {
-  width: 34px !important;
-  height: 34px !important;
+  width: 24px !important;
+  height: 24px !important;
 }
 .periodic-icon {
-  width: 28px !important;
-  height: 28px !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+.weapon-icon .star {
+  left: -2px;
+  bottom: -3px;
+  font-size: 7px;
+  padding: 0 2px;
+}
+.weapon-icon .lock {
+  width: 9px;
+  height: 9px;
 }
 .weapon-icon svg .glyph,
 .periodic-icon svg .glyph {
