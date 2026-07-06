@@ -125,8 +125,8 @@ const 主畫面繁星佈局: 繁星佈局[] = (() => {
     const 側內序 = Math.floor(i / 2); // 0..每側數量-1，決定由上到下的位置
     // 左側落在 3~17%、右側落在 83~97%，中央標題區完全留空。
     const left = 靠左
-      ? 3 + rng() * 14
-      : 83 + rng() * 14;
+      ? 8 + rng() * 26
+      : 66 + rng() * 26;
     const top = 4 + (側內序 / (每側數量 - 1)) * 88 + (rng() - 0.5) * 6; // 由上到下鋪滿 4~92%
     return {
       src: `/assets/transparent-portraits/members/${檔名}_s3.png`,
@@ -350,7 +350,39 @@ function 建立主畫面封面區(state: { 子頁: 主畫面分頁 }): HTMLEleme
   };
   Play子選單.append(新遊戲按鈕, 繼續遊戲按鈕);
 
+  // 新增的 Guide 子選單
+  const Guide子選單 = document.createElement("div");
+  Guide子選單.className = "主畫面-Play子選單";
+
+  const Tutorial按鈕 = document.createElement("button");
+  Tutorial按鈕.type = "button";
+  Tutorial按鈕.className = "主畫面-子選項按鈕";
+  Tutorial按鈕.textContent = 雙語("教學", "Tutorial");
+  Tutorial按鈕.onclick = async (event) => {
+    event.stopPropagation();
+    try {
+      const res = await fetch("/教學.md");
+      if (!res.ok) throw new Error("fetch failed");
+      const text = await res.text();
+      const pages = text.split(/\r?\n---\r?\n/);
+      打開教學視窗(pages);
+    } catch (e) {
+      alert("Tutorial file not found!");
+    }
+  };
+
+  const Dojo按鈕 = document.createElement("button");
+  Dojo按鈕.type = "button";
+  Dojo按鈕.className = "主畫面-子選項按鈕";
+  Dojo按鈕.textContent = 雙語("訓練道場", "Training Dojo");
+  Dojo按鈕.onclick = (event) => {
+    event.stopPropagation();
+    應用程式狀態.進入訓練道場();
+  };
+  Guide子選單.append(Tutorial按鈕, Dojo按鈕);
+
   let Play子選單展開 = false;
+  let Guide子選單展開 = false;
 
   for (const 名稱 of 主按鈕清單) {
     const btn = document.createElement("button");
@@ -362,9 +394,19 @@ function 建立主畫面封面區(state: { 子頁: 主畫面分頁 }): HTMLEleme
       event.stopPropagation();
       if (名稱 === "開始遊玩") {
         Play子選單展開 = true;
+        Guide子選單展開 = false;
         更新選單狀態();
         return;
       }
+      if (名稱 === "新手入門") {
+        Play子選單展開 = false;
+        Guide子選單展開 = true;
+        更新選單狀態();
+        return;
+      }
+      Play子選單展開 = false;
+      Guide子選單展開 = false;
+      更新選單狀態();
       應用程式狀態.切換主畫面子頁(名稱);
     };
     下拉按鈕列.appendChild(btn);
@@ -377,11 +419,12 @@ function 建立主畫面封面區(state: { 子頁: 主畫面分頁 }): HTMLEleme
   收起按鈕.onclick = (event) => {
     event.stopPropagation();
     Play子選單展開 = false;
+    Guide子選單展開 = false;
     更新選單狀態();
   };
   下拉按鈕列.appendChild(收起按鈕);
 
-  下拉選單.append(下拉按鈕列, Play子選單);
+  下拉選單.append(下拉按鈕列, Play子選單, Guide子選單);
   世界標題.append(標題按鈕, 下拉選單);
   世界展示.appendChild(世界標題);
 
@@ -449,9 +492,19 @@ function 建立主畫面封面區(state: { 子頁: 主畫面分頁 }): HTMLEleme
 
   let 選單展開 = false;
   const 更新選單狀態 = () => {
+    const 有任何子選單 = Play子選單展開 || Guide子選單展開;
     世界標題.classList.toggle("選單展開", 選單展開);
-    下拉選單.classList.toggle("有子選單", Play子選單展開);
+    下拉選單.classList.toggle("有子選單", 有任何子選單);
     區塊.classList.toggle("主畫面-選單展開", 選單展開);
+
+    // 控制子選單的平滑過渡
+    Play子選單.style.opacity = Play子選單展開 ? "1" : "0";
+    Play子選單.style.pointerEvents = Play子選單展開 ? "auto" : "none";
+    Play子選單.style.transform = Play子選單展開 ? "translateX(0) scale(1)" : "translateX(46px) scale(0.94)";
+
+    Guide子選單.style.opacity = Guide子選單展開 ? "1" : "0";
+    Guide子選單.style.pointerEvents = Guide子選單展開 ? "auto" : "none";
+    Guide子選單.style.transform = Guide子選單展開 ? "translateX(0) scale(1)" : "translateX(46px) scale(0.94)";
   };
 
   標題按鈕.onclick = (event) => {
@@ -590,63 +643,143 @@ function 新手入門子頁(): HTMLElement {
   return el;
 }
 
-function 打開教學視窗(htmlContent: string | Promise<string>) {
+function 打開教學視窗(htmlContentList: string[]) {
   const overlay = document.createElement("div");
   overlay.style.position = "fixed";
   overlay.style.top = "0";
   overlay.style.left = "0";
   overlay.style.width = "100%";
   overlay.style.height = "100%";
-  overlay.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+  overlay.style.backgroundColor = "rgba(38, 35, 30, 0.6)";
+  overlay.style.backdropFilter = "blur(2px)";
   overlay.style.zIndex = "9999";
   overlay.style.display = "flex";
   overlay.style.justifyContent = "center";
   overlay.style.alignItems = "center";
 
   const modal = document.createElement("div");
-  modal.style.width = "80%";
+  modal.style.width = "85%";
   modal.style.maxWidth = "800px";
-  modal.style.height = "80%";
-  modal.style.backgroundColor = "rgba(20, 25, 35, 0.95)";
-  modal.style.border = "2px solid #5a6b8c";
-  modal.style.borderRadius = "8px";
-  modal.style.padding = "40px";
-  modal.style.overflowY = "auto";
+  modal.style.height = "85%";
+  modal.style.backgroundColor = "var(--bg-panel)";
+  modal.style.border = "3px solid var(--line)";
+  modal.style.borderRadius = "12px";
+  modal.style.padding = "30px 40px";
+  modal.style.display = "flex";
+  modal.style.flexDirection = "column";
+  modal.style.justifyContent = "space-between";
   modal.style.position = "relative";
-  modal.style.color = "#ddd";
-  modal.style.fontFamily = "sans-serif";
+  modal.style.color = "var(--ink)";
+  modal.style.fontFamily = "var(--font-serif)";
+  modal.style.boxShadow = "0 12px 36px rgba(0, 0, 0, 0.25), inset 0 0 0 1px var(--line-soft)";
 
-  const content = document.createElement("div");
-  content.innerHTML = String(htmlContent);
-  content.style.lineHeight = "1.6";
-  const tables = content.querySelectorAll("table");
-  tables.forEach(t => {
-    t.style.borderCollapse = "collapse";
-    t.style.width = "100%";
-    t.style.marginBottom = "20px";
-  });
-  const ths = content.querySelectorAll("th, td");
-  ths.forEach(t => {
-    (t as HTMLElement).style.border = "1px solid #5a6b8c";
-    (t as HTMLElement).style.padding = "8px";
-  });
+  const header = document.createElement("div");
+  header.style.display = "flex";
+  header.style.justifyContent = "space-between";
+  header.style.alignItems = "center";
+  header.style.borderBottom = "1px solid var(--line-soft)";
+  header.style.paddingBottom = "12px";
+  header.style.marginBottom = "20px";
+
+  const title = document.createElement("h2");
+  title.style.margin = "0";
+  title.style.color = "var(--ink-warm)";
+  title.style.fontFamily = "var(--font-serif)";
+  title.textContent = 雙語("遊戲教學", "Game Tutorial");
 
   const closeBtn = document.createElement("button");
-  closeBtn.textContent = "Close";
-  closeBtn.style.position = "absolute";
-  closeBtn.style.top = "10px";
-  closeBtn.style.right = "10px";
-  closeBtn.style.padding = "8px 16px";
-  closeBtn.style.cursor = "pointer";
-  closeBtn.style.backgroundColor = "#5a6b8c";
-  closeBtn.style.color = "white";
-  closeBtn.style.border = "none";
-  closeBtn.style.borderRadius = "4px";
+  closeBtn.className = "二級按鈕";
+  closeBtn.textContent = 雙語("關閉", "Close");
+  closeBtn.style.minWidth = "80px";
   closeBtn.onclick = () => document.body.removeChild(overlay);
 
-  modal.appendChild(closeBtn);
-  modal.appendChild(content);
+  header.append(title, closeBtn);
+
+  const content = document.createElement("div");
+  content.style.flex = "1";
+  content.style.overflowY = "auto";
+  content.style.paddingRight = "15px";
+  content.style.marginBottom = "20px";
+
+  const footer = document.createElement("div");
+  footer.style.display = "flex";
+  footer.style.justifyContent = "space-between";
+  footer.style.alignItems = "center";
+  footer.style.borderTop = "1px solid var(--line-soft)";
+  footer.style.paddingTop = "16px";
+
+  const prevBtn = document.createElement("button");
+  prevBtn.className = "二級按鈕";
+  prevBtn.textContent = 雙語("上一頁", "← Prev");
+  prevBtn.style.minWidth = "100px";
+
+  const pageIndicator = document.createElement("span");
+  pageIndicator.style.fontWeight = "bold";
+  pageIndicator.style.fontSize = "1.1rem";
+  pageIndicator.style.color = "var(--ink-dim)";
+
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "一級按鈕";
+  nextBtn.textContent = 雙語("下一頁", "Next →");
+  nextBtn.style.minWidth = "100px";
+
+  footer.append(prevBtn, pageIndicator, nextBtn);
+  modal.append(header, content, footer);
   overlay.appendChild(modal);
+
+  let currentPage = 0;
+
+  const 渲染頁面 = () => {
+    const rawHtml = marked.parse(htmlContentList[currentPage]);
+    content.innerHTML = rawHtml;
+
+    content.querySelectorAll("h1, h2, h3").forEach(h => {
+      (h as HTMLElement).style.color = "var(--ink-warm)";
+      (h as HTMLElement).style.fontFamily = "var(--font-serif)";
+      (h as HTMLElement).style.marginTop = "0px";
+    });
+    content.querySelectorAll("p").forEach(p => {
+      (p as HTMLElement).style.color = "var(--ink)";
+      (p as HTMLElement).style.lineHeight = "1.7";
+      (p as HTMLElement).style.fontSize = "1.05rem";
+    });
+    content.querySelectorAll("table").forEach(t => {
+      t.style.borderCollapse = "collapse";
+      t.style.width = "100%";
+      t.style.marginBottom = "20px";
+      t.style.marginTop = "10px";
+      t.style.background = "var(--bg-panel-2)";
+      t.style.fontSize = "0.95rem";
+    });
+    content.querySelectorAll("th, td").forEach(cell => {
+      (cell as HTMLElement).style.border = "1px solid var(--line)";
+      (cell as HTMLElement).style.padding = "10px";
+      (cell as HTMLElement).style.color = "var(--ink)";
+    });
+
+    content.scrollTop = 0;
+
+    prevBtn.disabled = currentPage === 0;
+    nextBtn.disabled = currentPage === htmlContentList.length - 1;
+    nextBtn.className = currentPage === htmlContentList.length - 1 ? "二級按鈕" : "一級按鈕";
+    pageIndicator.textContent = `${currentPage + 1} / ${htmlContentList.length}`;
+  };
+
+  prevBtn.onclick = () => {
+    if (currentPage > 0) {
+      currentPage--;
+      渲染頁面();
+    }
+  };
+
+  nextBtn.onclick = () => {
+    if (currentPage < htmlContentList.length - 1) {
+      currentPage++;
+      渲染頁面();
+    }
+  };
+
+  渲染頁面();
   document.body.appendChild(overlay);
 }
 

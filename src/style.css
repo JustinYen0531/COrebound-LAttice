@@ -436,7 +436,13 @@ button.禁用:hover {
   z-index: 6;
   pointer-events: none;
   overflow: visible;
-  animation: 主畫面繁星淡入 0.5s ease both;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+.主畫面-已進場 .主畫面-繁星群 {
+  opacity: 1;
+  visibility: visible;
 }
 .主畫面-繁星 {
   position: absolute;

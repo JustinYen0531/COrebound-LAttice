@@ -100,6 +100,8 @@ function 條目顯示所屬(條目: 圖鑑條目): string {
 
 function 條目顯示簡介(條目: 圖鑑條目, 分頁名稱: string): string {
   if (!英文模式()) return 條目.簡介;
+  if (條目.英文簡介) return 條目.英文簡介;
+  // 兜底樣板：理論上所有條目都已由 圖鑑資料庫英文.ts 補上，走到這裡代表資料表漏收。
   const name = 取條目英文名(條目);
   const category = 翻譯分類文字(條目.所屬);
   if (分頁名稱 === "成員圖鑑") return `${name} is a playable squad member in ${category}.`;
@@ -125,6 +127,8 @@ function 翻譯表格欄位(key: string): string {
 
 function 條目顯示詳情(條目: 圖鑑條目, 分頁名稱: string): string {
   if (!英文模式()) return 條目.詳細描述;
+  if (條目.英文詳細描述) return 條目.英文詳細描述;
+  // 兜底樣板：理論上所有條目都已由 圖鑑資料庫英文.ts 補上，走到這裡代表資料表漏收。
   const lines = [
     "### English Codex Pass",
     `* **Entry**: ${取條目英文名(條目)}`,
