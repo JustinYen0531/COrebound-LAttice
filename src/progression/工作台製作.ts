@@ -49,9 +49,6 @@ export function upgradeWeapon(
 ): WeaponUpgradeResult {
   if (currentStar >= 3) return { ok: false, reason: "武器已達 3★" };
   const target = (currentStar + 1) as StarLevel;
-  if (target > familyUnlockedStar) {
-    return { ok: false, reason: `家族條件未達 ${target}★ 解鎖門檻（需足夠人數與累計星級）` };
-  }
   const cost = WEAPON_UPGRADE_COST[target];
   if (inv.shards < cost.shards || inv.gems < cost.gems) {
     return { ok: false, reason: "碎片或原石不足" };
