@@ -1370,6 +1370,13 @@ export function 建立世界地圖層(): HTMLElement {
   }
 
   function onWheel(event: WheelEvent): void {
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest(".Showcase控制台, .資料夾式版面-補充區, .Showcase背包編輯器, select, input, textarea, button")
+    ) {
+      return;
+    }
     event.preventDefault();
     const zoomFactor = Math.exp(-event.deltaY * 0.001);
     setCameraZoom(cameraZoom * zoomFactor);

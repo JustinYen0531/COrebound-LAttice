@@ -78,9 +78,9 @@ const bagItems = {
 
 // 選中的背包物品
 let 選中背包物品: any = null;
-const Showcase背包草稿: Record<"材料" | "消耗品", { itemNo: string; count: string }> = {
-  材料: { itemNo: "1", count: "1" },
-  消耗品: { itemNo: "1", count: "1" },
+const Showcase背包草稿: Record<"材料" | "消耗品", { itemKey: string; count: string }> = {
+  材料: { itemKey: "material:1", count: "1" },
+  消耗品: { itemKey: "potion:1", count: "1" },
 };
 const Showcase藥水編號: PotionId[] = ["hp_small", "hp_big", "energy_small", "energy_big", "hybrid_small", "hybrid_big"];
 // 選中的地圖標記
@@ -180,8 +180,27 @@ function 背包分頁內容(): HTMLElement {
       } : null;
     })
     .filter((item): item is NonNullable<typeof item> => item !== null && item.count > 0);
+  const shardEmoji: Record<string, string> = {
+    shield: "🛡️",
+    multishot: "🎯",
+    straight: "📏",
+    mine: "💣",
+    laser: "🔦",
+  };
+  const realShards = (Object.entries(inventory.碎片) as Array<[keyof typeof inventory.碎片, number]>)
+    .map(([family, count]) => ({
+      id: `shard_${family}`,
+      name: `${家族顯示名(family)} ${雙語("碎片", "Shards")}`,
+      count,
+      effect: 雙語("可用於角色升星與家族武器強化。", "Used for member star-ups and family weapon upgrades."),
+      desc: 雙語("目前沒有專屬圖片，先用 emoji 代替。", "No dedicated image yet, using emoji as a placeholder."),
+      emoji: shardEmoji[family] ?? "✨",
+      family,
+      category: "shard",
+    }))
+    .filter((item) => item.count > 0);
   const items =
-    activeTab === "材料" ? realMaterials :
+    activeTab === "材料" ? [...realMaterials, ...realShards] :
     activeTab === "消耗品" ? realPotions :
     bagItems[activeTab] || [];
 
@@ -215,7 +234,7 @@ function 背包分頁內容(): HTMLElement {
 
       const 視覺HTML = activeTab === "材料" && item.image
         ? `<div style="height:52px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;"><img src="${item.image}" alt="${item.name}" style="max-width:52px;max-height:52px;object-fit:contain;filter:drop-shadow(0 5px 8px rgba(0,0,0,0.28));" draggable="false" /></div>`
-        : `<div style="font-size: 1.5rem; margin-bottom: 4px;">${badge}</div>`;
+        : `<div style="font-size: 1.5rem; margin-bottom: 4px;">${item.emoji ?? badge}</div>`;
 
       cell.innerHTML = `
         ${視覺HTML}
@@ -259,42 +278,64 @@ function 背包分頁內容(): HTMLElement {
     const category = activeTab as "材料" | "消耗品";
     const draft = Showcase背包草稿[category];
     const catalog = category === "材料"
-      ? MATERIALS.map((item) => ({ no: item.no, name: 應用程式狀態.額外.語言 === "zh" ? item.nameZh : item.nameEn, count: 背包.取材料(item.no) }))
-      : Showcase藥水編號.map((id, index) => ({ no: index + 1, name: potionName[id], count: 背包.取藥水(id) }));
+      ? [
+          ...MATERIALS.map((item) => ({
+            key: `material:${item.no}`,
+            label: `🧱 ${String(item.no).padStart(2, "0")} ${應用程式狀態.額外.語言 === "zh" ? item.nameZh : item.nameEn}`,
+            count: 背包.取材料(item.no),
+            kind: "material" as const,
+            no: item.no,
+          })),
+          ...(["shield", "multishot", "straight", "mine", "laser"] as const).map((family) => ({
+            key: `shard:${family}`,
+            label: `${shardEmoji[family]} ${家族顯示名(family)} ${雙語("碎片", "Shards")}`,
+            count: 背包.取碎片(family),
+            kind: "shard" as const,
+            family,
+          })),
+        ]
+      : Showcase藥水編號.map((id, index) => ({
+          key: `potion:${index + 1}`,
+          label: `🧪 ${potionName[id]}`,
+          count: 背包.取藥水(id),
+          kind: "potion" as const,
+          no: index + 1,
+        }));
     補充區.classList.add("Showcase背包編輯器");
     補充區.innerHTML = `
       <h4 style="color:#a26a17;margin-top:0;">＋ ${雙語("Showcase 加入物品", "Showcase Add Item")}</h4>
       <div class="Showcase背包編輯器-清單">
-        ${catalog.map((item) => `<button type="button" data-item-no="${item.no}"><b>${String(item.no).padStart(2, "0")}</b><span>${item.name}</span><small>×${item.count}</small></button>`).join("")}
+        ${catalog.map((item) => `<button type="button" data-item-key="${item.key}"><b>${item.kind === "material" ? String(item.no).padStart(2, "0") : item.kind === "shard" ? "SH" : "PT"}</b><span>${item.label}</span><small>×${item.count}</small></button>`).join("")}
       </div>
       <div class="Showcase背包編輯器-輸入">
-        <label>${雙語("物品編號", "Item No.")}<input type="number" min="1" max="${catalog.length}" value="${draft.itemNo}" data-add-item /></label>
+        <label>${雙語("物品", "Item")}<select data-add-item>${catalog.map((item) => `<option value="${item.key}" ${item.key === draft.itemKey ? "selected" : ""}>${item.label}</option>`).join("")}</select></label>
         <label>${雙語("數量", "Quantity")}<input type="number" min="1" max="9999" value="${draft.count}" data-add-count /></label>
         <button type="button" class="一級按鈕" data-add-confirm>${雙語("加入背包", "Add to Bag")}</button>
         <div class="Showcase背包編輯器-訊息" data-add-message></div>
       </div>
     `;
-    const itemInput = 補充區.querySelector<HTMLInputElement>("[data-add-item]")!;
+    const itemInput = 補充區.querySelector<HTMLSelectElement>("[data-add-item]")!;
     const countInput = 補充區.querySelector<HTMLInputElement>("[data-add-count]")!;
-    itemInput.oninput = () => { draft.itemNo = itemInput.value; };
+    itemInput.oninput = () => { draft.itemKey = itemInput.value; };
     countInput.oninput = () => { draft.count = countInput.value; };
-    補充區.querySelectorAll<HTMLButtonElement>("[data-item-no]").forEach((button) => {
+    補充區.querySelectorAll<HTMLButtonElement>("[data-item-key]").forEach((button) => {
       button.onclick = () => {
-        draft.itemNo = button.dataset.itemNo ?? "1";
-        itemInput.value = draft.itemNo;
+        draft.itemKey = button.dataset.itemKey ?? catalog[0]?.key ?? "";
+        itemInput.value = draft.itemKey;
         itemInput.focus();
       };
     });
     補充區.querySelector<HTMLButtonElement>("[data-add-confirm]")!.onclick = () => {
-      const itemNo = Number(draft.itemNo);
+      const selected = catalog.find((item) => item.key === draft.itemKey);
       const count = Math.floor(Number(draft.count));
       const message = 補充區.querySelector<HTMLElement>("[data-add-message]")!;
-      if (!Number.isInteger(itemNo) || !catalog.some((item) => item.no === itemNo) || !Number.isFinite(count) || count <= 0) {
-        message.textContent = 雙語("請輸入列表中存在的編號與大於 0 的數量。", "Enter a listed item number and a quantity above zero.");
+      if (!selected || !Number.isFinite(count) || count <= 0) {
+        message.textContent = 雙語("請選擇列表中的物品，並輸入大於 0 的數量。", "Choose an item from the list and enter a quantity above zero.");
         return;
       }
-      if (category === "材料") 背包.加入材料(itemNo, count);
-      else 背包.加入藥水(Showcase藥水編號[itemNo - 1], count);
+      if (selected.kind === "material") 背包.加入材料(selected.no, count);
+      else if (selected.kind === "shard") 背包.加入碎片(selected.family, count);
+      else 背包.加入藥水(Showcase藥水編號[selected.no - 1], count);
       選中背包物品 = { id: "__showcase_add__", category };
       應用程式狀態.進入管理介面("背包");
     };
@@ -306,18 +347,27 @@ function 背包分頁內容(): HTMLElement {
   } else {
     let specDetails = "";
     if (activeTab === "材料") {
-      const worldName = 世界顯示名(選中背包物品.world as string);
-      
-      specDetails = `
-        <div style="display:flex;justify-content:center;margin: 0 0 12px;">
-          <img src="${選中背包物品.image}" alt="${選中背包物品.name}" style="max-width:160px;max-height:160px;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(0,0,0,0.24));" draggable="false" />
-        </div>
-        <div style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; line-height: 1.6;">
-          <div>${雙語("地緣出處", "World Origin")}：<span style="color:#ffd24d;">${worldName}</span></div>
-          <div>${雙語("星級星等", "Star Rating")}：<span style="color:#ffd24d;">${選中背包物品.star}★</span></div>
-          <div style="color: #4d8dff; margin-top: 4px;">${雙語("熔爐轉化：投入熔爐可轉化為對應家族碎片", "Forge Conversion: feed it into the forge to turn it into matching family shards.")}</div>
-        </div>
-      `;
+      if (選中背包物品.category === "shard") {
+        specDetails = `
+          <div style="display:flex;justify-content:center;align-items:center;font-size:4rem;margin: 0 0 12px;">${選中背包物品.emoji ?? "✨"}</div>
+          <div style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; line-height: 1.6;">
+            <div>${雙語("家族類型", "Family")}：<span style="color:#ffd24d;">${家族顯示名(選中背包物品.family)}</span></div>
+            <div style="color: #4d8dff; margin-top: 4px;">${雙語("用途：角色升星、家族武器升級、熔爐系統流轉。", "Usage: member star-ups, family weapon upgrades, and forge progression.")}</div>
+          </div>
+        `;
+      } else {
+        const worldName = 世界顯示名(選中背包物品.world as string);
+        specDetails = `
+          <div style="display:flex;justify-content:center;margin: 0 0 12px;">
+            <img src="${選中背包物品.image}" alt="${選中背包物品.name}" style="max-width:160px;max-height:160px;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(0,0,0,0.24));" draggable="false" />
+          </div>
+          <div style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; line-height: 1.6;">
+            <div>${雙語("地緣出處", "World Origin")}：<span style="color:#ffd24d;">${worldName}</span></div>
+            <div>${雙語("星級星等", "Star Rating")}：<span style="color:#ffd24d;">${選中背包物品.star}★</span></div>
+            <div style="color: #4d8dff; margin-top: 4px;">${雙語("熔爐轉化：投入熔爐可轉化為對應家族碎片", "Forge Conversion: feed it into the forge to turn it into matching family shards.")}</div>
+          </div>
+        `;
+      }
     } else if (activeTab === "消耗品") {
       specDetails = `
         <div style="margin-top: 10px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
