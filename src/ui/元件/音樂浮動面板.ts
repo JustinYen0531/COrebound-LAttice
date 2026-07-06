@@ -1,5 +1,5 @@
 import { 取得音樂狀態, 切換音樂靜音, 訂閱音樂狀態, 設定音樂音量 } from "../../audio/音樂管理";
-import { 取得音效狀態, 切換音效靜音, 訂閱音效狀態, 設定音效音量, 播放音效 } from "../../audio/音效管理";
+import { 取得音效狀態, 切換音效靜音, 訂閱音效狀態, 設定音效音量, 播放音效, 音效百分比轉音量, 音效音量轉百分比 } from "../../audio/音效管理";
 import { 應用程式狀態 } from "../應用程式狀態";
 import { 選文 } from "../語系";
 
@@ -88,9 +88,9 @@ export function 建立音樂浮動面板(): HTMLElement {
     hint.textContent = 雙語("這裡會直接影響主畫面、準備頁、戰場、Boss 與結算音樂。", "This changes the lobby, setup, battlefield, boss, and settlement music.");
     titleText.textContent = 雙語("音樂控制", "Music Control");
     sfxHeader.textContent = 雙語("音效", "Sound Effects");
-    sfxSlider.value = String(Math.round(sfxState.volume * 100));
+    sfxSlider.value = String(音效音量轉百分比(sfxState.volume));
     sfxMuteBtn.textContent = sfxState.muted ? 雙語("取消靜音", "Unmute") : 雙語("靜音", "Mute");
-    sfxValue.textContent = sfxState.muted ? 雙語("已靜音", "Muted") : `${Math.round(sfxState.volume * 100)}%`;
+    sfxValue.textContent = sfxState.muted ? 雙語("已靜音", "Muted") : `${音效音量轉百分比(sfxState.volume)}%`;
     sfxTestBtn.textContent = 雙語("試聽", "Test");
     sfxHint.textContent = 雙語("這裡控制按鈕、HUD、戰鬥碰撞、寶箱與設施互動音效。", "This controls buttons, HUD, combat hits, chests, and facility interaction sounds.");
   };
@@ -109,7 +109,7 @@ export function 建立音樂浮動面板(): HTMLElement {
     render();
   };
   sfxSlider.oninput = () => {
-    設定音效音量(Number(sfxSlider.value) / 100);
+    設定音效音量(音效百分比轉音量(Number(sfxSlider.value)));
     render();
   };
   sfxTestBtn.onclick = () => {

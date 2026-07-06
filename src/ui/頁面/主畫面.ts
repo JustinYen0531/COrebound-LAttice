@@ -7,7 +7,7 @@ import { 建立圖鑑瀏覽器 } from "../元件/圖鑑瀏覽器";
 import type { 主畫面分頁 } from "../共用型別";
 import { 選文 } from "../語系";
 import { 取得音樂狀態, 切換音樂靜音, 訂閱音樂狀態, 設定音樂音量 } from "../../audio/音樂管理";
-import { 取得音效狀態, 切換音效靜音, 訂閱音效狀態, 設定音效音量, 播放音效 } from "../../audio/音效管理";
+import { 取得音效狀態, 切換音效靜音, 訂閱音效狀態, 設定音效音量, 播放音效, 音效百分比轉音量, 音效音量轉百分比 } from "../../audio/音效管理";
 import { marked } from "marked";
 
 const 主按鈕清單: 主畫面分頁[] = ["開始遊玩", "圖鑑", "遊玩記錄", "新手入門", "設定"];
@@ -412,18 +412,6 @@ function 建立主畫面封面區(state: { 子頁: 主畫面分頁 }): HTMLEleme
     下拉按鈕列.appendChild(btn);
   }
 
-  const 收起按鈕 = document.createElement("button");
-  收起按鈕.type = "button";
-  收起按鈕.className = "主畫面-下拉按鈕 主畫面-下拉按鈕-次要";
-  收起按鈕.textContent = "↵";
-  收起按鈕.onclick = (event) => {
-    event.stopPropagation();
-    Play子選單展開 = false;
-    Guide子選單展開 = false;
-    更新選單狀態();
-  };
-  下拉按鈕列.appendChild(收起按鈕);
-
   下拉選單.append(下拉按鈕列, Play子選單, Guide子選單);
   世界標題.append(標題按鈕, 下拉選單);
   世界展示.appendChild(世界標題);
@@ -521,11 +509,6 @@ function 建立主畫面封面區(state: { 子頁: 主畫面分頁 }): HTMLEleme
     區塊.classList.add("主畫面-已進場");
     選單展開 = false;
     更新選單狀態();
-  };
-
-  任意處提示.onclick = (event) => {
-    event.stopPropagation();
-    完成進場();
   };
 
   轉台場景.addEventListener("click", (event) => {
@@ -874,9 +857,9 @@ function 建立音效控制卡(): HTMLElement {
 
   const render = () => {
     const state = 取得音效狀態();
-    slider.value = String(Math.round(state.volume * 100));
+    slider.value = String(音效音量轉百分比(state.volume));
     muteBtn.textContent = state.muted ? 雙語("取消靜音", "Unmute") : 雙語("靜音", "Mute");
-    value.textContent = state.muted ? 雙語("已靜音", "Muted") : `${Math.round(state.volume * 100)}%`;
+    value.textContent = state.muted ? 雙語("已靜音", "Muted") : `${音效音量轉百分比(state.volume)}%`;
   };
 
   muteBtn.onclick = () => {
@@ -884,7 +867,7 @@ function 建立音效控制卡(): HTMLElement {
     render();
   };
   slider.oninput = () => {
-    設定音效音量(Number(slider.value) / 100);
+    設定音效音量(音效百分比轉音量(Number(slider.value)));
     render();
   };
 
@@ -1022,3 +1005,7 @@ export function 渲染主畫面(容器: HTMLElement) {
   root.appendChild(版面);
   容器.appendChild(root);
 }
+  任意處提示.onclick = (event) => {
+    event.stopPropagation();
+    完成進場();
+  };

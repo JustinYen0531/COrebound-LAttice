@@ -52,9 +52,12 @@ export type 音效名稱 =
 
 const SFX_VOLUME_STORAGE_KEY = "cola-sfx-volume";
 const SFX_MUTE_STORAGE_KEY = "cola-sfx-muted";
+/** 目前舊量表的 100%（內部值 2.0）在新量表對應 30%。 */
+export const 音效音量上限 = 20 / 3;
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
+let limiter: DynamicsCompressorNode | null = null;
 let 已解鎖 = false;
 let 已啟動 = false;
 let 已播進場音 = false;
@@ -80,12 +83,12 @@ function 讀取初始音量(): number {
     // 注意：Number(null) === 0，缺鍵必須先擋掉，否則首次遊玩會被誤判成音量 0。
     if (raw !== null) {
       const parsed = Number(raw);
-      if (Number.isFinite(parsed)) return Math.max(0, Math.min(1, parsed));
+      if (Number.isFinite(parsed)) return Math.max(0, Math.min(音效音量上限, parsed));
     }
   } catch {
     // ignore
   }
-  return 0.7;
+  return 音效音量上限 * 0.5;
 }
 
 function 讀取初始靜音(): boolean {
@@ -118,7 +121,14 @@ function 確保音訊環境(): AudioContext | null {
     try {
       ctx = new AudioContext();
       master = ctx.createGain();
-      master.connect(ctx.destination);
+      limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.setValueAtTime(-8, ctx.currentTime);
+      limiter.knee.setValueAtTime(12, ctx.currentTime);
+      limiter.ratio.setValueAtTime(8, ctx.currentTime);
+      limiter.attack.setValueAtTime(0.003, ctx.currentTime);
+      limiter.release.setValueAtTime(0.16, ctx.currentTime);
+      master.connect(limiter);
+      limiter.connect(ctx.destination);
       套用音量();
     } catch {
       return null;
@@ -438,10 +448,19 @@ export function 播放音效(名稱: 音效名稱): void {
 }
 
 export function 設定音效音量(next: number): void {
-  音量 = Math.max(0, Math.min(1, next));
+  音量 = Math.max(0, Math.min(音效音量上限, next));
   套用音量();
   寫入設定();
   通知();
+}
+
+/** 新量表：上一版上限 2.0 對應畫面 30%，新 100% 對應約 6.67。 */
+export function 音效音量轉百分比(value: number): number {
+  return Math.round((Math.max(0, Math.min(音效音量上限, value)) / 音效音量上限) * 100);
+}
+
+export function 音效百分比轉音量(percent: number): number {
+  return Math.max(0, Math.min(100, percent)) / 100 * 音效音量上限;
 }
 
 export function 切換音效靜音(): void {

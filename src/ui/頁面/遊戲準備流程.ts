@@ -12,6 +12,7 @@ import {
   設定起始成員,
   type 初始成員層級,
 } from "../../progression/養成狀態";
+import { SHOWCASE_PRESETS, 尋找Showcase預設, type Showcase預設隊伍 } from "../../progression/Showcase預設隊伍";
 
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
@@ -54,6 +55,21 @@ function 世界顯示名(world: string): string {
   }[world] ?? world;
 }
 
+function 預設名稱(preset: Showcase預設隊伍): string {
+  return 應用程式狀態.額外.語言 === "zh" ? preset.名稱 : preset.名稱英;
+}
+function 預設archetype標籤(preset: Showcase預設隊伍): string {
+  return 應用程式狀態.額外.語言 === "zh" ? preset.archetype標籤 : preset.archetype標籤英;
+}
+function 預設說明(preset: Showcase預設隊伍): string {
+  return 應用程式狀態.額外.語言 === "zh" ? preset.說明 : preset.說明英;
+}
+const ARCHETYPE_ICON: Record<Showcase預設隊伍["archetype"], string> = {
+  aggressive: "⚔️",
+  defense: "🛡️",
+  support: "✨",
+};
+
 const 隊長立繪來源: Record<string, string> = {
   conductor: "/assets/transparent-portraits/captains/conductor_form1.png",
   operator: "/assets/transparent-portraits/captains/operator_form1.png",
@@ -78,9 +94,22 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   const 隊伍設定區 = document.createElement("div");
   隊伍設定區.className = "準備流程-隊伍設定區";
 
+const 顯示起始成員選擇 = state.來源 !== "Continue Game";
+
   const 隊長區 = document.createElement("div");
   隊長區.className = "準備流程-隊長區";
   隊長區.innerHTML = `<h4>${雙語("選擇隊長", "Choose a Captain")}</h4>`;
+
+  if (顯示起始成員選擇) {
+    const 徽章 = document.createElement("div");
+    const 是Showcase = 應用程式狀態.額外.開場模式 === "showcase";
+    徽章.className = `準備流程-模式徽章 ${是Showcase ? "作用中" : "無加成"}`;
+    徽章.innerHTML = 是Showcase
+      ? `⚡ ${雙語("目前使用 Showcase 模式", "Currently Using Showcase Mode")}`
+      : `🌱 ${雙語("目前從零開始，無開場加成", "Starting From Scratch — No Boost")}`;
+    隊長區.appendChild(徽章);
+  }
+
   const 隊長列表 = document.createElement("div");
   隊長列表.className = "隊長卡片列";
 
@@ -91,9 +120,10 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   function 重繪隊伍預覽() {
     預覽容器.innerHTML = "";
     const 隊長 = 隊長清單.find((c) => c.id === 選中隊長id)!;
-    const 當前配置 = 取得起始成員配置();
+    const 使用Showcase預設 = 顯示起始成員選擇 && 應用程式狀態.額外.開場模式 === "showcase";
+    const 選中預設 = 使用Showcase預設 ? 尋找Showcase預設(應用程式狀態.額外.選中Showcase預設ID) : undefined;
     const 隊伍立繪 = document.createElement("div");
-    隊伍立繪.className = "準備流程-隊伍立繪";
+    隊伍立繪.className = `準備流程-隊伍立繪${選中預設 ? " 準備流程-隊伍立繪--九宮格" : ""}`;
 
     const 隊長立繪 = document.createElement("article");
     隊長立繪.className = "準備流程-立繪卡 準備流程-立繪卡--隊長";
@@ -110,18 +140,36 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
       middle: 雙語("中層", "Middle"),
       outer: 雙語("外層", "Outer"),
     };
-    當前配置.forEach((entry) => {
-      const member = MEMBERS.find((item) => item.no === entry.memberNo);
-      if (!member) return;
-      const 立繪卡 = document.createElement("article");
-      立繪卡.className = `準備流程-立繪卡 準備流程-立繪卡--${entry.layer}`;
-      立繪卡.innerHTML = `
-        <div class="準備流程-立繪角色標籤">${層級標籤[entry.layer]}</div>
-        <img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${成員顯示名(member)}" />
-        <div class="準備流程-立繪名稱"><strong>${成員顯示名(member)}</strong><span>${member.nameEn}</span></div>
-      `;
-      隊伍立繪.appendChild(立繪卡);
-    });
+
+    if (選中預設) {
+      選中預設.members.forEach((entry) => {
+        const member = MEMBERS.find((item) => item.no === entry.memberNo);
+        if (!member) return;
+        const 立繪卡 = document.createElement("article");
+        立繪卡.className = `準備流程-立繪卡 準備流程-立繪卡--${entry.layer}`;
+        立繪卡.innerHTML = `
+          <div class="準備流程-立繪角色標籤">${層級標籤[entry.layer]}</div>
+          <div class="準備流程-立繪星級標籤">${"★".repeat(entry.star)}</div>
+          <img src="/assets/transparent-portraits/members/${member.id}_s${entry.star}.png" alt="${成員顯示名(member)}" />
+          <div class="準備流程-立繪名稱"><strong>${成員顯示名(member)}</strong><span>${member.nameEn}</span></div>
+        `;
+        隊伍立繪.appendChild(立繪卡);
+      });
+    } else {
+      const 當前配置 = 取得起始成員配置();
+      當前配置.forEach((entry) => {
+        const member = MEMBERS.find((item) => item.no === entry.memberNo);
+        if (!member) return;
+        const 立繪卡 = document.createElement("article");
+        立繪卡.className = `準備流程-立繪卡 準備流程-立繪卡--${entry.layer}`;
+        立繪卡.innerHTML = `
+          <div class="準備流程-立繪角色標籤">${層級標籤[entry.layer]}</div>
+          <img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${成員顯示名(member)}" />
+          <div class="準備流程-立繪名稱"><strong>${成員顯示名(member)}</strong><span>${member.nameEn}</span></div>
+        `;
+        隊伍立繪.appendChild(立繪卡);
+      });
+    }
     預覽容器.appendChild(隊伍立繪);
 
     const 說明 = document.createElement("div");
@@ -157,58 +205,125 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   隊長區.appendChild(隊長列表);
   隊伍設定區.appendChild(隊長區);
 
-  const 顯示起始成員選擇 = state.來源 !== "Continue Game";
   if (顯示起始成員選擇) {
-    const 選角區 = document.createElement("section");
-    選角區.className = "準備流程-選角區";
-    選角區.innerHTML = `
-      <div class="準備流程-區塊標題">${雙語("選擇 3 名初始成員", "Choose 3 Starting Members")}</div>
+    const 模式切換區 = document.createElement("section");
+    模式切換區.className = "準備流程-模式切換區";
+    模式切換區.innerHTML = `
+      <div class="準備流程-區塊標題">${雙語("開場方式", "Starting Approach")}</div>
       <div class="準備流程-區塊說明">
-        ${雙語("由內而外安排三名初始成員；每一位只能加入一次。", "Assign three starting members from the inner ring outward. Each member can only be chosen once.")}
+        ${雙語("挑一套已驗證過的預設隊伍立刻探索，或不要任何加成、從零慢慢養成。", "Jump in with a validated preset squad, or skip every boost and grow your team from scratch.")}
       </div>
     `;
+    const 切換列 = document.createElement("div");
+    切換列.className = "準備流程-模式切換列";
 
-    const 選擇列 = document.createElement("div");
-    選擇列.className = "準備流程-選擇列";
-    const 當前配置 = 取得起始成員配置();
-    const 層級標籤: Record<初始成員層級, string> = {
-      inner: 雙語("最內層", "Inner Ring"),
-      middle: 雙語("中層", "Middle Ring"),
-      outer: 雙語("外層", "Outer Ring"),
+    const 目前開場模式 = 應用程式狀態.額外.開場模式;
+
+    const showcase按鈕 = document.createElement("button");
+    showcase按鈕.type = "button";
+    showcase按鈕.className = `準備流程-模式按鈕 ${目前開場模式 === "showcase" ? "作用中" : ""}`;
+    showcase按鈕.innerHTML = `<strong>⚡ ${雙語("Showcase 快速上手", "Showcase Quick Start")}</strong><small>${雙語("三套已驗證的預設隊伍，選了就能直接探索", "3 validated preset squads — pick one and explore right away")}</small>`;
+    showcase按鈕.onclick = () => {
+      應用程式狀態.設定開場模式("showcase");
+      渲染遊戲準備流程(容器);
     };
 
-    (["inner", "middle", "outer"] as 初始成員層級[]).forEach((layer) => {
-      const current = 當前配置.find((entry) => entry.layer === layer);
-      if (!current) return;
-      const 其他已選 = new Set(當前配置.filter((entry) => entry.layer !== layer).map((entry) => entry.memberNo));
-      const member = MEMBERS.find((entry) => entry.no === current.memberNo);
-      const 卡片 = document.createElement("label");
-      卡片.className = `準備流程-選角卡 準備流程-選角卡--${layer}`;
-      卡片.innerHTML = `<div class="準備流程-選角卡標題"><span>${層級標籤[layer]}</span><strong>${member ? 成員顯示名(member) : ""}</strong></div>`;
+    const 從零按鈕 = document.createElement("button");
+    從零按鈕.type = "button";
+    從零按鈕.className = `準備流程-模式按鈕 ${目前開場模式 === "none" ? "作用中" : ""}`;
+    從零按鈕.innerHTML = `<strong>🌱 ${雙語("不要開場加成", "No Starting Boost")}</strong><small>${雙語("從零開始，自己手動挑 3 名初始成員慢慢養成", "Start from scratch — manually pick 3 starting members and grow at your own pace")}</small>`;
+    從零按鈕.onclick = () => {
+      應用程式狀態.設定開場模式("none");
+      渲染遊戲準備流程(容器);
+    };
 
-      const 下拉 = document.createElement("select");
-      下拉.className = "二級按鈕";
-      MEMBERS.filter((candidate) => !其他已選.has(candidate.no) || candidate.no === current.memberNo).forEach((candidate) => {
-        const option = document.createElement("option");
-        option.value = String(candidate.no);
-        option.selected = candidate.no === current.memberNo;
-        option.textContent = `${String(candidate.no).padStart(2, "0")}. ${成員顯示名(candidate)}`;
-        下拉.appendChild(option);
+    切換列.append(showcase按鈕, 從零按鈕);
+    模式切換區.appendChild(切換列);
+    隊伍設定區.appendChild(模式切換區);
+
+    if (目前開場模式 === "showcase") {
+      const 預設區 = document.createElement("section");
+      預設區.className = "準備流程-預設區";
+      預設區.innerHTML = `
+        <div class="準備流程-區塊標題">${雙語("選擇一套預設隊伍", "Choose a Preset Build")}</div>
+        <div class="準備流程-區塊說明">
+          ${雙語("每套都是 9 名真實上陣成員，星級 1~3★ 不等，家族配置各不相同，選了就直接帶著這套隊伍出發。", "Each build fields 9 real squad members at 1-3 stars, with a different family split. Pick one and head straight into the run with it.")}
+        </div>
+      `;
+      const 預設卡列 = document.createElement("div");
+      預設卡列.className = "準備流程-預設卡列";
+      const 選中預設id = 應用程式狀態.額外.選中Showcase預設ID;
+
+      SHOWCASE_PRESETS.forEach((preset) => {
+        const 卡片 = document.createElement("button");
+        卡片.type = "button";
+        卡片.className = `準備流程-預設卡 準備流程-預設卡--${preset.archetype} ${preset.id === 選中預設id ? "作用中" : ""}`;
+        卡片.innerHTML = `
+          <div class="準備流程-預設卡標題"><span>${ARCHETYPE_ICON[preset.archetype]} ${預設archetype標籤(preset)}</span><strong>${預設名稱(preset)}</strong></div>
+          <div class="準備流程-預設卡配置">${preset.家族配置}</div>
+          <div class="準備流程-預設卡說明">${預設說明(preset)}</div>
+        `;
+        卡片.onclick = () => {
+          應用程式狀態.設定選中Showcase預設(preset.id);
+          渲染遊戲準備流程(容器);
+        };
+        預設卡列.appendChild(卡片);
       });
-      下拉.onchange = () => {
-        設定起始成員(layer, Number(下拉.value));
-        渲染遊戲準備流程(容器);
-      };
-      卡片.appendChild(下拉);
 
-      const 補充 = document.createElement("div");
-      補充.className = "準備流程-選角補充";
-      補充.textContent = member ? `${member.nameEn} | ${雙語("世界", "World")}: ${世界顯示名(member.world)}` : "";
-      卡片.appendChild(補充);
-      選擇列.appendChild(卡片);
-    });
-    選角區.appendChild(選擇列);
-    隊伍設定區.appendChild(選角區);
+      預設區.appendChild(預設卡列);
+      隊伍設定區.appendChild(預設區);
+    } else {
+      const 選角區 = document.createElement("section");
+      選角區.className = "準備流程-選角區";
+      選角區.innerHTML = `
+        <div class="準備流程-區塊標題">${雙語("選擇 3 名初始成員", "Choose 3 Starting Members")}</div>
+        <div class="準備流程-區塊說明">
+          ${雙語("由內而外安排三名初始成員；每一位只能加入一次。", "Assign three starting members from the inner ring outward. Each member can only be chosen once.")}
+        </div>
+      `;
+
+      const 選擇列 = document.createElement("div");
+      選擇列.className = "準備流程-選擇列";
+      const 當前配置 = 取得起始成員配置();
+      const 層級標籤: Record<初始成員層級, string> = {
+        inner: 雙語("最內層", "Inner Ring"),
+        middle: 雙語("中層", "Middle Ring"),
+        outer: 雙語("外層", "Outer Ring"),
+      };
+
+      (["inner", "middle", "outer"] as 初始成員層級[]).forEach((layer) => {
+        const current = 當前配置.find((entry) => entry.layer === layer);
+        if (!current) return;
+        const 其他已選 = new Set(當前配置.filter((entry) => entry.layer !== layer).map((entry) => entry.memberNo));
+        const member = MEMBERS.find((entry) => entry.no === current.memberNo);
+        const 卡片 = document.createElement("label");
+        卡片.className = `準備流程-選角卡 準備流程-選角卡--${layer}`;
+        卡片.innerHTML = `<div class="準備流程-選角卡標題"><span>${層級標籤[layer]}</span><strong>${member ? 成員顯示名(member) : ""}</strong></div>`;
+
+        const 下拉 = document.createElement("select");
+        下拉.className = "二級按鈕";
+        MEMBERS.filter((candidate) => !其他已選.has(candidate.no) || candidate.no === current.memberNo).forEach((candidate) => {
+          const option = document.createElement("option");
+          option.value = String(candidate.no);
+          option.selected = candidate.no === current.memberNo;
+          option.textContent = `${String(candidate.no).padStart(2, "0")}. ${成員顯示名(candidate)}`;
+          下拉.appendChild(option);
+        });
+        下拉.onchange = () => {
+          設定起始成員(layer, Number(下拉.value));
+          渲染遊戲準備流程(容器);
+        };
+        卡片.appendChild(下拉);
+
+        const 補充 = document.createElement("div");
+        補充.className = "準備流程-選角補充";
+        補充.textContent = member ? `${member.nameEn} | ${雙語("世界", "World")}: ${世界顯示名(member.world)}` : "";
+        卡片.appendChild(補充);
+        選擇列.appendChild(卡片);
+      });
+      選角區.appendChild(選擇列);
+      隊伍設定區.appendChild(選角區);
+    }
   }
 
   版面.appendChild(隊伍設定區);
@@ -283,22 +398,6 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   畫質區.appendChild(提示);
 
   root.appendChild(畫質區);
-
-  if (state.來源 !== "Continue Game") {
-    const showcase = document.createElement("label");
-    showcase.className = `準備流程-Showcase ${應用程式狀態.額外.Showcase模式 ? "作用中" : ""}`;
-    showcase.innerHTML = `
-      <input type="checkbox" ${應用程式狀態.額外.Showcase模式 ? "checked" : ""} />
-      <span class="準備流程-Showcase勾選"></span>
-      <span>
-        <strong>${雙語("開啟 Showcase 模式", "Enable Showcase Mode")}</strong>
-        <small>${雙語("在正常對局中開放召敵、回復、資源、進度與速度等沙盒工具；戰鬥、掉落與結算仍使用正式規則。", "Unlock sandbox tools for spawning, healing, resources, progression, and speed inside a normal run. Combat, drops, and settlement still use the formal rules.")}</small>
-      </span>
-    `;
-    const checkbox = showcase.querySelector<HTMLInputElement>("input")!;
-    checkbox.onchange = () => 應用程式狀態.設定Showcase模式(checkbox.checked);
-    root.appendChild(showcase);
-  }
 
   const 底部按鈕列 = document.createElement("div");
   底部按鈕列.className = "按鈕列";
