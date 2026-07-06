@@ -506,7 +506,7 @@ const e29: MonsterDef = {
 // ============================================================
 
 const MONSTER_HP_MULTIPLIER = 2;
-const MONSTER_ATK_MULTIPLIER = 2;
+const MONSTER_ATK_MULTIPLIER = 6;
 
 const BASE_MONSTERS: readonly MonsterDef[] = [
   e01, e02, e03, e04, e05, e06, e07,
