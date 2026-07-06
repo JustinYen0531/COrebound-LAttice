@@ -12,6 +12,7 @@ import { 應用程式狀態 } from "../應用程式狀態";
 import { 戰鬥HUD接線 } from "../戰鬥HUD接線";
 import { 建立世界地圖層, 讀取玩家位置 } from "../元件/世界地圖層";
 import {
+  取得全部可召喚怪物圖鑑,
   取得可召喚怪物圖鑑,
   取得訓練編隊預設列表,
   取得訓練道場摘要,
@@ -76,11 +77,12 @@ function 建立Showcase快捷面板(): HTMLElement {
   const panel = document.createElement("aside");
   panel.className = "Showcase控制台";
   let 收合 = false;
+  let 已選Showcase怪物Id: string | null = null;
 
   const render = () => {
     const hp = 取得正式小隊摘要();
-    const catalog = 取得可召喚怪物圖鑑();
-    const selectedId = 取得訓練道場摘要().selectedEnemyMonsterId || catalog[0]?.id || "";
+    const catalog = 取得全部可召喚怪物圖鑑().filter((monster) => monster.world !== "core");
+    const selectedId = 已選Showcase怪物Id || 取得訓練道場摘要().selectedEnemyMonsterId || catalog[0]?.id || "";
     panel.innerHTML = `
       <header><div><small>SHOWCASE MODE</small><strong>${雙語("正式對局沙盒工具", "Formal Run Sandbox")}</strong></div><button class="二級按鈕" data-collapse>${收合 ? "+" : "−"}</button></header>
       <div class="Showcase控制台-內容" ${收合 ? "hidden" : ""}>
@@ -99,16 +101,33 @@ function 建立Showcase快捷面板(): HTMLElement {
     panel.querySelector<HTMLButtonElement>("[data-clear]")!.onclick = () => 發送Showcase事件("clear_enemies");
 
     const enemySelect = panel.querySelector<HTMLSelectElement>("[data-enemy]")!;
+    enemySelect.size = Math.min(12, Math.max(8, catalog.length));
+    enemySelect.style.minHeight = "220px";
+    enemySelect.style.maxHeight = "280px";
+    enemySelect.style.overflowY = "auto";
     for (const monster of catalog) {
       const option = document.createElement("option");
       option.value = monster.id;
       option.selected = monster.id === selectedId;
-      option.textContent = `T${monster.tier} | ${monster.no.toString().padStart(2, "0")} ${應用程式狀態.額外.語言 === "zh" ? monster.nameZh : monster.nameEn}`;
+      const worldLabel = monster.world === "geometry"
+        ? 雙語("幾何", "Geometry")
+        : monster.world === "organic"
+          ? 雙語("有機", "Organic")
+          : monster.world === "fractal"
+            ? 雙語("分形", "Fractal")
+            : 雙語("機械", "Mechanical");
+      option.textContent = `[${worldLabel}] T${monster.tier} | ${monster.no.toString().padStart(2, "0")} ${應用程式狀態.額外.語言 === "zh" ? monster.nameZh : monster.nameEn}`;
       enemySelect.appendChild(option);
     }
-    enemySelect.onchange = () => 設定訓練預選怪物(enemySelect.value);
+    enemySelect.onchange = () => {
+      已選Showcase怪物Id = enemySelect.value;
+      設定訓練預選怪物(enemySelect.value);
+    };
     panel.querySelectorAll<HTMLButtonElement>("[data-spawn]").forEach((button) => {
-      button.onclick = () => 發送Showcase事件("spawn_enemies", { monsterId: enemySelect.value, count: Number(button.dataset.spawn) });
+      button.onclick = () => {
+        已選Showcase怪物Id = enemySelect.value;
+        發送Showcase事件("spawn_enemies", { monsterId: enemySelect.value, count: Number(button.dataset.spawn) });
+      };
     });
 
     const speedRow = panel.querySelector<HTMLElement>("[data-speed]")!;

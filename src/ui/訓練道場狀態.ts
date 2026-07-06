@@ -379,6 +379,10 @@ export function 取得可召喚怪物圖鑑(): MonsterDef[] {
   return 該世界可召喚怪物(狀態.selectedWorld);
 }
 
+export function 取得全部可召喚怪物圖鑑(): MonsterDef[] {
+  return 全部可召喚怪物.map((monster) => ({ ...monster }));
+}
+
 export function 設定訓練世界場景(world: World): void {
   const nextWorld = 正規化訓練世界(world);
   狀態.selectedWorld = nextWorld;
