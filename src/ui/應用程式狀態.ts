@@ -72,9 +72,9 @@ function 讀取世界地板細節模式偏好(): 世界地板細節模式 {
     const saved = window.localStorage.getItem(DETAILED_WORLD_FLOORS_STORAGE_KEY);
     if (saved === "high" || saved === "medium" || saved === "smooth") return saved;
     if (saved === "true") return "medium";
-    return "smooth";
+    return "high";
   } catch {
-    return "smooth";
+    return "high";
   }
 }
 
