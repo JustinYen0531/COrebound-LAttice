@@ -1007,18 +1007,6 @@ export function 建立世界地圖層(): HTMLElement {
       chestNodes.set(chest.id, node);
     }
 
-    const nearestChest = worldChests
-      .map((chest) => ({ chest, distance: Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) }))
-      .filter((entry) => entry.distance <= 190)
-      .sort((a, b) => a.distance - b.distance)[0];
-    const nearestResource = resourceDrops
-      .map((drop) => ({ drop, distance: Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) }))
-      .filter((entry) => entry.distance <= 190)
-      .sort((a, b) => a.distance - b.distance)[0];
-    const nearestDeathDrop = deathDrops
-      .map((drop) => ({ drop, distance: Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) }))
-      .filter((entry) => entry.distance <= 190)
-      .sort((a, b) => a.distance - b.distance)[0];
     for (const [id, node] of chestNodes) {
       if (liveIds.has(id)) continue;
       node.remove();
@@ -1537,6 +1525,19 @@ export function 建立世界地圖層(): HTMLElement {
       node.style.display = isVisible(screenPos, viewport) ? "grid" : "none";
       node.style.filter = Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) <= 190 ? "brightness(1.4)" : "none";
     }
+
+    const nearestChest = worldChests
+      .map((chest) => ({ chest, distance: Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) }))
+      .filter((entry) => entry.distance <= 190)
+      .sort((a, b) => a.distance - b.distance)[0];
+    const nearestResource = resourceDrops
+      .map((drop) => ({ drop, distance: Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) }))
+      .filter((entry) => entry.distance <= 190)
+      .sort((a, b) => a.distance - b.distance)[0];
+    const nearestDeathDrop = deathDrops
+      .map((drop) => ({ drop, distance: Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) }))
+      .filter((entry) => entry.distance <= 190)
+      .sort((a, b) => a.distance - b.distance)[0];
 
     const nearest = near[0];
     if (nearest) {
