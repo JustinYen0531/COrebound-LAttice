@@ -444,8 +444,8 @@ export class HudController {
     this.itemDrawer.onUsePotion((potionId, memberId) => {
       this.emit({ type: "use_potion", potionId, onMemberId: memberId });
     });
-    this.memberStatus.onCycle((layer, direction) => {
-      this.emit({ type: "cycle_layer_member", layer, direction });
+    this.memberStatus.onCycle((direction) => {
+      this.emit({ type: "cycle_roster_role", direction });
     });
     // 點圓圈進管理介面 — 規格 §2.4(僅 ring_full 時才生效)
     // 互斥原則(§3.4)保證 ring_full 時抽屜必然關閉,故無需再檢查 drawer 狀態。

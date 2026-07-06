@@ -301,6 +301,6 @@ export type HudEvent =
   | { type: "cast_active" } // 玩家施放隊長主動技能
   | { type: "toggle_weapon"; family: WeaponFamily } // 左滑抽屜內切換武器群組
   | { type: "use_potion"; potionId: string; onMemberId: string | null } // 使用藥水(null=隊長)
-  | { type: "cycle_layer_member"; layer: Layer; direction: -1 | 1 } // 切換該層顯示中的成員
+  | { type: "cycle_roster_role"; direction: -1 | 1 } // 三層同步切換防守、進攻、效果位
   | { type: "open_management"; focusMemberId?: string } // 點圓圈進管理介面
   | { type: "interact_prompt" }; // 驚嘆號被點(本骨架僅記錄)

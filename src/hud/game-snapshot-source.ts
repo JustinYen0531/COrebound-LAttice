@@ -113,7 +113,7 @@ export class GameSnapshotSource {
   private readonly potions: PotionItem[] = 建立靜態藥水().map((potion) => ({ ...potion }));
   private tickProgress = 0;
   private tickPulseAt = 0;
-  private readonly layerCycleIndex: Record<Layer, number> = { inner: 0, middle: 0, outer: 0 };
+  private activeRoleIndex = 0;
 
   setMoving(moving: boolean): void {
     this.moving = moving;
@@ -214,15 +214,9 @@ export class GameSnapshotSource {
     }
   }
 
-  cycleLayerMember(mode: SnapshotMode, layer: Layer, direction: -1 | 1): void {
-    const roster = this.readRuntime(mode).roster.filter((member) => member.layer === layer);
-    const slots = roster.length <= 1 ? roster.length + 1 : roster.length;
-    if (slots <= 0) {
-      this.layerCycleIndex[layer] = 0;
-      return;
-    }
-    const next = this.layerCycleIndex[layer] + direction;
-    this.layerCycleIndex[layer] = ((next % slots) + slots) % slots;
+  cycleRosterRole(_mode: SnapshotMode, direction: -1 | 1): void {
+    const next = this.activeRoleIndex + direction;
+    this.activeRoleIndex = ((next % ROLE_ORDER.length) + ROLE_ORDER.length) % ROLE_ORDER.length;
   }
 
   /**
@@ -442,11 +436,8 @@ export class GameSnapshotSource {
   }
 
   private resolveLayerRoster(roster: RosterMember[], layer: Layer): RosterMember | null {
-    const members = roster.filter((member) => member.layer === layer);
-    if (!members.length) return null;
-    const slots = members.length <= 1 ? [...members, null] : members;
-    const index = this.layerCycleIndex[layer] % slots.length;
-    return slots[index] ?? null;
+    const activeRole = ROLE_ORDER[this.activeRoleIndex] ?? "protect";
+    return roster.find((member) => member.layer === layer && member.role === activeRole) ?? null;
   }
 
   private buildPartyVitals(runtime: RosterRuntime, captainStar: ControlStar): PartyVital[] {

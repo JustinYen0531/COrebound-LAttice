@@ -130,8 +130,8 @@ class 戰鬥HUD接線器 {
       case "use_potion":
         this.source.usePotion(this.currentMode(), event.potionId);
         break;
-      case "cycle_layer_member":
-        this.source.cycleLayerMember(this.currentMode(), event.layer, event.direction);
+      case "cycle_roster_role":
+        this.source.cycleRosterRole(this.currentMode(), event.direction);
         break;
       case "open_management":
         應用程式狀態.進入管理介面("小隊");
