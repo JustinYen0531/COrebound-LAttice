@@ -9,6 +9,7 @@ import { 隊長圖騰清單 } from "../../totem/資料/隊長圖騰";
 import { 隊長清單 } from "../資料/隊長清單";
 import { 建立玩家標記圖騰 } from "./玩家標記圖騰";
 import { 應用程式狀態 } from "../應用程式狀態";
+import { 選文 } from "../語系";
 import { 取得正式小隊摘要, 刷新正式最大生命 } from "../正式對局小隊狀態";
 import {
   取得上陣養成,
@@ -78,16 +79,72 @@ const 正式槽位配置: Array<{ slotId: number; layer: 初始成員層級; rin
   { slotId: 2, layer: "outer", ring: "外", angle: 0, role: "補給" },
 ];
 
+function 雙語(中文: string, 英文: string): string {
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
+}
+
+function 世界顯示名(world: World): string {
+  return {
+    geometry: 雙語("幾何", "Geometry"),
+    organic: 雙語("有機", "Organic"),
+    fractal: 雙語("分形", "Fractal"),
+    mechanical: 雙語("機械", "Mechanical"),
+  }[world];
+}
+
+function 家族顯示名(family: keyof typeof FAMILY_LABEL): string {
+  return {
+    shield: 雙語("護盾", "Shield"),
+    multishot: 雙語("多發", "Multishot"),
+    straight: 雙語("直線", "Straight"),
+    mine: 雙語("地雷", "Mine"),
+    laser: 雙語("激光", "Laser"),
+  }[family];
+}
+
+function 成員顯示名(member: Pick<(typeof MEMBERS)[number], "nameZh" | "nameEn">): string {
+  return 應用程式狀態.額外.語言 === "zh" ? member.nameZh : member.nameEn;
+}
+
+function 隊長顯示名(captain: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? captain.名稱 : captain.名稱英;
+}
+
+function 隊長代號顯示(captain: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? captain.代號 : captain.代號英;
+}
+
+function 隊長控制顯示(captain: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? captain.控制效果 : captain.控制效果英;
+}
+
+function 隊長主動顯示(captain: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? captain.主動位移技能 : captain.主動位移技能英;
+}
+
+function 隊長週期顯示(captain: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? captain.週期技能 : captain.週期技能英;
+}
+
+function 星節點顯示名(member: (typeof MEMBERS)[number], star: 1 | 2 | 3): string {
+  return 應用程式狀態.額外.語言 === "zh" ? member.starNodes[star].name : `Star ${star} Node`;
+}
+
+function 成員角色摘要(member: (typeof MEMBERS)[number]): string {
+  if (應用程式狀態.額外.語言 === "zh") return member.role;
+  return `Role focus: ${家族顯示名(member.family)} tactics from ${世界顯示名(member.world)}.`;
+}
+
 function 取得層級標籤(layer: "外" | "中" | "內"): string {
-  if (layer === "內") return "最內層";
-  if (layer === "中") return "中層";
-  return "最外層";
+  if (layer === "內") return 雙語("最內層", "Inner Ring");
+  if (layer === "中") return 雙語("中層", "Middle Ring");
+  return 雙語("最外層", "Outer Ring");
 }
 
 function 取得正式層級短標(layer: 初始成員層級): string {
-  if (layer === "inner") return "最內層";
-  if (layer === "middle") return "中層";
-  return "最外層";
+  if (layer === "inner") return 雙語("最內層", "Inner");
+  if (layer === "middle") return 雙語("中層", "Middle");
+  return 雙語("最外層", "Outer");
 }
 
 function 建立標題(文字: string, 副標?: string): HTMLElement {
@@ -107,15 +164,15 @@ function 建立隊長核心卡(captain: (typeof 隊長清單)[number]): HTMLElem
   captainCard.className = "訓練軌道編排器-隊長卡";
   captainCard.style.setProperty("--captain-color", captain.代表色);
   captainCard.innerHTML = `
-    <div class="訓練軌道編排器-隊長卡眉標">隊長核心</div>
+    <div class="訓練軌道編排器-隊長卡眉標">${雙語("隊長核心", "Captain Core")}</div>
     <div class="訓練軌道編排器-隊長卡主列">
-      <span class="訓練軌道編排器-隊長徽記">${captain.名稱.slice(0, 1)}</span>
+      <span class="訓練軌道編排器-隊長徽記">${隊長顯示名(captain).slice(0, 1)}</span>
       <div>
-        <div class="訓練軌道編排器-隊長名稱">${captain.名稱}</div>
-        <div class="訓練軌道編排器-隊長資訊">${captain.代號} ｜ ${captain.控制效果}</div>
+        <div class="訓練軌道編排器-隊長名稱">${隊長顯示名(captain)}</div>
+        <div class="訓練軌道編排器-隊長資訊">${隊長代號顯示(captain)} | ${隊長控制顯示(captain)}</div>
       </div>
     </div>
-    <div class="訓練軌道編排器-隊長描述">${captain.主動位移技能} ｜ ${captain.週期技能}</div>
+    <div class="訓練軌道編排器-隊長描述">${隊長主動顯示(captain)} | ${隊長週期顯示(captain)}</div>
   `;
   return captainCard;
 }
@@ -154,8 +211,8 @@ function 建立隊長舞台立繪(captain: (typeof 隊長清單)[number]): HTMLE
   const figure = document.createElement("div");
   figure.className = "正式立會舞台-隊長";
   figure.innerHTML = `
-    <img src="${取得正式隊長立繪路徑(captain.id, 1)}" alt="${captain.名稱}" />
-    <span class="正式立會舞台-名牌 正式立會舞台-名牌--隊長">${captain.名稱}</span>
+    <img src="${取得正式隊長立繪路徑(captain.id, 1)}" alt="${隊長顯示名(captain)}" />
+    <span class="正式立會舞台-名牌 正式立會舞台-名牌--隊長">${隊長顯示名(captain)}</span>
   `;
   return figure;
 }
@@ -201,8 +258,8 @@ function 建立正式圖騰預覽(): HTMLElement {
   const root = document.createElement("div");
   root.className = "訓練軌道編排器-圖騰預覽畫面";
   root.innerHTML = `
-    <div class="訓練軌道編排器-圖騰預覽標題">主畫面圖騰預覽</div>
-    <div class="訓練軌道編排器-圖騰預覽說明">這裡直接套用正式遊戲的圖騰元件，方便看整體圖騰樣貌。</div>
+    <div class="訓練軌道編排器-圖騰預覽標題">${雙語("主畫面圖騰預覽", "Lobby Totem Preview")}</div>
+    <div class="訓練軌道編排器-圖騰預覽說明">${雙語("這裡直接套用正式遊戲的圖騰元件，方便看整體圖騰樣貌。", "Uses the real in-game totem component so you can inspect the full look directly.")}</div>
   `;
 
   const view = document.createElement("div");
@@ -241,8 +298,8 @@ function 建立正式對局圖騰預覽(): HTMLElement {
   const root = document.createElement("div");
   root.className = "訓練軌道編排器-圖騰預覽畫面";
   root.innerHTML = `
-    <div class="訓練軌道編排器-圖騰預覽標題">正式遊戲圖騰預覽</div>
-    <div class="訓練軌道編排器-圖騰預覽說明">這裡會直接顯示目前正式對局實際使用中的三層編隊。</div>
+    <div class="訓練軌道編排器-圖騰預覽標題">${雙語("正式遊戲圖騰預覽", "Live Match Totem Preview")}</div>
+    <div class="訓練軌道編排器-圖騰預覽說明">${雙語("這裡會直接顯示目前正式對局實際使用中的三層編隊。", "Shows the three-ring loadout currently used in the live match.")}</div>
   `;
 
   const view = document.createElement("div");
@@ -265,8 +322,8 @@ function 建立正式小隊立繪舞台(captain: (typeof 隊長清單)[number]):
   const root = document.createElement("div");
   root.className = "正式立會舞台";
   root.innerHTML = `
-    <div class="訓練軌道編排器-圖騰預覽標題">小隊立會舞台</div>
-    <div class="訓練軌道編排器-圖騰預覽說明">預設展示三名正式上陣成員的合照站位，不含隊長。</div>
+    <div class="訓練軌道編排器-圖騰預覽標題">${雙語("小隊立會舞台", "Squad Stage")}</div>
+    <div class="訓練軌道編排器-圖騰預覽說明">${雙語("預設展示三名正式上陣成員的合照站位，不含隊長。", "Shows the three deployed members as a group portrait on the stage.")}</div>
   `;
 
   const stage = document.createElement("div");
@@ -287,8 +344,8 @@ function 建立正式小隊立繪舞台(captain: (typeof 隊長清單)[number]):
     const figure = document.createElement("div");
     figure.className = position.className;
     figure.innerHTML = `
-      <img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${member.nameZh}" />
-      <span class="正式立會舞台-名牌">${member.nameZh}</span>
+      <img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${成員顯示名(member)}" />
+      <span class="正式立會舞台-名牌">${成員顯示名(member)}</span>
     `;
     stage.appendChild(figure);
   });
@@ -326,7 +383,7 @@ function 建立正式軌道預覽(selectedSlotId: number, 刷新: () => void): H
         node.style.setProperty("--slot-angle", `${item.angle}deg`);
         node.style.setProperty("--slot-radius", `${軌道半徑[item.ring]}px`);
         node.style.setProperty("--slot-color", role.color);
-        node.title = `${取得層級標籤(item.ring)}｜${slot.member ? slot.member.nameZh : "未配置"}`;
+        node.title = `${取得層級標籤(item.ring)} | ${slot.member ? (應用程式狀態.額外.語言 === "zh" ? slot.member.nameZh : slot.member.nameEn) : 雙語("未配置", "Unassigned")}`;
         node.onclick = () => {
           應用程式狀態.額外.選中的小隊成員展示位 = item.slotId;
           刷新();
@@ -338,7 +395,7 @@ function 建立正式軌道預覽(selectedSlotId: number, 刷新: () => void): H
 
         const initial = document.createElement("span");
         initial.className = "訓練軌道編排器-縮寫";
-        initial.textContent = slot.member ? slot.member.nameZh.slice(0, 1) : "空";
+        initial.textContent = slot.member ? (應用程式狀態.額外.語言 === "zh" ? slot.member.nameZh : slot.member.nameEn).slice(0, 1) : "-";
 
         node.append(num, initial);
         ring.appendChild(node);
@@ -363,15 +420,15 @@ function 建立正式舞台切換區(captain: (typeof 隊長清單)[number], sel
   const title = document.createElement("div");
   title.className = "訓練軌道編排器-視圖標題";
   title.textContent =
-    正式舞台視圖 === "stage" ? "小隊立會舞台" :
-    正式舞台視圖 === "orbit" ? "軌道預覽" :
-    "圖騰預覽";
+    正式舞台視圖 === "stage" ? 雙語("小隊立會舞台", "Squad Stage") :
+    正式舞台視圖 === "orbit" ? 雙語("軌道預覽", "Orbit Preview") :
+    雙語("圖騰預覽", "Totem Preview");
   const hint = document.createElement("div");
   hint.className = "正式舞台切換區-說明";
   hint.textContent =
-    正式舞台視圖 === "stage" ? "像合照一樣看三名上陣成員的站位。" :
-    正式舞台視圖 === "orbit" ? "切回原本的軌道視圖，看圈層與位置。" :
-    "查看目前正式上陣對應的圖騰樣貌。";
+    正式舞台視圖 === "stage" ? 雙語("像合照一樣看三名上陣成員的站位。", "View the deployed trio like a staged group portrait.") :
+    正式舞台視圖 === "orbit" ? 雙語("切回原本的軌道視圖，看圈層與位置。", "Switch back to the orbit view to inspect ring placement.") :
+    雙語("查看目前正式上陣對應的圖騰樣貌。", "Inspect the current deployed totem layout.");
   header.append(title, hint);
   frame.appendChild(header);
 
@@ -379,7 +436,7 @@ function 建立正式舞台切換區(captain: (typeof 隊長清單)[number], sel
   prev.type = "button";
   prev.className = "正式舞台切換區-箭頭 正式舞台切換區-箭頭--左";
   prev.textContent = "←";
-  prev.title = "切到前一種預覽";
+  prev.title = 雙語("切到前一種預覽", "Previous Preview");
   prev.onclick = () => {
     正式舞台視圖 = 正式舞台視圖 === "stage" ? "orbit" : 正式舞台視圖 === "orbit" ? "totem" : "stage";
     刷新();
@@ -389,7 +446,7 @@ function 建立正式舞台切換區(captain: (typeof 隊長清單)[number], sel
   next.type = "button";
   next.className = "正式舞台切換區-箭頭 正式舞台切換區-箭頭--右";
   next.textContent = "→";
-  next.title = "切到下一種預覽";
+  next.title = 雙語("切到下一種預覽", "Next Preview");
   next.onclick = () => {
     正式舞台視圖 = 正式舞台視圖 === "stage" ? "totem" : 正式舞台視圖 === "totem" ? "orbit" : "stage";
     刷新();
@@ -488,12 +545,12 @@ function 建立訓練槽位格(刷新: () => void): HTMLElement {
 
     const main = document.createElement("div");
     main.className = "訓練軌道編排器-槽位主文";
-    main.textContent = member ? `${member.no.toString().padStart(2, "0")} ${member.nameZh}` : "（空槽）";
+    main.textContent = member ? `${member.no.toString().padStart(2, "0")} ${成員顯示名(member)}` : 雙語("（空槽）", "(Empty Slot)");
     card.appendChild(main);
 
     const sub = document.createElement("div");
     sub.className = "訓練軌道編排器-槽位副文";
-    sub.textContent = `${slot.star}★${member ? ` ｜ ${WORLD_LABEL[member.world]}` : ""}`;
+    sub.textContent = `${slot.star}★${member ? ` | ${世界顯示名(member.world)}` : ""}`;
     card.appendChild(sub);
     card.addEventListener("dragstart", (event) => {
       event.dataTransfer?.setData("text/plain", String(slot.slotId));
@@ -543,7 +600,7 @@ function 建立訓練軌道編排器(captain: (typeof 隊長清單)[number], 刷
   const previewBtn = document.createElement("button");
   previewBtn.type = "button";
   previewBtn.className = "訓練軌道編排器-切換箭頭";
-  previewBtn.textContent = "→ 圖騰預覽";
+  previewBtn.textContent = `→ ${雙語("圖騰預覽", "Totem Preview")}`;
   previewBtn.onclick = () => {
     左側模式 = "預覽";
     刷新();
@@ -583,7 +640,7 @@ function 建立訓練軌道編排器(captain: (typeof 隊長清單)[number], 刷
         node.style.setProperty("--slot-angle", `${item.angle}deg`);
         node.style.setProperty("--slot-radius", `${軌道半徑[item.layer]}px`);
         node.style.setProperty("--slot-color", role.color);
-        node.title = `槽位 ${item.slotId + 1}｜${role.label}｜${member ? member.nameZh : "空槽"}`;
+        node.title = `${雙語("槽位", "Slot")} ${item.slotId + 1} | ${role.label} | ${member ? 成員顯示名(member) : 雙語("空槽", "Empty")}`;
         node.onclick = () => {
           設定訓練選中槽位(item.slotId);
           刷新();
@@ -595,7 +652,7 @@ function 建立訓練軌道編排器(captain: (typeof 隊長清單)[number], 刷
 
         const initial = document.createElement("span");
         initial.className = "訓練軌道編排器-縮寫";
-        initial.textContent = member ? member.nameZh.slice(0, 1) : "空";
+        initial.textContent = member ? 成員顯示名(member).slice(0, 1) : "-";
 
         node.append(num, initial);
         ring.appendChild(node);
@@ -633,11 +690,11 @@ function 建立訓練圖騰預覽面板(captain: (typeof 隊長清單)[number], 
   topBar.className = "訓練軌道編排器-視圖列";
   const viewTitle = document.createElement("div");
   viewTitle.className = "訓練軌道編排器-視圖標題";
-  viewTitle.textContent = "圖騰預覽";
+  viewTitle.textContent = 雙語("圖騰預覽", "Totem Preview");
   const backBtn = document.createElement("button");
   backBtn.type = "button";
   backBtn.className = "訓練軌道編排器-切換箭頭";
-  backBtn.textContent = "← 返回編排";
+  backBtn.textContent = `← ${雙語("返回編排", "Back to Layout")}`;
   backBtn.onclick = () => {
     左側模式 = "編排";
     刷新();
@@ -710,12 +767,12 @@ function 建立正式槽位格(selectedSlotId: number, 刷新: () => void): HTML
 
     const main = document.createElement("div");
     main.className = "訓練軌道編排器-槽位主文";
-    main.textContent = slot.member ? `${slot.member.memberNo.toString().padStart(2, "0")} ${slot.member.nameZh}` : "（未配置）";
+    main.textContent = slot.member ? `${slot.member.memberNo.toString().padStart(2, "0")} ${應用程式狀態.額外.語言 === "zh" ? slot.member.nameZh : slot.member.nameEn}` : 雙語("（未配置）", "(Unassigned)");
     card.appendChild(main);
 
     const sub = document.createElement("div");
     sub.className = "訓練軌道編排器-槽位副文";
-    sub.textContent = slot.member ? `${WORLD_LABEL[MEMBERS.find((entry) => entry.no === slot.member?.memberNo)?.world ?? "geometry"]} ｜ ${FAMILY_LABEL[slot.member.family]}` : "請從下方成員庫指派";
+    sub.textContent = slot.member ? `${世界顯示名(MEMBERS.find((entry) => entry.no === slot.member?.memberNo)?.world ?? "geometry")} | ${家族顯示名(slot.member.family)}` : 雙語("請從下方成員庫指派", "Assign a member from the library below.");
     card.appendChild(sub);
     grid.appendChild(card);
   });
@@ -735,7 +792,7 @@ function 建立正式例會預覽(captain: (typeof 隊長清單)[number], select
   topBar.className = "訓練軌道編排器-視圖列";
   const viewTitle = document.createElement("div");
   viewTitle.className = "訓練軌道編排器-視圖標題";
-  viewTitle.textContent = "小隊例會預覽";
+  viewTitle.textContent = 雙語("小隊例會預覽", "Squad Meeting Preview");
   const hint = document.createElement("div");
   hint.style.fontSize = "0.72rem";
   hint.style.color = "#8d93ad";
@@ -788,14 +845,14 @@ function 建立正式例會預覽(captain: (typeof 隊長清單)[number], select
         seat.type = "button";
         seat.className = `正式例會-席位${selectedSlotId === item.slotId ? " 作用中" : ""}`;
         seat.style.setProperty("--slot-color", role.color);
-        seat.title = `${layer.label}｜${member ? member.nameZh : "未配置"}`;
+        seat.title = `${layer.label} | ${member ? 成員顯示名(member) : 雙語("未配置", "Unassigned")}`;
         seat.onclick = () => {
           應用程式狀態.額外.選中的小隊成員展示位 = item.slotId;
           刷新();
         };
         seat.innerHTML = `
           <span class="正式例會-席位標">${role.label}</span>
-          <span class="正式例會-席位名">${member ? member.nameZh : "空位"}</span>
+          <span class="正式例會-席位名">${member ? 成員顯示名(member) : 雙語("空位", "Empty Seat")}</span>
           <span class="正式例會-席位副文">${member ? `${member.no.toString().padStart(2, "0")} ｜ 1★` : "待指派"}</span>
         `;
         row.appendChild(seat);
@@ -825,7 +882,7 @@ export function 建立訓練小隊編輯器(刷新: () => void): HTMLElement {
   root.appendChild(
     左側模式 === "編排"
       ? 建立標題("訓練編隊台", "左邊看軌道與槽位、右邊做細節調整與成員替換。")
-      : 建立標題("主畫面｜圖騰預覽", "左邊正在預覽主畫面圖騰，右邊仍可維持編隊與替換。"),
+      : 建立標題(雙語("主畫面｜圖騰預覽", "Lobby | Totem Preview"), 雙語("左邊正在預覽主畫面圖騰，右邊仍可維持編隊與替換。", "The left side previews the lobby totem while the right side keeps the roster editor active.")),
   );
 
   const layout = document.createElement("div");
@@ -1069,7 +1126,7 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   const summary = 取得正式小隊摘要();
   const assignedMembers = new Map(squad.filter((slot) => slot.member).map((slot) => [slot.member!.memberNo, slot.layer]));
 
-  root.appendChild(建立標題("小隊例會", "先看正式小隊的例會席位與圖騰概況，再從下方調整隊長與三層成員。"));
+  root.appendChild(建立標題(雙語("小隊例會", "Squad Meeting"), 雙語("先看正式小隊的例會席位與圖騰概況，再從下方調整隊長與三層成員。", "Review the meeting stage and totem overview first, then adjust the captain and the three deployed members below.")));
 
   const layout = document.createElement("div");
   layout.style.display = "grid";
@@ -1095,9 +1152,9 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
     btn.className = `正式隊長卡${captain.id === entry.id ? " 作用中" : ""}`;
     btn.style.setProperty("--隊長色", entry.代表色);
     btn.innerHTML = `
-      <span class="正式隊長卡-立繪"><img src="${取得正式隊長立繪路徑(entry.id, 1)}" alt="${entry.名稱}" /></span>
-      <span class="正式隊長卡-名稱">${entry.名稱}</span>
-      <span class="正式隊長卡-代號">${entry.代號}</span>
+      <span class="正式隊長卡-立繪"><img src="${取得正式隊長立繪路徑(entry.id, 1)}" alt="${隊長顯示名(entry)}" /></span>
+      <span class="正式隊長卡-名稱">${隊長顯示名(entry)}</span>
+      <span class="正式隊長卡-代號">${隊長代號顯示(entry)}</span>
     `;
     btn.onclick = () => {
       應用程式狀態.額外.選中隊長 = entry.id;
@@ -1127,8 +1184,8 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
         <span>${role.label}</span>
         <span>${取得正式層級短標(slot.layer)}</span>
       </div>
-      <div class="正式小隊摘要卡-名稱">${member ? `${member.no.toString().padStart(2, "0")} ${member.nameZh}` : "未配置"}</div>
-      <div class="正式小隊摘要卡-副文">${member ? `${FAMILY_LABEL[member.family]} ｜ ${member.starNodes[1].name}` : "請從下方成員庫指派"}</div>
+      <div class="正式小隊摘要卡-名稱">${member ? `${member.no.toString().padStart(2, "0")} ${成員顯示名(member)}` : 雙語("未配置", "Unassigned")}</div>
+      <div class="正式小隊摘要卡-副文">${member ? `${家族顯示名(member.family)} | ${星節點顯示名(member, 1)}` : 雙語("請從下方成員庫指派", "Assign a member from the library below.")}</div>
     `;
     squadSummaryRow.appendChild(card);
   });
@@ -1138,11 +1195,11 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   summaryGrid.style.gridTemplateColumns = "repeat(5, minmax(0, 1fr))";
   summaryGrid.style.gap = "8px";
   summaryGrid.innerHTML = [
-    建立資料膠囊("上陣隊員", `${squad.filter((slot) => slot.member).length} / 3`),
-    建立資料膠囊("隊長階段", `${當前隊長星級()}★`),
-    建立資料膠囊("總生命", `${summary.playerHp} / ${summary.playerMaxHp}`),
-    建立資料膠囊("總攻擊", `${summary.totalAtk}`),
-    建立資料膠囊("總重量", `${summary.totalWeight}`),
+    建立資料膠囊(雙語("上陣隊員", "Deployed"), `${squad.filter((slot) => slot.member).length} / 3`),
+    建立資料膠囊(雙語("隊長階段", "Captain Tier"), `${當前隊長星級()}★`),
+    建立資料膠囊(雙語("總生命", "Total HP"), `${summary.playerHp} / ${summary.playerMaxHp}`),
+    建立資料膠囊(雙語("總攻擊", "Total ATK"), `${summary.totalAtk}`),
+    建立資料膠囊(雙語("總重量", "Total Weight"), `${summary.totalWeight}`),
   ].join("");
   rightPane.appendChild(summaryGrid);
 
@@ -1153,24 +1210,24 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   selectedInfo.style.border = "1px solid rgba(255,255,255,0.06)";
   if (selectedMember && selectedSlot.member) {
     selectedInfo.innerHTML = `
-      <div style="font-size:0.72rem;color:#8d93ad;">目前編輯：${取得層級標籤(selectedSlot.ring)}</div>
-      <div style="font-size:0.9rem;color:#fff;font-weight:700;margin-top:4px;">${selectedMember.no.toString().padStart(2, "0")} ${selectedMember.nameZh}</div>
+      <div style="font-size:0.72rem;color:#8d93ad;">${雙語("目前編輯", "Currently Editing")}: ${取得層級標籤(selectedSlot.ring)}</div>
+      <div style="font-size:0.9rem;color:#fff;font-weight:700;margin-top:4px;">${selectedMember.no.toString().padStart(2, "0")} ${成員顯示名(selectedMember)}</div>
       <div style="font-size:0.78rem;color:#8d93ad;line-height:1.5;margin-top:8px;">
-        ${WORLD_LABEL[selectedMember.world]}世界｜${FAMILY_LABEL[selectedMember.family]}家族｜${selectedMember.starNodes[selectedSlot.member.star].name}
+        ${世界顯示名(selectedMember.world)} | ${家族顯示名(selectedMember.family)} | ${星節點顯示名(selectedMember, selectedSlot.member.star)}
       </div>
       <div style="font-size:0.78rem;color:#fff;line-height:1.5;margin-top:6px;">
-        ${selectedMember.role}
+        ${成員角色摘要(selectedMember)}
       </div>
       <div style="font-size:0.74rem;color:#8d93ad;line-height:1.5;margin-top:8px;">
-        若你選到已經在別的圈層上的成員，系統會自動幫你交換位置，不會產生重複上陣。
+        ${雙語("若你選到已經在別的圈層上的成員，系統會自動幫你交換位置，不會產生重複上陣。", "If the member is already assigned elsewhere, the system will automatically swap positions instead of duplicating the deployment.")}
       </div>
     `;
   } else {
     selectedInfo.innerHTML = `
-      <div style="font-size:0.72rem;color:#8d93ad;">目前編輯：${取得層級標籤(selectedSlot.ring)}</div>
-      <div style="font-size:0.9rem;color:#fff;font-weight:700;margin-top:4px;">未配置成員</div>
+      <div style="font-size:0.72rem;color:#8d93ad;">${雙語("目前編輯", "Currently Editing")}: ${取得層級標籤(selectedSlot.ring)}</div>
+      <div style="font-size:0.9rem;color:#fff;font-weight:700;margin-top:4px;">${雙語("未配置成員", "No Member Assigned")}</div>
       <div style="font-size:0.78rem;color:#8d93ad;line-height:1.5;margin-top:8px;">
-        先點左邊的圈層，再從下方成員庫指定對應的正式上陣成員。
+        ${雙語("先點左邊的圈層，再從下方成員庫指定對應的正式上陣成員。", "Select a ring on the left, then assign the matching deployed member from the library below.")}
       </div>
     `;
   }
@@ -1190,11 +1247,11 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
     btn.style.padding = "10px";
     btn.innerHTML = `
       <div style="display:flex;justify-content:space-between;gap:10px;">
-        <strong>${member.no.toString().padStart(2, "0")} ${member.nameZh}</strong>
-        <span style="color:#8d93ad;">${WORLD_LABEL[member.world]}</span>
+        <strong>${member.no.toString().padStart(2, "0")} ${成員顯示名(member)}</strong>
+        <span style="color:#8d93ad;">${世界顯示名(member.world)}</span>
       </div>
-      <div style="font-size:0.72rem;color:#8d93ad;margin-top:4px;">${FAMILY_LABEL[member.family]} ｜ ${member.starNodes[1].name}</div>
-      <div style="font-size:0.68rem;color:${assignedLayer ? "#ffd24d" : "#8d93ad"};margin-top:4px;">${assignedLayer ? `目前在${assignedLayer === "inner" ? "最內層" : assignedLayer === "middle" ? "中層" : "最外層"}` : "可指派到目前圈層"}</div>
+      <div style="font-size:0.72rem;color:#8d93ad;margin-top:4px;">${家族顯示名(member.family)} | ${星節點顯示名(member, 1)}</div>
+      <div style="font-size:0.68rem;color:${assignedLayer ? "#ffd24d" : "#8d93ad"};margin-top:4px;">${assignedLayer ? `${雙語("目前在", "Currently in")} ${assignedLayer === "inner" ? 雙語("最內層", "Inner Ring") : assignedLayer === "middle" ? 雙語("中層", "Middle Ring") : 雙語("最外層", "Outer Ring")}` : 雙語("可指派到目前圈層", "Can be assigned to the current ring")}</div>
     `;
     btn.onclick = () => {
       套用正式槽位成員(selectedSlot.layer, member.no);
@@ -1219,7 +1276,7 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
   const active = 取得訓練召喚敵群();
   const catalog = 取得可召喚怪物圖鑑();
 
-  root.appendChild(建立標題("敵群召喚台", "選定怪物後可在玩家附近直接叫出來，立刻做碰撞測試。"));
+  root.appendChild(建立標題(雙語("敵群召喚台", "Enemy Summon Console"), 雙語("選定怪物後可在玩家附近直接叫出來，立刻做碰撞測試。", "Choose a monster and summon it near the player for immediate collision testing.")));
 
   const selectorWrap = document.createElement("div");
   selectorWrap.style.display = "grid";
@@ -1240,7 +1297,7 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
   訓練世界選項.forEach((world) => {
     const option = document.createElement("option");
     option.value = world;
-    option.textContent = `${WORLD_LABEL[world]}世界場景`;
+    option.textContent = `${世界顯示名(world)} ${雙語("世界場景", "Scene")}`;
     option.selected = world === summary.selectedWorld;
     場景選擇.appendChild(option);
   });
@@ -1310,11 +1367,11 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
   const 更新按鈕文字 = () => {
     const current = catalog.find((monster) => monster.id === 目前怪物Id()) ?? 目前怪物;
     if (!current) {
-      pickerLabel.textContent = "請先選擇怪物";
+      pickerLabel.textContent = 雙語("請先選擇怪物", "Choose a monster first");
       return;
     }
-    const worldName = current.world === "core" ? "核心" : WORLD_LABEL[current.world];
-    pickerLabel.textContent = `${worldName}世界｜T${current.tier}｜${current.no.toString().padStart(2, "0")} ${current.nameZh}`;
+    const worldName = current.world === "core" ? "COLA" : 世界顯示名(current.world);
+    pickerLabel.textContent = `${worldName} | T${current.tier} | ${current.no.toString().padStart(2, "0")} ${應用程式狀態.額外.語言 === "zh" ? current.nameZh : current.nameEn}`;
   };
   const 設定選單開關 = (open: boolean) => {
     menuOpen = open;
@@ -1350,10 +1407,10 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
     optionBtn.style.fontSize = "0.8rem";
     optionBtn.style.textAlign = "left";
     optionBtn.innerHTML = `
-      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">T${monster.tier}｜${monster.no
+      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">T${monster.tier} | ${monster.no
         .toString()
-        .padStart(2, "0")} ${monster.nameZh}</span>
-      <span style="color:${monster.id === 目前怪物Id() ? "#ffd278" : "#7f8ab0"};font-size:0.72rem;">${monster.id === 目前怪物Id() ? "已選中" : "點擊選取"}</span>
+        .padStart(2, "0")} ${應用程式狀態.額外.語言 === "zh" ? monster.nameZh : monster.nameEn}</span>
+      <span style="color:${monster.id === 目前怪物Id() ? "#ffd278" : "#7f8ab0"};font-size:0.72rem;">${monster.id === 目前怪物Id() ? 雙語("已選中", "Selected") : 雙語("點擊選取", "Click to Select")}</span>
     `;
     optionBtn.onclick = (event) => {
       event.preventDefault();
@@ -1369,28 +1426,28 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
 
   const summon1 = document.createElement("button");
   summon1.className = "一級按鈕";
-  summon1.textContent = "召喚 1";
+  summon1.textContent = 雙語("召喚 1", "Spawn 1");
   summon1.onclick = () => {
     召喚訓練敵人(目前怪物Id(), 1, 生成座標);
     刷新();
   };
   const summon3 = document.createElement("button");
   summon3.className = "二級按鈕";
-  summon3.textContent = "召喚 3";
+  summon3.textContent = 雙語("召喚 3", "Spawn 3");
   summon3.onclick = () => {
     召喚訓練敵人(目前怪物Id(), 3, 生成座標);
     刷新();
   };
   const summon6 = document.createElement("button");
   summon6.className = "二級按鈕";
-  summon6.textContent = "召喚 6";
+  summon6.textContent = 雙語("召喚 6", "Spawn 6");
   summon6.onclick = () => {
     召喚訓練敵人(目前怪物Id(), 6, 生成座標);
     刷新();
   };
   const clear = document.createElement("button");
   clear.className = "二級按鈕";
-  clear.textContent = "清空敵群";
+  clear.textContent = 雙語("清空敵群", "Clear Enemies");
   clear.onclick = () => {
     清空訓練敵人();
     刷新();
@@ -1403,10 +1460,10 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
   status.style.gridTemplateColumns = "repeat(4, minmax(0, 1fr))";
   status.style.gap = "8px";
   status.innerHTML = [
-    建立資料膠囊("當前敵數", `${active.length}`),
-    建立資料膠囊("碰撞測試", summary.lastCollision ? summary.lastCollision.enemyNames.join("、") : "尚未接觸"),
-    建立資料膠囊("最近我方輸出", summary.lastCollision ? `${summary.lastCollision.squadDamage}` : "0"),
-    建立資料膠囊("最近敵方輸出", summary.lastCollision ? `${summary.lastCollision.enemyDamage}` : "0"),
+    建立資料膠囊(雙語("當前敵數", "Active Enemies"), `${active.length}`),
+    建立資料膠囊(雙語("碰撞測試", "Collision Test"), summary.lastCollision ? summary.lastCollision.enemyNames.join(應用程式狀態.額外.語言 === "zh" ? "、" : ", ") : 雙語("尚未接觸", "No Contact Yet")),
+    建立資料膠囊(雙語("最近我方輸出", "Latest Squad Damage"), summary.lastCollision ? `${summary.lastCollision.squadDamage}` : "0"),
+    建立資料膠囊(雙語("最近敵方輸出", "Latest Enemy Damage"), summary.lastCollision ? `${summary.lastCollision.enemyDamage}` : "0"),
   ].join("");
   root.appendChild(status);
 
@@ -1418,7 +1475,7 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
   activeList.style.overflowY = "auto";
 
   if (active.length === 0) {
-    activeList.innerHTML = `<div style="padding:18px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);font-size:0.8rem;color:#8d93ad;">目前沒有任何召喚中的敵人。先選一隻，然後在玩家附近召喚出來。</div>`;
+    activeList.innerHTML = `<div style="padding:18px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);font-size:0.8rem;color:#8d93ad;">${雙語("目前沒有任何召喚中的敵人。先選一隻，然後在玩家附近召喚出來。", "There are no summoned enemies right now. Pick one and spawn it near the player.")}</div>`;
   } else {
     active.forEach((enemy) => {
       const row = document.createElement("div");
@@ -1432,20 +1489,20 @@ export function 建立訓練召喚面板(刷新: () => void, 生成座標: { x: 
       row.style.border = "1px solid rgba(255,255,255,0.06)";
       row.innerHTML = `
         <div>
-          <div style="font-size:0.82rem;color:#fff;font-weight:700;">T${enemy.tier}｜${enemy.nameZh}</div>
-          <div style="font-size:0.72rem;color:#8d93ad;margin-top:4px;">HP ${enemy.hp}/${enemy.maxHp} ｜ 重量 ${enemy.weight} ｜ ATK ${enemy.atk}</div>
+          <div style="font-size:0.82rem;color:#fff;font-weight:700;">T${enemy.tier} | ${應用程式狀態.額外.語言 === "zh" ? enemy.nameZh : enemy.nameEn}</div>
+          <div style="font-size:0.72rem;color:#8d93ad;margin-top:4px;">HP ${enemy.hp}/${enemy.maxHp} | ${雙語("重量", "Weight")} ${enemy.weight} | ATK ${enemy.atk}</div>
         </div>
       `;
       const resetHp = document.createElement("button");
       resetHp.className = "二級按鈕";
-      resetHp.textContent = "補滿";
+      resetHp.textContent = 雙語("補滿", "Refill");
       resetHp.onclick = () => {
         更新訓練敵人(enemy.id, { hp: enemy.maxHp });
         刷新();
       };
       const remove = document.createElement("button");
       remove.className = "二級按鈕";
-      remove.textContent = "移除";
+      remove.textContent = 雙語("移除", "Remove");
       remove.onclick = () => {
         移除訓練敵人(enemy.id);
         刷新();
