@@ -509,6 +509,21 @@ function isVisible(point: { x: number; y: number }, viewport: { w: number; h: nu
   );
 }
 
+function 建立世界導覽核心邊界(): {
+  geometry: EinsteinPoint[][];
+  fractal: PenrosePoint[][];
+  organic: EscherPoint[][];
+  mechanical: CairoPoint[][];
+} {
+  const scratchSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  return {
+    geometry: createGeometryEinsteinFloor(scratchSvg),
+    fractal: createFractalPenroseFloor(scratchSvg),
+    organic: createOrganicBirdFloor(scratchSvg),
+    mechanical: createMechanicalCairoFloor(scratchSvg) as CairoPoint[][],
+  };
+}
+
 function 建立世界導覽內層(hostClassName: string, player: { x: number; y: number }): HTMLElement {
   const miniMap = document.createElement("div");
   miniMap.className = hostClassName;
@@ -530,18 +545,19 @@ function 建立世界導覽內層(hostClassName: string, player: { x: number; y:
   const miniOrganicCore = createMiniOrganicCore(miniSvg);
   const miniMechanicalCore = createMiniMechanicalCore(miniSvg);
   const miniDividerPaths = createMiniDividerPaths(miniSvg);
+  const coreBoundaries = 建立世界導覽核心邊界();
 
   initMiniStaticPaths(
     miniMapInner,
     miniRegionPaths,
     miniGeometryCore,
-    geometryCoreBoundaries,
+    coreBoundaries.geometry,
     miniFractalCore,
-    fractalCoreBoundaries,
+    coreBoundaries.fractal,
     miniOrganicCore,
-    organicCoreBoundaries,
+    coreBoundaries.organic,
     miniMechanicalCore,
-    mechanicalCoreBoundaries,
+    coreBoundaries.mechanical,
     miniDividerPaths,
   );
   initMiniPlaza(miniPlaza);
@@ -591,13 +607,13 @@ function 建立世界導覽內層(hostClassName: string, player: { x: number; y:
       miniMapInner,
       miniRegionPaths,
       miniGeometryCore,
-      geometryCoreBoundaries,
+      coreBoundaries.geometry,
       miniFractalCore,
-      fractalCoreBoundaries,
+      coreBoundaries.fractal,
       miniOrganicCore,
-      organicCoreBoundaries,
+      coreBoundaries.organic,
       miniMechanicalCore,
-      mechanicalCoreBoundaries,
+      coreBoundaries.mechanical,
       miniDividerPaths,
     );
     renderMiniMapDynamic(miniMapInner, miniMarkers, miniObjectNodes, miniPlayer, player);
