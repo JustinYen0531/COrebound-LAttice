@@ -1132,10 +1132,10 @@ export function 建立世界地圖層(): HTMLElement {
   // 乘上此比例把彈速換算到世界座標，讓子彈能在存活時間內真正飛到目標。
   const PROJECTILE_SPEED_SCALE = 40;
   const WEAPON_ENERGY_COST: Record<Family, number> = {
-    shield: 3,
-    multishot: 2,
-    straight: 2,
-    mine: 4,
+    shield: 12,
+    multishot: 8,
+    straight: 8,
+    mine: 16,
     laser: 0,
   };
   let 已觸發陣亡 = false;
