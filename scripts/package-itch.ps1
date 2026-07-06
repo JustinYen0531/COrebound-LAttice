@@ -66,10 +66,16 @@ try {
       $updated = $updated.Replace($rename.OldName, $rename.NewName)
       $updated = $updated.Replace($oldNameEncoded, $newNameEncoded)
     }
+    $publicPrefix = if ($textFile.Extension.ToLowerInvariant() -eq ".css") { "../" } else { "./" }
+    $updated = [regex]::Replace(
+      $updated,
+      '(?<![A-Za-z0-9.:/])/assets/(audio|images|video|transparent-portraits)/',
+      "$publicPrefix`$1/"
+    )
     $updated = [regex]::Replace(
       $updated,
       '(?<![A-Za-z0-9.:/])/(audio|images|video|transparent-portraits)/',
-      './$1/'
+      "$publicPrefix`$1/"
     )
     if ($updated -cne $content) {
       [IO.File]::WriteAllText($textFile.FullName, $updated, [Text.UTF8Encoding]::new($false))
@@ -106,7 +112,7 @@ try {
 
   foreach ($textFile in $textFiles) {
     $content = [IO.File]::ReadAllText($textFile.FullName)
-    if ($content -match '(?<![A-Za-z0-9.:/])/(audio|images|video|transparent-portraits)/') {
+    if ($content -match '(?<![A-Za-z0-9.:/])/(assets/)?(audio|images|video|transparent-portraits)/') {
       throw "An itch.io-unsafe root asset reference remains in $($textFile.FullName)."
     }
   }
