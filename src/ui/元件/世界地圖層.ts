@@ -211,12 +211,11 @@ function cameraPercentToZoom(percent: number): number {
   return DEFAULT_CAMERA_ZOOM * (percent / DEFAULT_CAMERA_ZOOM_PERCENT);
 }
 
-const GUARDIAN_ALTAR_SPRITE = "/images/props/facilities/source/守護者召喚祭壇_四世界總表.png";
-const GUARDIAN_ALTAR_SPRITE_INDEX: Record<World, number> = {
-  geometry: 0,
-  organic: 1,
-  fractal: 2,
-  mechanical: 3,
+const GUARDIAN_ALTAR_IMAGE: Record<World, string> = {
+  geometry: "/images/props/facilities/altars/guardian_altar_geometry.png",
+  organic: "/images/props/facilities/altars/guardian_altar_organic.png",
+  fractal: "/images/props/facilities/altars/guardian_altar_fractal.png",
+  mechanical: "/images/props/facilities/altars/guardian_altar_mechanical.png",
 };
 
 const FAMILY_FURNACE_IMAGE: Record<Family, string> = {
@@ -592,10 +591,6 @@ export function 建立世界地圖層(): HTMLElement {
   }
   playerNode.title = "小隊(玩家)· 中央隊長核心與外圍三環圖騰";
   canvas.appendChild(playerNode);
-  window.addEventListener("hud-tick-pulse", () => {
-    playerNode.classList.add("世界地圖層-玩家-tick-hit");
-    window.setTimeout(() => playerNode.classList.remove("世界地圖層-玩家-tick-hit"), 220);
-  });
 
   const miniMap = document.createElement("div");
   miniMap.className = "世界地圖層-小地圖";
@@ -2356,12 +2351,7 @@ function createObjectNode(object: MapObject): HTMLElement {
   node.dataset.kind = object.kind;
   node.dataset.id = object.id;
   node.style.setProperty("--world-object-size", `${WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM}px`);
-  const facilityVisual = facilityVisualMeta(object);
-  const imagePath = facilityVisual?.path ?? null;
-  if (facilityVisual?.spriteIndex !== undefined) {
-    node.style.setProperty("--altar-sprite-index", `${facilityVisual.spriteIndex}`);
-    node.classList.add("世界地圖層-物件-祭壇分頁");
-  }
+  const imagePath = facilityImagePath(object);
 
   const beacon = document.createElement("div");
   beacon.className = "世界地圖層-物件-信標";
@@ -2382,25 +2372,17 @@ function createObjectNode(object: MapObject): HTMLElement {
   bodyLayer.className = "世界地圖層-物件-主體";
 
   if (imagePath) {
-    if (facilityVisual?.spriteIndex !== undefined) {
-      const mainSprite = document.createElement("div");
-      mainSprite.className = "世界地圖層-物件-image 世界地圖層-物件-image-sprite";
-      mainSprite.setAttribute("role", "img");
-      mainSprite.setAttribute("aria-label", object.label);
-      bodyLayer.appendChild(mainSprite);
-    } else {
-      const shadowMask = document.createElement("div");
-      shadowMask.className = "世界地圖層-物件-image-shadow";
-      shadowMask.style.setProperty("--shadow-mask", `url("${imagePath}")`);
-      shadowLayer.appendChild(shadowMask);
+    const shadowMask = document.createElement("div");
+    shadowMask.className = "世界地圖層-物件-image-shadow";
+    shadowMask.style.setProperty("--shadow-mask", `url("${imagePath}")`);
+    shadowLayer.appendChild(shadowMask);
 
-      const mainImg = document.createElement("img");
-      mainImg.className = "世界地圖層-物件-image";
-      mainImg.src = imagePath;
-      mainImg.alt = object.label;
-      mainImg.draggable = false;
-      bodyLayer.appendChild(mainImg);
-    }
+    const mainImg = document.createElement("img");
+    mainImg.className = "世界地圖層-物件-image";
+    mainImg.src = imagePath;
+    mainImg.alt = object.label;
+    mainImg.draggable = false;
+    bodyLayer.appendChild(mainImg);
   } else {
     const shadowGlyph = document.createElement("span");
     shadowGlyph.className = "世界地圖層-物件-glyph 世界地圖層-物件-glyph-shadow";
@@ -2425,20 +2407,11 @@ function createObjectNode(object: MapObject): HTMLElement {
 }
 
 function facilityImagePath(object: MapObject): string | null {
-  return facilityVisualMeta(object)?.path ?? null;
-}
-
-function facilityVisualMeta(object: MapObject): { path: string; spriteIndex?: number } | null {
-  if (object.kind === "熔爐" && object.family) return { path: FAMILY_FURNACE_IMAGE[object.family] };
-  if (object.kind === "合成") return { path: WORKBENCH_IMAGE };
-  if (object.kind === "商店") return { path: SHOP_IMAGE };
-  if (object.kind === "雕像" && object.memberNo) {
-    const path = STATUE_IMAGE_BY_MEMBER_NO[object.memberNo] ?? null;
-    return path ? { path } : null;
-  }
-  if (object.kind === "召喚" && object.region !== "plaza") {
-    return { path: GUARDIAN_ALTAR_SPRITE, spriteIndex: GUARDIAN_ALTAR_SPRITE_INDEX[object.region] };
-  }
+  if (object.kind === "熔爐" && object.family) return FAMILY_FURNACE_IMAGE[object.family];
+  if (object.kind === "合成") return WORKBENCH_IMAGE;
+  if (object.kind === "商店") return SHOP_IMAGE;
+  if (object.kind === "雕像" && object.memberNo) return STATUE_IMAGE_BY_MEMBER_NO[object.memberNo] ?? null;
+  if (object.kind === "召喚" && object.region !== "plaza") return GUARDIAN_ALTAR_IMAGE[object.region];
   return null;
 }
 
