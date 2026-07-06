@@ -44,6 +44,36 @@ function 家族顯示名(family: string): string {
 const 分頁清單: 管理介面分頁[] = ["小隊", "背包", "互動", "圖鑑", "地圖"];
 const 互動設施清單: 互動設施[] = ["合成", "熔爐", "雕像", "商店", "召喚"];
 
+// ── 捲軸位置保存 ─────────────────────────────────────────────
+// 世界時鐘每秒觸發 通知() → 路由器整頁重建管理介面，會把捲動位置歸零。
+// 這裡在重建前後快照 / 還原捲動位置：只在「同一個分頁」重繪時還原，
+// 切換分頁時不還原（維持換頁回到頂端的正常體驗）。
+let 上次渲染分頁: 管理介面分頁 | null = null;
+// 管理介面內有自己 overflow 捲動的容器（例如圖鑑列表），用選擇器逐一保存。
+const 內部捲軸選擇器 = [".圖鑑瀏覽器-卡片格"];
+
+interface 捲軸快照 {
+  視窗: number;
+  內部: Record<string, number>;
+}
+
+function 快照捲軸(容器: HTMLElement): 捲軸快照 {
+  const 內部: Record<string, number> = {};
+  for (const 選擇器 of 內部捲軸選擇器) {
+    const el = 容器.querySelector<HTMLElement>(選擇器);
+    if (el) 內部[選擇器] = el.scrollTop;
+  }
+  return { 視窗: window.scrollY, 內部 };
+}
+
+function 還原捲軸(容器: HTMLElement, 快照: 捲軸快照): void {
+  for (const 選擇器 of 內部捲軸選擇器) {
+    const el = 容器.querySelector<HTMLElement>(選擇器);
+    if (el && 快照.內部[選擇器] != null) el.scrollTop = 快照.內部[選擇器];
+  }
+  window.scrollTo(0, 快照.視窗);
+}
+
 /** 內部中文 id → 中英雙語顯示標籤（id 仍作狀態鍵）。 */
 const 分頁標籤: Record<管理介面分頁, string> = {
   小隊: 雙語("小隊", "Squad"),
@@ -286,6 +316,7 @@ function 背包分頁內容(): HTMLElement {
   補充區.className = "資料夾式版面-補充區";
 
   if (選中背包物品?.id === "__showcase_add__" && 可Showcase新增) {
+    wrap.classList.add("資料夾式版面--Showcase背包編輯");
     const category = activeTab as "材料" | "消耗品";
     const draft = Showcase背包草稿[category];
     const catalog = category === "材料"
@@ -660,9 +691,16 @@ function 互動分頁內容(): HTMLElement {
 }
 
 export function 渲染管理介面(容器: HTMLElement) {
-  容器.innerHTML = "";
   const state = 應用程式狀態.畫面;
-  if (state.層 !== "管理介面") return;
+  if (state.層 !== "管理介面") {
+    容器.innerHTML = "";
+    上次渲染分頁 = null;
+    return;
+  }
+  // 重建前先快照捲動位置（僅同分頁重繪時才會於結尾還原）。
+  const 同分頁重繪 = 上次渲染分頁 === state.分頁;
+  const 捲軸位置 = 同分頁重繪 ? 快照捲軸(容器) : null;
+  容器.innerHTML = "";
   const 額外 = 應用程式狀態.額外;
 
   const root = document.createElement("div");
@@ -733,6 +771,10 @@ export function 渲染管理介面(容器: HTMLElement) {
 
   root.appendChild(底部按鈕列);
   容器.appendChild(root);
+
+  // 重建完成後還原捲動位置（僅同分頁重繪；換頁時 捲軸位置 為 null，維持回到頂端）。
+  上次渲染分頁 = state.分頁;
+  if (捲軸位置) 還原捲軸(容器, 捲軸位置);
 }
 
 function 建立管理音量控制(): HTMLElement {

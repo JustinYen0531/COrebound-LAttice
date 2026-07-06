@@ -3969,9 +3969,10 @@ button.禁用:hover {
 .Showcase背包加號 span { font-size: 1.8rem; line-height: 1; }
 .Showcase背包加號 small { font-size: 0.66rem; }
 .Showcase背包加號:hover, .Showcase背包加號.作用中 { background: rgba(235, 198, 120, 0.32); border-style: solid; }
-.Showcase背包編輯器-清單 { display: flex; flex-direction: column; gap: 5px; max-height: 310px; overflow-y: auto; }
+.Showcase背包編輯器-清單 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .Showcase背包編輯器-清單 button { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 7px; text-align: left; padding: 7px; border: 1px solid rgba(115,84,39,0.14); background: rgba(255,255,255,0.36); color: #4b3923; }
 .Showcase背包編輯器-清單 button b { color: #a26a17; }
+.Showcase背包編輯器-清單 button span { white-space: normal; line-height: 1.25; }
 .Showcase背包編輯器-清單 button small { color: #7d6b52; }
 .Showcase背包編輯器-輸入 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .Showcase背包編輯器-輸入 label { display: flex; flex-direction: column; gap: 4px; font-size: 0.68rem; color: #735128; }
