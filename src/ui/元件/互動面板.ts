@@ -109,8 +109,12 @@ function regionNearby(): import("../../data/成員型別").World {
   return object && object.region !== "plaza" ? object.region : "geometry";
 }
 
+function Showcase遠端互動可用(): boolean {
+  return 應用程式狀態.額外.Showcase模式;
+}
+
 function 設施已連線(設施: 互動設施): boolean {
-  return 應用程式狀態.額外.靠近的互動設施 === 設施;
+  return Showcase遠端互動可用() || 應用程式狀態.額外.靠近的互動設施 === 設施;
 }
 
 // 現場/遠端狀態 Banner
@@ -119,12 +123,14 @@ function 建立狀態警示條(設施: 互動設施): HTMLElement {
   const near = 應用程式狀態.額外.靠近的互動設施;
   const div = document.createElement("div");
   
-  if (near === 設施) {
+  if (near === 設施 || Showcase遠端互動可用()) {
     div.className = "互動狀態條 狀態-在線";
     div.innerHTML = `
       <div style="background: rgba(77, 141, 255, 0.15); border: 1px solid #4d8dff; padding: 10px; border-radius: 6px; margin-bottom: 16px; font-size: 0.85rem; color: #a3c5ff; display: flex; align-items: center; gap: 8px;">
-        <span>📡 ${雙語("已連接到現場設施", "Connected to nearby facility")}: <b>${雙語(設施, 設施 === "合成" ? "Craft" : 設施 === "熔爐" ? "Forge" : 設施 === "雕像" ? "Statue" : 設施 === "商店" ? "Shop" : "Summon")}</b></span>
-        <span style="margin-left: auto; background: #4d8dff; color: #05060b; padding: 1px 6px; border-radius: 3px; font-size: 0.72rem; font-weight: bold;">${雙語("現場操作模式", "Live Mode")}</span>
+        <span>📡 ${Showcase遠端互動可用() && near !== 設施
+          ? `${雙語("Showcase 遠端預覽已直連", "Showcase remote preview is linked to")} <b>${雙語(設施, 設施 === "合成" ? "Craft" : 設施 === "熔爐" ? "Forge" : 設施 === "雕像" ? "Statue" : 設施 === "商店" ? "Shop" : "Summon")}</b>`
+          : `${雙語("已連接到現場設施", "Connected to nearby facility")}: <b>${雙語(設施, 設施 === "合成" ? "Craft" : 設施 === "熔爐" ? "Forge" : 設施 === "雕像" ? "Statue" : 設施 === "商店" ? "Shop" : "Summon")}</b>`}</span>
+        <span style="margin-left: auto; background: #4d8dff; color: #05060b; padding: 1px 6px; border-radius: 3px; font-size: 0.72rem; font-weight: bold;">${Showcase遠端互動可用() && near !== 設施 ? 雙語("Showcase 遠端操作", "Showcase Remote") : 雙語("現場操作模式", "Live Mode")}</span>
       </div>
     `;
   } else {
@@ -324,6 +330,9 @@ function 熔爐面板(): HTMLElement {
   const nearbyFurnace = MAP_OBJECTS.find(
     (entry) => entry.id === 應用程式狀態.額外.靠近的地圖物件ID && entry.kind === "熔爐" && entry.family,
   );
+  const furnaceContext = nearbyFurnace ?? (Showcase遠端互動可用()
+    ? MAP_OBJECTS.find((entry) => entry.kind === "熔爐" && entry.region === regionNearby() && entry.family)
+    : undefined);
   const localWorld = regionNearby();
   const realInventory = 背包.背包快照();
   const worldLabel = 世界顯示名(localWorld ?? "geometry");
@@ -397,15 +406,15 @@ function 熔爐面板(): HTMLElement {
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="color: #ffd24d; font-weight: bold;">×${count}</span>
-          <button class="三級按鈕 熔化-單個" style="padding: 2px 8px; font-size: 0.72rem;" ${nearbyFurnace ? "" : "disabled"}>${雙語("熔化 1 個", "Smelt 1")}</button>
+          <button class="三級按鈕 熔化-單個" style="padding: 2px 8px; font-size: 0.72rem;" ${furnaceContext ? "" : "disabled"}>${雙語("熔化 1 個", "Smelt 1")}</button>
         </div>
       `;
 
       row.querySelector(".熔化-單個")!.addEventListener("click", () => {
-        if (!nearbyFurnace?.family || nearbyFurnace.region === "plaza" || 背包.取材料(m.no) <= 0) return;
+        if (!furnaceContext?.family || furnaceContext.region === "plaza" || 背包.取材料(m.no) <= 0) return;
         if (!背包.花費材料(m.no, 1)) return;
         const result = smelt({
-          furnace: { family: nearbyFurnace.family, world: nearbyFurnace.region },
+          furnace: { family: furnaceContext.family, world: furnaceContext.region },
           inputs: [{ materialNo: m.no, count: 1 }],
         });
         背包.加入碎片(result.family, result.shards);

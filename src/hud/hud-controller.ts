@@ -121,13 +121,22 @@ export class HudController {
     this.quickPanelSwitch.innerHTML = `
       <button type="button" data-panel="weapon">技</button>
       <button type="button" data-panel="item">補</button>
+      <button type="button" data-panel="close">×</button>
     `;
     this.quickPanelSwitch.querySelectorAll<HTMLButtonElement>("[data-panel]").forEach((button) => {
       button.onclick = () => {
-        const target = button.dataset.panel === "item" ? "item" : "weapon";
-        this.activeQuickPanel = target;
-        this.setState(target === "weapon" ? "left_open" : "right_open");
-        this.refreshQuickPanel();
+        const target = button.dataset.panel;
+        if (target === "close") {
+          this.closeDrawers();
+          return;
+        }
+        if (target === "item") {
+          this.activeQuickPanel = "item";
+          this.openRightDrawer();
+          return;
+        }
+        this.activeQuickPanel = "weapon";
+        this.openLeftDrawer();
       };
     });
 
@@ -172,21 +181,30 @@ export class HudController {
 
   /** 對外公開：直接開啟左側抽屜 */
   openLeftDrawer(): void {
+    this.activeQuickPanel = "weapon";
     this.setState("left_open");
     // 設定展開比例為 1.0 (全開)
     this.weaponDrawer.setOpenRatio(1);
+    this.itemDrawer.setOpenRatio(0);
+    this.refreshQuickPanel();
   }
 
   /** 對外公開：直接開啟右側抽屜 */
   openRightDrawer(): void {
+    this.activeQuickPanel = "item";
     this.setState("right_open");
     // 設定展開比例為 1.0 (全開)
     this.itemDrawer.setOpenRatio(1);
+    this.weaponDrawer.setOpenRatio(0);
+    this.refreshQuickPanel();
   }
 
   /** 對外公開：關閉抽屜 */
   closeDrawers(): void {
     this.setState("idle");
+    this.weaponDrawer.setOpenRatio(0);
+    this.itemDrawer.setOpenRatio(0);
+    this.refreshQuickPanel();
   }
 
   // ============================================================
@@ -246,8 +264,10 @@ export class HudController {
   private refreshQuickPanel(): void {
     const weaponButton = this.quickPanelSwitch.querySelector<HTMLButtonElement>("[data-panel='weapon']");
     const itemButton = this.quickPanelSwitch.querySelector<HTMLButtonElement>("[data-panel='item']");
+    const closeButton = this.quickPanelSwitch.querySelector<HTMLButtonElement>("[data-panel='close']");
     weaponButton?.classList.toggle("is-active", this.activeQuickPanel === "weapon");
     itemButton?.classList.toggle("is-active", this.activeQuickPanel === "item");
+    closeButton?.classList.toggle("is-active", this.state !== "left_open" && this.state !== "right_open");
     this.quickPanelHost.classList.toggle("is-open", this.state === "left_open" || this.state === "right_open");
     this.weaponDrawer.el.classList.toggle("is-hidden-panel", this.activeQuickPanel !== "weapon");
     this.itemDrawer.el.classList.toggle("is-hidden-panel", this.activeQuickPanel !== "item");
