@@ -3424,6 +3424,31 @@ button.禁用:hover {
 .正式Showcase編輯列 select { min-width: 0; padding: 8px 9px; border: 1px solid rgba(114, 84, 39, 0.3); border-radius: 7px; background: rgba(255,255,255,0.78); color: #352615; }
 .正式Showcase編輯列-錯誤 { grid-column: 1 / -1; color: #b33f42; font-size: 0.72rem; }
 
+.Showcase背包加號 {
+  min-height: 92px;
+  border: 1px dashed rgba(162, 106, 23, 0.55);
+  border-radius: 9px;
+  background: rgba(255, 247, 218, 0.38);
+  color: #7c5317;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.Showcase背包加號 span { font-size: 1.8rem; line-height: 1; }
+.Showcase背包加號 small { font-size: 0.66rem; }
+.Showcase背包加號:hover, .Showcase背包加號.作用中 { background: rgba(235, 198, 120, 0.32); border-style: solid; }
+.Showcase背包編輯器-清單 { display: flex; flex-direction: column; gap: 5px; max-height: 310px; overflow-y: auto; }
+.Showcase背包編輯器-清單 button { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 7px; text-align: left; padding: 7px; border: 1px solid rgba(115,84,39,0.14); background: rgba(255,255,255,0.36); color: #4b3923; }
+.Showcase背包編輯器-清單 button b { color: #a26a17; }
+.Showcase背包編輯器-清單 button small { color: #7d6b52; }
+.Showcase背包編輯器-輸入 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.Showcase背包編輯器-輸入 label { display: flex; flex-direction: column; gap: 4px; font-size: 0.68rem; color: #735128; }
+.Showcase背包編輯器-輸入 input { min-width: 0; padding: 8px; border: 1px solid rgba(115,84,39,0.28); border-radius: 7px; background: rgba(255,255,255,0.74); }
+.Showcase背包編輯器-輸入 [data-add-confirm], .Showcase背包編輯器-訊息 { grid-column: 1 / -1; }
+.Showcase背包編輯器-訊息 { min-height: 1em; color: #a23f42; font-size: 0.68rem; }
+
 .準備流程-Showcase {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);

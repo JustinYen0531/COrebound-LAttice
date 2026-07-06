@@ -13,7 +13,7 @@ import type { 互動設施, 管理介面分頁 } from "../共用型別";
 import { MATERIALS, materialImagePath } from "../../data/素材資料庫";
 import { MATERIAL_RARITY_LABEL } from "../../data/戰鬥原語";
 import * as 背包 from "../../economy/背包狀態";
-import { POTIONS } from "../../economy/流浪商店";
+import { POTIONS, type PotionId } from "../../economy/流浪商店";
 import { 選文 } from "../語系";
 import { 取得音樂狀態, 切換音樂靜音, 訂閱音樂狀態, 設定音樂音量 } from "../../audio/音樂管理";
 
@@ -78,6 +78,11 @@ const bagItems = {
 
 // 選中的背包物品
 let 選中背包物品: any = null;
+const Showcase背包草稿: Record<"材料" | "消耗品", { itemNo: string; count: string }> = {
+  材料: { itemNo: "1", count: "1" },
+  消耗品: { itemNo: "1", count: "1" },
+};
+const Showcase藥水編號: PotionId[] = ["hp_small", "hp_big", "energy_small", "energy_big", "hybrid_small", "hybrid_big"];
 // 選中的地圖標記
 let 選中地圖標記Id: string = "m_player";
 
@@ -186,7 +191,8 @@ function 背包分頁內容(): HTMLElement {
   itemsGrid.style.gap = "10px";
   itemsGrid.style.marginTop = "12px";
 
-  if (items.length === 0) {
+  const 可Showcase新增 = 應用程式狀態.額外.Showcase模式 && (activeTab === "材料" || activeTab === "消耗品");
+  if (items.length === 0 && !可Showcase新增) {
     itemsGrid.innerHTML = `<p class="占位說明" style="grid-column: 1/-1; text-align: center; padding: 40px 0;">${雙語("此類別中尚無物品。", "No items in this category yet.")}</p>`;
   } else {
     items.forEach((item: any) => {
@@ -227,6 +233,18 @@ function 背包分頁內容(): HTMLElement {
     });
   }
 
+  if (可Showcase新增) {
+    const addCell = document.createElement("button");
+    addCell.type = "button";
+    addCell.className = `Showcase背包加號${選中背包物品?.id === "__showcase_add__" ? " 作用中" : ""}`;
+    addCell.innerHTML = `<span>＋</span><small>${雙語("加入物品", "Add Item")}</small>`;
+    addCell.onclick = () => {
+      選中背包物品 = { id: "__showcase_add__", category: activeTab };
+      應用程式狀態.進入管理介面("背包");
+    };
+    itemsGrid.appendChild(addCell);
+  }
+
   const 背包分類標籤 = activeTab === "材料" ? 雙語("材料", "Materials")
     : activeTab === "消耗品" ? 雙語("消耗品", "Consumables")
     : activeTab === "任務物" ? 雙語("任務物", "Quest Items")
@@ -237,7 +255,50 @@ function 背包分頁內容(): HTMLElement {
   const 補充區 = document.createElement("div");
   補充區.className = "資料夾式版面-補充區";
 
-  if (選中背包物品 === null) {
+  if (選中背包物品?.id === "__showcase_add__" && 可Showcase新增) {
+    const category = activeTab as "材料" | "消耗品";
+    const draft = Showcase背包草稿[category];
+    const catalog = category === "材料"
+      ? MATERIALS.map((item) => ({ no: item.no, name: 應用程式狀態.額外.語言 === "zh" ? item.nameZh : item.nameEn, count: 背包.取材料(item.no) }))
+      : Showcase藥水編號.map((id, index) => ({ no: index + 1, name: potionName[id], count: 背包.取藥水(id) }));
+    補充區.classList.add("Showcase背包編輯器");
+    補充區.innerHTML = `
+      <h4 style="color:#a26a17;margin-top:0;">＋ ${雙語("Showcase 加入物品", "Showcase Add Item")}</h4>
+      <div class="Showcase背包編輯器-清單">
+        ${catalog.map((item) => `<button type="button" data-item-no="${item.no}"><b>${String(item.no).padStart(2, "0")}</b><span>${item.name}</span><small>×${item.count}</small></button>`).join("")}
+      </div>
+      <div class="Showcase背包編輯器-輸入">
+        <label>${雙語("物品編號", "Item No.")}<input type="number" min="1" max="${catalog.length}" value="${draft.itemNo}" data-add-item /></label>
+        <label>${雙語("數量", "Quantity")}<input type="number" min="1" max="9999" value="${draft.count}" data-add-count /></label>
+        <button type="button" class="一級按鈕" data-add-confirm>${雙語("加入背包", "Add to Bag")}</button>
+        <div class="Showcase背包編輯器-訊息" data-add-message></div>
+      </div>
+    `;
+    const itemInput = 補充區.querySelector<HTMLInputElement>("[data-add-item]")!;
+    const countInput = 補充區.querySelector<HTMLInputElement>("[data-add-count]")!;
+    itemInput.oninput = () => { draft.itemNo = itemInput.value; };
+    countInput.oninput = () => { draft.count = countInput.value; };
+    補充區.querySelectorAll<HTMLButtonElement>("[data-item-no]").forEach((button) => {
+      button.onclick = () => {
+        draft.itemNo = button.dataset.itemNo ?? "1";
+        itemInput.value = draft.itemNo;
+        itemInput.focus();
+      };
+    });
+    補充區.querySelector<HTMLButtonElement>("[data-add-confirm]")!.onclick = () => {
+      const itemNo = Number(draft.itemNo);
+      const count = Math.floor(Number(draft.count));
+      const message = 補充區.querySelector<HTMLElement>("[data-add-message]")!;
+      if (!Number.isInteger(itemNo) || !catalog.some((item) => item.no === itemNo) || !Number.isFinite(count) || count <= 0) {
+        message.textContent = 雙語("請輸入列表中存在的編號與大於 0 的數量。", "Enter a listed item number and a quantity above zero.");
+        return;
+      }
+      if (category === "材料") 背包.加入材料(itemNo, count);
+      else 背包.加入藥水(Showcase藥水編號[itemNo - 1], count);
+      選中背包物品 = { id: "__showcase_add__", category };
+      應用程式狀態.進入管理介面("背包");
+    };
+  } else if (選中背包物品 === null) {
     補充區.innerHTML = `
       <h4>🔍 ${雙語("物品詳細說明", "Item Details")}</h4>
       <p style="font-size: 0.8rem; color: #8d93ad; line-height: 1.5;">${雙語("點選左側格網中的任何物品，即可在此查看材料地緣歸屬、熔煉轉化率或合成配方用途。", "Click any item in the left grid to inspect its world origin, forge conversion rate, or crafting usage here.")}</p>

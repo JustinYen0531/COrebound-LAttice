@@ -152,7 +152,7 @@ class 應用程式狀態機 {
       if (!在對局內) return;
       this.額外.世界時鐘秒數 += 1;
       if (this.額外.世界時鐘秒數 >= EROSION_START_SECOND) this.額外.縮圈警戒 = true;
-      if (this.畫面.層 === "管理介面" && document.activeElement?.closest(".正式Showcase編輯列")) return;
+      if (this.畫面.層 === "管理介面" && document.activeElement?.closest(".正式Showcase編輯列, .Showcase背包編輯器")) return;
       this.通知();
     }, 1000);
   }
