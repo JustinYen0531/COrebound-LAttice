@@ -16,6 +16,12 @@ import {
   type WeaponGroupState,
 } from "./types";
 import { familyGlyphSvg, lockGlyphSvg } from "./glyphs";
+import { 應用程式狀態 } from "../ui/應用程式狀態";
+import { 選文 } from "../ui/語系";
+
+function 雙語(中文: string, 英文: string): string {
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
+}
 
 export class WeaponDrawer {
   readonly el: HTMLElement;
@@ -31,9 +37,9 @@ export class WeaponDrawer {
     this.el = document.createElement("div");
     this.el.className = "drawer weapon-drawer";
     this.el.innerHTML = `
-      <div class="drawer-title">技能列</div>
+      <div class="drawer-title">${雙語("技能列", "Weapon Skills")}</div>
       <div class="weapon-list"></div>
-      <div class="drawer-hint">點擊圖示可單獨關閉武器群組</div>
+      <div class="drawer-hint">${雙語("點擊圖示可單獨關閉武器群組", "Weapon list visibility can be managed here")}</div>
     `;
     this.list = this.el.querySelector(".weapon-list") as HTMLElement;
   }
@@ -92,10 +98,10 @@ export class WeaponDrawer {
       <div class="wi-glyph">${familyGlyphSvg(w.family)}</div>
       <div class="wi-meta">
         <div class="wi-name">${FAMILY_LABEL[w.family]} <span class="wi-star">${w.star}★</span></div>
-        <div class="wi-cd">冷卻 ${cdPct}%</div>
+        <div class="wi-cd">${雙語("CD", "CD")} ${cdPct}%</div>
       </div>
       <div class="wi-state">${
-        w.disabledByRoster ? `${lockGlyphSvg()}人數不足` : w.active ? "啟用中" : "已關閉"
+        w.disabledByRoster ? `${lockGlyphSvg()}${雙語("Insufficient Members", "Insufficient Members")}` : w.active ? 雙語("Active", "Active") : 雙語("Disabled", "Disabled")
       }</div>
     `;
     return node;
