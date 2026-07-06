@@ -369,6 +369,7 @@ const SIMPLE_TILE_PALETTE: Record<World | "plaza", {
 let playerPos = { x: 0, y: 0 };
 let playerMoving = false;
 let activePlayableBounds = MAP_BOUNDS;
+let 守護者核心戰區限制: { minX: number; maxX: number; minY: number; maxY: number } | null = null;
 
 type 可見怪物實例 = MonsterInstance | 訓練召喚敵人;
 
@@ -439,7 +440,12 @@ function keepOutsideBlockingGround(next: { x: number; y: number }, current: { x:
 }
 
 function clampTraversablePlayerPosition(next: { x: number; y: number }, current: { x: number; y: number }): { x: number; y: number } {
-  return keepOutsideBlockingGround(clampPlayerPosition(next), current);
+  const blocked = keepOutsideBlockingGround(clampPlayerPosition(next), current);
+  if (!守護者核心戰區限制) return blocked;
+  return {
+    x: Math.max(守護者核心戰區限制.minX, Math.min(守護者核心戰區限制.maxX, blocked.x)),
+    y: Math.max(守護者核心戰區限制.minY, Math.min(守護者核心戰區限制.maxY, blocked.y)),
+  };
 }
 
 function 最近傳送門(player: { x: number; y: number }): EnvObjectInstance | null {
@@ -774,6 +780,40 @@ export function 建立世界地圖層(): HTMLElement {
     if (!訓練道場中) 設定正式玩家位置(playerPos);
     syncNearbyToState();
   };
+
+  function 點在矩形內(point: { x: number; y: number }, rect: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
+    return point.x >= rect.minX && point.x <= rect.maxX && point.y >= rect.minY && point.y <= rect.maxY;
+  }
+
+  function 取得守護者核心戰區(world: World): { minX: number; maxX: number; minY: number; maxY: number } {
+    const polygons = buildRegionPolygons();
+    const bounds = boundsOf(polygons[world]);
+    return coreRectForWorld(world, bounds);
+  }
+
+  function 取得Boss戰區(monster: MonsterRuntime): { minX: number; maxX: number; minY: number; maxY: number } | null {
+    if (monster.bossKind === "guardian" && monster.bossWorld) return 取得守護者核心戰區(monster.bossWorld);
+    return null;
+  }
+
+  function 更新守護者核心戰區鎖定(activeBoss: MonsterRuntime | undefined): void {
+    if (訓練道場中 || !activeBoss || activeBoss.bossKind !== "guardian" || !activeBoss.bossWorld) {
+      守護者核心戰區限制 = null;
+      return;
+    }
+    const arena = 取得守護者核心戰區(activeBoss.bossWorld);
+    if (點在矩形內(playerPos, arena)) {
+      const wasLocked = 守護者核心戰區限制 !== null;
+      守護者核心戰區限制 = arena;
+      playerPos = clampTraversablePlayerPosition(playerPos, playerPos);
+      設定正式玩家位置(playerPos);
+      if (!wasLocked) {
+        顯示技能提示(雙語("已進入角落核心戰區｜擊敗 Boss 前無法離開", "Corner core arena engaged. Defeat the boss before leaving."));
+      }
+      return;
+    }
+    守護者核心戰區限制 = null;
+  }
 
   miniMapInner.addEventListener("click", (event) => {
     event.preventDefault();
@@ -1323,6 +1363,13 @@ export function 建立世界地圖層(): HTMLElement {
     };
   }
 
+  function 夾回Boss戰區(point: { x: number; y: number }, arena: { minX: number; maxX: number; minY: number; maxY: number }) {
+    return {
+      x: Math.max(arena.minX, Math.min(arena.maxX, point.x)),
+      y: Math.max(arena.minY, Math.min(arena.maxY, point.y)),
+    };
+  }
+
   /** 目前上陣小隊的家族清單（含個人星級），供 技能管理 判定各家族可用武器星級。 */
   function 目前上陣成員(): DeployedMember[] {
     if (訓練道場中) {
@@ -1593,6 +1640,8 @@ export function 建立世界地圖層(): HTMLElement {
     const fieldActive = 減速領域 !== null && nowMs < 減速領域.until;
     for (const m of monsters) {
       if (m.inst.hp <= 0) continue;
+      const bossArena = 取得Boss戰區(m);
+      const 玩家已進入Boss戰區 = bossArena ? 點在矩形內(playerPos, bossArena) : true;
       // 建築師減速領域：站在圈內的敵人持續被減速（沿用既有 slowUntil/slowMult 機制）。
       if (fieldActive && 減速領域 && Math.hypot(m.pos.x - 減速領域.x, m.pos.y - 減速領域.y) <= 減速領域.radius) {
         m.slowUntil = nowMs + 260;
@@ -1607,7 +1656,7 @@ export function 建立世界地圖層(): HTMLElement {
       const slowed = m.slowUntil !== undefined && performance.now() < m.slowUntil;
       const worldSpeed = m.inst.speed * MONSTER_SPEED_SCALE * (slowed ? (m.slowMult ?? 1) : 1);
 
-      if (active) {
+      if (active && 玩家已進入Boss戰區) {
         const underFire = m.lastHitMs !== undefined && performance.now() - m.lastHitMs < 1500;
         const decision = decideEnemyAction({
           tier: m.inst.tier,
@@ -1637,8 +1686,13 @@ export function 建立世界地圖層(): HTMLElement {
       if (moveX !== 0 || moveY !== 0) {
         const len = Math.hypot(moveX, moveY) || 1;
         const speed = worldSpeed * (active ? 1 : 0.35);
-        m.pos.x = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, m.pos.x + (moveX / len) * speed * dt));
-        m.pos.y = Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, m.pos.y + (moveY / len) * speed * dt));
+        const nextPos = {
+          x: Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, m.pos.x + (moveX / len) * speed * dt)),
+          y: Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, m.pos.y + (moveY / len) * speed * dt)),
+        };
+        const clampedPos = bossArena ? 夾回Boss戰區(nextPos, bossArena) : nextPos;
+        m.pos.x = clampedPos.x;
+        m.pos.y = clampedPos.y;
         if (m.persistent) {
           m.persistent.x = m.pos.x;
           m.persistent.y = m.pos.y;
@@ -2195,6 +2249,7 @@ export function 建立世界地圖層(): HTMLElement {
     render();
 
     const activeBoss = monsters.find((monster) => monster.inst.hp > 0 && monster.bossKind);
+    更新守護者核心戰區鎖定(activeBoss);
     更新戰場音樂情境({
       elapsedSeconds: 應用程式狀態.額外.世界時鐘秒數 ?? 0,
       boss: activeBoss?.bossKind === "cola" ? "cola" : activeBoss?.bossWorld ?? null,
