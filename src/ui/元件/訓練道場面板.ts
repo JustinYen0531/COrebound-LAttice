@@ -348,24 +348,25 @@ function 建立正式小隊立繪舞台(captain: (typeof 隊長清單)[number]):
   `;
 
   const stage = document.createElement("div");
-  stage.className = "正式立會舞台-框";
+  stage.className = `正式立會舞台-框${應用程式狀態.額外.Showcase模式 ? " 正式立會舞台-框--九人" : ""}`;
   stage.appendChild(建立隊長舞台立繪(captain));
 
-  const positions: Array<{ layer: 初始成員層級; className: string }> = [
-    { layer: "middle", className: "正式立會舞台-角色 正式立會舞台-角色--高" },
-    { layer: "inner", className: "正式立會舞台-角色 正式立會舞台-角色--左" },
-    { layer: "outer", className: "正式立會舞台-角色 正式立會舞台-角色--右" },
-  ];
+  const stageMembers = 應用程式狀態.額外.Showcase模式
+    ? roster.map((memberState) => ({ memberState, className: `正式立會舞台-角色 正式立會舞台-角色--九宮-${memberState.slotId}` }))
+    : ([
+        { memberState: roster.find((entry) => entry.layer === "middle"), className: "正式立會舞台-角色 正式立會舞台-角色--高" },
+        { memberState: roster.find((entry) => entry.layer === "inner"), className: "正式立會舞台-角色 正式立會舞台-角色--左" },
+        { memberState: roster.find((entry) => entry.layer === "outer"), className: "正式立會舞台-角色 正式立會舞台-角色--右" },
+      ]);
 
-  positions.forEach((position) => {
-    const memberState = roster.find((entry) => entry.layer === position.layer);
+  stageMembers.forEach(({ memberState, className }) => {
     if (!memberState) return;
     const member = MEMBERS.find((entry) => entry.no === memberState.memberNo);
     if (!member) return;
     const figure = document.createElement("div");
-    figure.className = position.className;
+    figure.className = className;
     figure.innerHTML = `
-      <img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${成員顯示名(member)}" />
+      <img src="/assets/transparent-portraits/members/${member.id}_s${memberState.star}.png" alt="${成員顯示名(member)}" />
       <span class="正式立會舞台-名牌">${成員顯示名(member)}</span>
     `;
     stage.appendChild(figure);
