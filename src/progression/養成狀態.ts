@@ -142,6 +142,15 @@ export function 設定正式小隊成員(layer: 初始成員層級, memberNo: nu
   setMemberStar(持有狀態表, memberNo, target.star);
 }
 
+/** Showcase 專用：不消耗素材，直接指定正式上陣成員星級。 */
+export function 設定正式小隊星級(layer: 初始成員層級, star: StarLevel): void {
+  const target = 上陣.find((entry) => entry.layer === layer);
+  if (!target || !應用程式狀態.額外.Showcase模式) return;
+  target.star = Math.max(1, Math.min(3, star)) as StarLevel;
+  unlockMember(持有狀態表, target.memberNo);
+  setMemberStar(持有狀態表, target.memberNo, target.star);
+}
+
 export function 套用起始成員配置(): void {
   上陣.length = 0;
   for (const entry of 起始成員配置) {

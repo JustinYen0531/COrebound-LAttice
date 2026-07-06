@@ -14,6 +14,7 @@ import { 取得正式小隊摘要, 刷新正式最大生命 } from "../正式對
 import {
   取得上陣養成,
   設定正式小隊成員,
+  設定正式小隊星級,
   當前隊長星級,
   type 初始成員層級,
 } from "../../progression/養成狀態";
@@ -67,6 +68,7 @@ const 軌道槽位配置: Array<{ slotId: number; layer: "外" | "中" | "內"; 
 
 const 軌道半徑: Record<"外" | "中" | "內", number> = { 外: 140, 中: 98, 內: 60 };
 let 正在編輯槽位: number | null = null;
+let 正在編輯正式槽位: number | null = null;
 let 左側模式: 左側視圖模式 = "編排";
 let 正式舞台視圖: 正式舞台模式 = "stage";
 const 全部圖騰角色 = [...幾何世界圖騰清單, ...有機世界圖騰清單, ...分形世界圖騰清單, ...機械世界圖騰清單];
@@ -1170,6 +1172,8 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   squad.forEach((slot, index) => {
     const role = 槽位職責色票[slot.role];
     const member = slot.member ? MEMBERS.find((entry) => entry.no === slot.member?.memberNo) ?? null : null;
+    const cardWrap = document.createElement("div");
+    cardWrap.className = "正式小隊摘要卡框";
     const card = document.createElement("button");
     card.type = "button";
     card.className = `正式小隊摘要卡${selectedSlotId === slot.slotId ? " 作用中" : ""}`;
@@ -1187,9 +1191,66 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
       <div class="正式小隊摘要卡-名稱">${member ? `${member.no.toString().padStart(2, "0")} ${成員顯示名(member)}` : 雙語("未配置", "Unassigned")}</div>
       <div class="正式小隊摘要卡-副文">${member ? `${家族顯示名(member.family)} | ${星節點顯示名(member, 1)}` : 雙語("請從下方成員庫指派", "Assign a member from the library below.")}</div>
     `;
-    squadSummaryRow.appendChild(card);
+    cardWrap.appendChild(card);
+
+    if (應用程式狀態.額外.Showcase模式) {
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "訓練軌道編排器-鉛筆按鈕 正式小隊摘要卡-鉛筆";
+      editButton.textContent = "✎";
+      editButton.title = 雙語("Showcase：直接修改成員編號與星級", "Showcase: directly edit member number and star level");
+      editButton.onclick = (event) => {
+        event.stopPropagation();
+        正在編輯正式槽位 = 正在編輯正式槽位 === slot.slotId ? null : slot.slotId;
+        應用程式狀態.額外.選中的小隊成員展示位 = slot.slotId;
+        刷新();
+      };
+      cardWrap.appendChild(editButton);
+    }
+    squadSummaryRow.appendChild(cardWrap);
   });
   rightPane.appendChild(squadSummaryRow);
+
+  if (應用程式狀態.額外.Showcase模式 && 正在編輯正式槽位 !== null) {
+    const editingSlot = squad.find((slot) => slot.slotId === 正在編輯正式槽位);
+    if (editingSlot) {
+      const member = editingSlot.member ? MEMBERS.find((entry) => entry.no === editingSlot.member?.memberNo) : null;
+      const editor = document.createElement("div");
+      editor.className = "正式Showcase編輯列";
+      editor.innerHTML = `
+        <div><small>SHOWCASE EDIT</small><strong>${取得層級標籤(editingSlot.ring)}</strong></div>
+        <label>${雙語("成員編號", "Member No.")}<input type="number" min="1" max="${MEMBERS.length}" value="${member?.no ?? 1}" data-member-no /></label>
+        <label>${雙語("星級", "Star Level")}<select data-star><option value="1">1★</option><option value="2">2★</option><option value="3">3★</option></select></label>
+        <button type="button" class="一級按鈕" data-apply>${雙語("套用", "Apply")}</button>
+        <button type="button" class="二級按鈕" data-cancel>${雙語("取消", "Cancel")}</button>
+        <span class="正式Showcase編輯列-錯誤" data-error></span>
+      `;
+      const numberInput = editor.querySelector<HTMLInputElement>("[data-member-no]")!;
+      const starSelect = editor.querySelector<HTMLSelectElement>("[data-star]")!;
+      starSelect.value = String(editingSlot.member?.star ?? 1);
+      editor.querySelector<HTMLButtonElement>("[data-apply]")!.onclick = () => {
+        const memberNo = Number(numberInput.value);
+        const targetMember = MEMBERS.find((entry) => entry.no === memberNo);
+        if (!targetMember) {
+          editor.querySelector<HTMLElement>("[data-error]")!.textContent = 雙語("找不到這個成員編號", "Member number not found");
+          return;
+        }
+        套用正式槽位成員(editingSlot.layer, memberNo);
+        設定正式小隊星級(editingSlot.layer, Number(starSelect.value) as 1 | 2 | 3);
+        刷新正式最大生命();
+        正在編輯正式槽位 = null;
+        刷新();
+      };
+      numberInput.onkeydown = (event) => {
+        if (event.key === "Enter") editor.querySelector<HTMLButtonElement>("[data-apply]")!.click();
+      };
+      editor.querySelector<HTMLButtonElement>("[data-cancel]")!.onclick = () => {
+        正在編輯正式槽位 = null;
+        刷新();
+      };
+      rightPane.appendChild(editor);
+    }
+  }
   const summaryGrid = document.createElement("div");
   summaryGrid.style.display = "grid";
   summaryGrid.style.gridTemplateColumns = "repeat(5, minmax(0, 1fr))";
