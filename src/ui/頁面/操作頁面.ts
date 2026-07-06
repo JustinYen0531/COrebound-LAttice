@@ -73,6 +73,18 @@ function 發送Showcase事件(type: string, detail: Record<string, unknown> = {}
   window.dispatchEvent(new CustomEvent("showcase-action", { detail: { type, ...detail } }));
 }
 
+function 讀取Showcase傳送狀態(): boolean {
+  let armed = false;
+  window.dispatchEvent(new CustomEvent("request-showcase-teleport-state", {
+    detail: {
+      resolve: (value: boolean) => {
+        armed = value;
+      },
+    },
+  }));
+  return armed;
+}
+
 function 建立Showcase快捷面板(): HTMLElement {
   const panel = document.createElement("aside");
   panel.className = "Showcase控制台";
@@ -83,8 +95,15 @@ function 建立Showcase快捷面板(): HTMLElement {
     const hp = 取得正式小隊摘要();
     const catalog = 取得全部可召喚怪物圖鑑().filter((monster) => monster.world !== "core");
     const selectedId = 已選Showcase怪物Id || 取得訓練道場摘要().selectedEnemyMonsterId || catalog[0]?.id || "";
+    const teleportArmed = 讀取Showcase傳送狀態();
     panel.innerHTML = `
-      <header><div><small>SHOWCASE MODE</small><strong>${雙語("正式對局沙盒工具", "Formal Run Sandbox")}</strong></div><button class="二級按鈕" data-collapse>${收合 ? "+" : "−"}</button></header>
+      <header>
+        <div><small>SHOWCASE MODE</small><strong>${雙語("正式對局沙盒工具", "Formal Run Sandbox")}</strong></div>
+        <div class="Showcase控制台-列">
+          <button class="${teleportArmed ? "一級按鈕" : "二級按鈕"}" data-teleport>${teleportArmed ? 雙語("取消傳送", "Cancel Warp") : 雙語("地圖傳送", "Map Warp")}</button>
+          <button class="二級按鈕" data-collapse>${收合 ? "+" : "−"}</button>
+        </div>
+      </header>
       <div class="Showcase控制台-內容" ${收合 ? "hidden" : ""}>
         <div class="Showcase控制台-狀態">${雙語("正式生命", "Formal HP")} ${hp.playerHp}/${hp.playerMaxHp} · ${雙語("工具只影響本局", "Tools affect this run only")}</div>
         <div class="Showcase控制台-列"><button class="一級按鈕" data-management>${雙語("管理介面", "Management")}</button><button class="二級按鈕" data-heal>${雙語("回滿生命", "Restore HP")}</button><button class="二級按鈕" data-clear>${雙語("清空敵群", "Clear Enemies")}</button></div>
@@ -96,6 +115,10 @@ function 建立Showcase快捷面板(): HTMLElement {
       </div>`;
 
     panel.querySelector<HTMLButtonElement>("[data-collapse]")!.onclick = () => { 收合 = !收合; render(); };
+    panel.querySelector<HTMLButtonElement>("[data-teleport]")!.onclick = () => {
+      發送Showcase事件("toggle_map_teleport");
+      render();
+    };
     panel.querySelector<HTMLButtonElement>("[data-management]")!.onclick = () => 應用程式狀態.進入管理介面("小隊");
     panel.querySelector<HTMLButtonElement>("[data-heal]")!.onclick = () => { 回滿正式玩家生命(); render(); };
     panel.querySelector<HTMLButtonElement>("[data-clear]")!.onclick = () => 發送Showcase事件("clear_enemies");

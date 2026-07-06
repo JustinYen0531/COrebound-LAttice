@@ -74,7 +74,6 @@ import {
   PLAZA_RADIUS,
   REGION_DIRECTION,
   REGION_LABEL,
-  nearbyObjects,
   type MapObject,
   type MapZone,
   type Region,
@@ -182,6 +181,7 @@ const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 // 環境物件（障礙/礦/機關）不套用，維持原尺寸。
 const FACILITY_SIZE_SCALE = 0.8;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
+const FACILITY_INTERACT_RADIUS = WORLD_OBJECT_FOOTPRINT_RADIUS + 140;
 const PORTAL_INTERACT_RADIUS = 230;
 const PORTAL_LANDING_DISTANCE = WORLD_OBJECT_FOOTPRINT_RADIUS + 52;
 
@@ -451,8 +451,16 @@ function 最近傳送門(player: { x: number; y: number }): EnvObjectInstance | 
     .sort((a, b) => a.distance - b.distance)[0]?.env ?? null;
 }
 
+function 附近可互動建築(player: { x: number; y: number }): MapObject[] {
+  return MAP_OBJECTS
+    .map((object) => ({ object, distance: Math.hypot(object.x - player.x, object.y - player.y) }))
+    .filter((entry) => entry.distance <= FACILITY_INTERACT_RADIUS)
+    .sort((a, b) => a.distance - b.distance)
+    .map((entry) => entry.object);
+}
+
 function syncNearbyToState(): void {
-  const near = nearbyObjects(playerPos);
+  const near = 附近可互動建築(playerPos);
   const nearest = near[0] ?? null;
   if (
     應用程式狀態.額外.靠近的互動設施 !== (nearest?.kind ?? null) ||
@@ -651,29 +659,8 @@ export function 建立世界地圖層(): HTMLElement {
 
   const miniMapHint = document.createElement("div");
   miniMapHint.className = "世界地圖層-小地圖說明";
-  miniMapHint.textContent = "點一下放大；按傳送後點任一位置；點外面收起";
+  miniMapHint.textContent = "點一下放大；在沙盒面板按傳送後點任一位置；點外面收起";
   miniMap.appendChild(miniMapHint);
-
-  const miniMapTeleportButton = document.createElement("button");
-  miniMapTeleportButton.type = "button";
-  miniMapTeleportButton.className = "世界地圖層-小地圖傳送按鈕";
-  miniMapTeleportButton.style.position = "absolute";
-  miniMapTeleportButton.style.right = "12px";
-  miniMapTeleportButton.style.top = "12px";
-  miniMapTeleportButton.style.zIndex = "5";
-  miniMapTeleportButton.style.minWidth = "82px";
-  miniMapTeleportButton.style.padding = "8px 13px";
-  miniMapTeleportButton.style.border = "1px solid rgba(255, 224, 145, 0.48)";
-  miniMapTeleportButton.style.borderRadius = "999px";
-  miniMapTeleportButton.style.background = "rgba(53, 40, 14, 0.94)";
-  miniMapTeleportButton.style.color = "rgba(255, 248, 231, 0.98)";
-  miniMapTeleportButton.style.fontSize = "12px";
-  miniMapTeleportButton.style.fontWeight = "800";
-  miniMapTeleportButton.style.letterSpacing = "0.05em";
-  miniMapTeleportButton.style.lineHeight = "1";
-  miniMapTeleportButton.style.cursor = "pointer";
-  miniMapTeleportButton.style.transition = "transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease";
-  miniMap.appendChild(miniMapTeleportButton);
 
   const miniMapInner = document.createElement("div");
   miniMapInner.className = "世界地圖層-小地圖內層";
@@ -767,14 +754,9 @@ export function 建立世界地圖層(): HTMLElement {
 
   let miniMapTeleportArmed = false;
   const updateMiniMapTeleportUi = () => {
-    miniMapTeleportButton.textContent = miniMapTeleportArmed ? 雙語("取消傳送", "Cancel Warp") : 雙語("傳送", "Warp");
-    miniMapTeleportButton.setAttribute("aria-pressed", miniMapTeleportArmed ? "true" : "false");
-    miniMapTeleportButton.style.borderColor = miniMapTeleportArmed ? "rgba(120, 217, 255, 0.58)" : "rgba(255, 224, 145, 0.48)";
-    miniMapTeleportButton.style.background = miniMapTeleportArmed ? "rgba(18, 72, 92, 0.96)" : "rgba(53, 40, 14, 0.94)";
-    miniMapTeleportButton.style.boxShadow = miniMapTeleportArmed ? "0 0 0 1px rgba(120, 217, 255, 0.22)" : "0 6px 18px rgba(0, 0, 0, 0.22)";
     miniMapHint.textContent = miniMapTeleportArmed
       ? 雙語("傳送已啟用，請點小地圖任一位置", "Warp armed. Click anywhere on the mini-map.")
-      : 雙語("點一下放大；按傳送後點任一位置；點外面收起", "Tap to expand. Press Warp, then click any point.");
+      : 雙語("點一下放大；在沙盒面板按傳送後點任一位置；點外面收起", "Tap to expand. Arm Warp in the sandbox panel, then click any point.");
   };
   const collapseMiniMap = () => {
     miniMap.classList.remove("世界地圖層-小地圖-放大");
@@ -792,16 +774,6 @@ export function 建立世界地圖層(): HTMLElement {
     playerPos = clampTraversablePlayerPosition(target, playerPos);
     if (!訓練道場中) 設定正式玩家位置(playerPos);
     syncNearbyToState();
-  };
-
-  miniMapTeleportButton.onclick = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    miniMapTeleportArmed = !miniMapTeleportArmed;
-    if (miniMapTeleportArmed && !miniMap.classList.contains("世界地圖層-小地圖-放大")) {
-      expandMiniMap();
-    }
-    updateMiniMapTeleportUi();
   };
 
   miniMapInner.addEventListener("click", (event) => {
@@ -1484,13 +1456,19 @@ export function 建立世界地圖層(): HTMLElement {
       node.style.display = isVisible(screenPos, viewport) ? "block" : "none";
     }
 
-    const near = nearbyObjects(playerPos);
+    const near = 附近可互動建築(playerPos);
     const nearIds = new Set(near.map((object) => object.id));
 
     for (const object of MAP_OBJECTS) {
       const node = objectNodes.get(object.id);
       if (!node) continue;
-      node.classList.toggle("靠近中", nearIds.has(object.id));
+      const isNear = nearIds.has(object.id);
+      node.classList.toggle("靠近中", isNear);
+      const hint = node.querySelector<HTMLElement>(".世界地圖層-物件-互動提示");
+      if (hint) {
+        hint.style.opacity = isNear ? "1" : "0";
+        hint.style.transform = isNear ? "translateX(-50%) translateY(-4px)" : "translateX(-50%)";
+      }
     }
 
     const nearestPortal = 最近傳送門(playerPos);
@@ -2279,16 +2257,13 @@ export function 建立世界地圖層(): HTMLElement {
   }
 
   function onObjectClick(object: MapObject): void {
-    const dir = regionDirSafe(object.region);
-    playerVelocity = { x: 0, y: 0 };
-    const approachDistance = facilityImagePath(object) !== null ? WORLD_OBJECT_FOOTPRINT_RADIUS + 36 : 36;
-    playerPos = clampTraversablePlayerPosition({
-      x: object.x - dir.dx * approachDistance,
-      y: object.y - dir.dy * approachDistance,
-    }, playerPos);
-    if (!訓練道場中) 設定正式玩家位置(playerPos);
-    syncNearbyToState();
-    render();
+    const isNear = 附近可互動建築(playerPos).some((nearby) => nearby.id === object.id);
+    if (!isNear) {
+      顯示技能提示(`Move closer to ${facilityEnglishLabel(object)} to interact`);
+      return;
+    }
+    應用程式狀態.模擬靠近設施(object.kind, object.id);
+    應用程式狀態.點擊驚嘆號提示();
   }
 
   for (const object of MAP_OBJECTS) {
@@ -2320,6 +2295,7 @@ export function 建立世界地圖層(): HTMLElement {
     root.removeEventListener("wheel", onWheel);
     window.removeEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
     window.removeEventListener("showcase-action", onShowcaseAction as EventListener);
+    window.removeEventListener("request-showcase-teleport-state", onRequestShowcaseTeleportState as EventListener);
     window.removeEventListener("captain-active-cast", onCaptainCast as EventListener);
     window.removeEventListener("combat-tick-pulse", onCombatTickPulse as EventListener);
     if (玩家戰鬥Tick特效計時) window.clearTimeout(玩家戰鬥Tick特效計時);
@@ -2499,6 +2475,13 @@ export function 建立世界地圖層(): HTMLElement {
     if (訓練道場中 || !應用程式狀態.額外.Showcase模式) return;
     const event = raw as CustomEvent<{ type?: string; monsterId?: string; count?: number; bypass?: boolean }>;
     switch (event.detail?.type) {
+      case "toggle_map_teleport":
+        miniMapTeleportArmed = !miniMapTeleportArmed;
+        if (miniMapTeleportArmed && !miniMap.classList.contains("世界地圖層-小地圖-放大")) {
+          expandMiniMap();
+        }
+        updateMiniMapTeleportUi();
+        break;
       case "spawn_enemies": {
         const def = event.detail.monsterId ? findMonsterById(event.detail.monsterId) : undefined;
         if (def) Showcase召喚怪物(def, event.detail.count ?? 1);
@@ -2518,8 +2501,14 @@ export function 建立世界地圖層(): HTMLElement {
     render();
   }
 
+  function onRequestShowcaseTeleportState(raw: Event): void {
+    const event = raw as CustomEvent<{ resolve?: (armed: boolean) => void }>;
+    event.detail?.resolve?.(miniMapTeleportArmed);
+  }
+
   window.addEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
   window.addEventListener("showcase-action", onShowcaseAction as EventListener);
+  window.addEventListener("request-showcase-teleport-state", onRequestShowcaseTeleportState as EventListener);
   window.addEventListener("captain-active-cast", onCaptainCast as EventListener);
   window.addEventListener("combat-tick-pulse", onCombatTickPulse as EventListener);
 
@@ -2736,7 +2725,30 @@ function createObjectNode(object: MapObject): HTMLElement {
   label.className = "世界地圖層-物件-label";
   label.textContent = facilityEnglishLabel(object);
 
-  node.append(beacon, visualLayer, label);
+  const interactHint = document.createElement("div");
+  interactHint.className = "世界地圖層-物件-互動提示";
+  interactHint.textContent = "E  ·  INTERACT";
+  Object.assign(interactHint.style, {
+    position: "absolute",
+    left: "50%",
+    top: "-42px",
+    transform: "translateX(-50%)",
+    padding: "7px 13px",
+    border: "1px solid rgba(255, 244, 207, 0.82)",
+    borderRadius: "999px",
+    background: "rgba(14, 13, 11, 0.92)",
+    color: "#fff8e5",
+    boxShadow: "0 5px 16px rgba(0,0,0,0.42)",
+    font: "800 12px Georgia, serif",
+    letterSpacing: "0.08em",
+    whiteSpace: "nowrap",
+    opacity: "0",
+    pointerEvents: "none",
+    transition: "opacity 140ms ease, transform 140ms ease",
+    zIndex: "9",
+  });
+
+  node.append(beacon, visualLayer, label, interactHint);
   node.title = `${facilityEnglishLabel(object)} | Press E to interact`;
   return node;
 }
