@@ -27,13 +27,18 @@ import {
   正式玩家已陣亡,
 } from "../正式對局小隊狀態";
 import { 取得訓練小隊成員 } from "../訓練道場狀態";
-import { ProjectilePool, type Projectile } from "../../combat/投射物系統";
+import {
+  DEFAULT_LIFE_SECONDS,
+  ProjectilePool,
+  type Projectile,
+} from "../../combat/投射物系統";
 import { detectHits, resolveProjectileHit } from "../../combat/碰撞解析";
 import { PLAYABLE_FAMILIES, FAMILY_FIRE_PERIOD, type EnemyTier } from "../../data/戰鬥原語";
 import { STAR_MULTIPLIER, type StarLevel } from "../../data/成員型別";
 import { computeFamilyWeaponStatus, type DeployedMember } from "../../skills/技能管理";
 import { MEMBERS } from "../../data/成員資料庫";
 import { findMonster, findMonsterById } from "../../data/怪物資料庫";
+import { WEAPON_BASE } from "../../data/武器與附魔";
 import { findMaterial, materialImagePath, type MaterialUse } from "../../data/素材資料庫";
 import { rollMonsterDrop } from "../../economy/資源掉落系統";
 import * as 背包 from "../../economy/背包狀態";
@@ -1052,7 +1057,6 @@ export function 建立世界地圖層(): HTMLElement {
   const familyFireTimers: Record<Family, number> = {
     shield: 0, multishot: 0, straight: 0, mine: 0, laser: 0,
   };
-  const FIRE_RANGE = 900; // 小隊武器索敵範圍（世界座標）
   const MONSTER_FIRE_CD = 1.4; // 遠程怪物開火冷卻（秒）
   // 武器 speed 是「設計單位」(straight=18)，但世界座標尺度極大（怪物在數百~數千）。
   // 乘上此比例把彈速換算到世界座標，讓子彈能在存活時間內真正飛到目標。
@@ -1067,6 +1071,14 @@ export function 建立世界地圖層(): HTMLElement {
       if (p.motion === "decaying") p.decel = p.speed / 0.5; // 維持 0.5 秒衰減到 0
     }
     return shots;
+  }
+
+  /** 依實際彈速與壽命推算索敵距離，確保武器只要射得到就會開始攻擊。 */
+  function 武器索敵距離(family: Family): number {
+    const weapon = WEAPON_BASE[family];
+    const worldSpeed = weapon.speed * PROJECTILE_SPEED_SCALE;
+    if (family === "mine") return worldSpeed * 0.25; // 0.5 秒等減速至停止的位移
+    return worldSpeed * DEFAULT_LIFE_SECONDS;
   }
 
   // —— 擊殺掉落與擊殺統計（Batch 2）——
@@ -1224,7 +1236,7 @@ export function 建立世界地圖層(): HTMLElement {
     });
   }
 
-  /** 找最近的存活怪物（限 FIRE_RANGE 內）。 */
+  /** 找最近的存活怪物（限指定武器的實際射程內）。 */
   function 最近怪物(withinRange: number): MonsterRuntime | null {
     let best: MonsterRuntime | null = null;
     let bestD = withinRange;
@@ -1525,25 +1537,17 @@ export function 建立世界地圖層(): HTMLElement {
    * 家族可用星級由 技能管理 依上陣成員人數與累計星級判定。
    */
   function updateSquadFire(dt: number): void {
-    // 攻擊 TICK 只有在「圖騰碰撞體積碰到任意可攻擊的怪物」時才加載：
-    // 沒有敵人進入圖騰接觸範圍時，發射計時凍結（不累加、不歸零），
-    // 一有敵人接觸就從當前進度繼續充能並開火。
-    const 圖騰接觸敵人 = monsters.some(
-      (m) => 是戰鬥Tick有效小怪(m) && 怪物接觸戰鬥圈層(m).length > 0,
-    );
-    if (!圖騰接觸敵人) return;
-
     const status = computeFamilyWeaponStatus(目前上陣成員());
     const unlocked = new Map(status.map((s) => [s.family, s.unlockedStar]));
     for (const family of PLAYABLE_FAMILIES) {
       const star = unlocked.get(family) ?? 0;
       if (star < 1) continue;
+      const target = 最近怪物(武器索敵距離(family));
+      if (!target) continue;
       familyFireTimers[family] += dt;
       const period = FAMILY_FIRE_PERIOD[family] * TICK_SECONDS;
       if (familyFireTimers[family] < period) continue;
       familyFireTimers[family] = 0;
-      const target = 最近怪物(FIRE_RANGE);
-      if (!target) continue;
       const aim = { x: target.pos.x - playerPos.x, y: target.pos.y - playerPos.y };
       套用世界彈速(
         projectilePool.spawn({
