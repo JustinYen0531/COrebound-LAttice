@@ -133,6 +133,14 @@ html::after {
   max-width: 1180px;
   padding: 24px;
 }
+/* 主畫面／操作頁面是 position:fixed 的全螢幕覆蓋層，自己管版面，
+   不需要外層 .頁面容器 的內距；但因為它們是 out-of-flow，.頁面容器
+   本身會塌陷成只剩這圈 padding 的高度，變成一條「往下滑什麼都沒有」
+   的整頁空捲軸。只在包住這兩種全螢幕頁面時把內距歸零來源根消除。 */
+.頁面容器:has(> .主畫面-root),
+.頁面容器:has(> .操作頁面-root) {
+  padding: 0;
+}
 
 h1,
 h2,
@@ -345,6 +353,12 @@ button.禁用:hover {
   overflow-y: auto;
   background: #04070d;
 }
+/* 封面首頁（沒有子頁）本身就是 100vh，flex 的 gap 會多墊出一點高度，
+   讓外層冒出一條「往下滑什麼都沒有」的空捲軸；子頁（圖鑑/設定等）
+   內容可能真的比一屏長，所以只在沒有子頁時關閉捲動。 */
+.主畫面-root:not(.主畫面-root--子頁開啟) {
+  overflow-y: hidden;
+}
 .主畫面-封面區 {
   position: relative;
   width: 100vw;
@@ -428,8 +442,9 @@ button.禁用:hover {
   filter: none !important;
 }
 /* 天空繁星：20 名角色三星立繪散佈上半天空，各自呼吸閃爍。
-   整層在進場時以 0.5s 淡入出現（主畫面繁星淡入），星星本身則無限期
-   在 半透明↔不透明 之間呼吸；每顆的週期/相位不同，形成互補的明滅。 */
+   預設不出現（畫面上已經有 4 個 Boss + 4 位隊長，不需要一開始就疊更多）；
+   只有在「打開選單」（點標題展開下拉選單）那一刻才淡入出現，
+   不需要額外點擊其他按鈕。 */
 .主畫面-繁星群 {
   position: absolute;
   inset: 0;
@@ -437,11 +452,10 @@ button.禁用:hover {
   pointer-events: none;
   overflow: visible;
   opacity: 0;
-  visibility: hidden;
+  transition: opacity 0.5s ease;
 }
-.主畫面-已進場 .主畫面-繁星群 {
+.主畫面-選單展開 .主畫面-繁星群 {
   opacity: 1;
-  visibility: visible;
 }
 .主畫面-繁星 {
   position: absolute;
@@ -1413,6 +1427,117 @@ button.禁用:hover {
 .準備流程-立繪名稱 strong { font-size: 0.86rem; }
 .準備流程-立繪名稱 span { color: var(--ink-dim); font-size: 0.66rem; }
 
+/* ---------- 開場模式徽章 / 切換 / Showcase 預設卡 ---------- */
+.準備流程-模式徽章 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  width: fit-content;
+}
+.準備流程-模式徽章.作用中 {
+  border: 1px solid color-mix(in srgb, #d8b84a 55%, var(--line));
+  background: color-mix(in srgb, #d8b84a 16%, var(--bg-panel));
+  color: #7a5c17;
+}
+.準備流程-模式徽章.無加成 {
+  border: 1px solid color-mix(in srgb, #4a8ee8 45%, var(--line));
+  background: color-mix(in srgb, #4a8ee8 12%, var(--bg-panel));
+  color: #2f5a94;
+}
+
+.準備流程-模式切換區 {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-panel) 92%, transparent);
+}
+.準備流程-模式切換列 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.準備流程-模式按鈕 {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-top: 3px solid color-mix(in srgb, #d8b84a 60%, var(--line));
+  background: var(--bg-panel-2);
+  cursor: pointer;
+}
+.準備流程-模式按鈕 strong { font-size: 0.9rem; }
+.準備流程-模式按鈕 small { color: var(--ink-dim); font-size: 0.72rem; line-height: 1.5; }
+.準備流程-模式按鈕.作用中 {
+  border-color: #d8b84a;
+  box-shadow: inset 0 0 0 1px #d8b84a, 0 0 14px color-mix(in srgb, #d8b84a 35%, transparent);
+}
+
+.準備流程-預設區 {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  min-height: 300px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.32), transparent 44%),
+    color-mix(in srgb, var(--bg-panel) 90%, transparent);
+  box-shadow: 0 12px 28px rgba(62, 48, 29, 0.1);
+}
+.準備流程-預設卡列 {
+  display: grid;
+  gap: 10px;
+}
+.準備流程-預設卡 {
+  --archetype-color: #6f8cff;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--archetype-color);
+  background: color-mix(in srgb, var(--bg-panel) 92%, var(--archetype-color) 8%);
+  cursor: pointer;
+}
+.準備流程-預設卡--aggressive { --archetype-color: #e14b3f; }
+.準備流程-預設卡--defense { --archetype-color: #4a8ee8; }
+.準備流程-預設卡--support { --archetype-color: #3bbf6d; }
+.準備流程-預設卡.作用中 {
+  box-shadow: inset 0 0 0 1px var(--archetype-color), 0 0 14px color-mix(in srgb, var(--archetype-color) 35%, transparent);
+}
+.準備流程-預設卡標題 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.準備流程-預設卡標題 span { color: var(--archetype-color); font-size: 0.74rem; font-weight: 700; }
+.準備流程-預設卡標題 strong { font-size: 0.94rem; }
+.準備流程-預設卡配置 { color: var(--ink-dim); font-size: 0.74rem; font-weight: 600; }
+.準備流程-預設卡說明 { color: var(--ink-dim); font-size: 0.76rem; line-height: 1.55; }
+
+.準備流程-立繪星級標籤 {
+  position: relative;
+  z-index: 1;
+  justify-self: start;
+  margin: 0 8px;
+  color: #d8b84a;
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+}
+.準備流程-隊伍立繪--九宮格 {
+  grid-template-columns: repeat(5, 1fr);
+}
+.準備流程-隊伍立繪--九宮格 .準備流程-立繪卡 { min-height: 300px; }
+.準備流程-隊伍立繪--九宮格 .準備流程-立繪卡 img { height: 230px; }
+
 @media (max-width: 980px) {
   .準備流程-版面 { grid-template-columns: 1fr; }
   .準備流程-隊伍立繪 { min-height: 380px; }
@@ -2354,6 +2479,9 @@ button.禁用:hover {
   grid-template-columns: 170px 1fr 220px;
   gap: 16px;
   min-height: 280px;
+}
+.資料夾式版面--Showcase背包編輯 {
+  grid-template-columns: 170px 1fr 340px;
 }
 .資料夾式版面-書籤欄 {
   display: flex;
@@ -3895,15 +4023,15 @@ button.禁用:hover {
   margin-top: -14px;
   font-size: 0.56rem;
 }
-.正式立會舞台-角色--九宮-0 { --portrait-left: 18%; --portrait-bottom: 18px; --portrait-width: 42%; --portrait-height: 356px; --portrait-z: 8; }
-.正式立會舞台-角色--九宮-1 { --portrait-left: 50%; --portrait-bottom: 28px; --portrait-width: 44%; --portrait-height: 376px; --portrait-z: 9; }
-.正式立會舞台-角色--九宮-2 { --portrait-left: 82%; --portrait-bottom: 18px; --portrait-width: 42%; --portrait-height: 356px; --portrait-z: 8; }
-.正式立會舞台-角色--九宮-3 { --portrait-left: 27%; --portrait-bottom: 142px; --portrait-width: 36%; --portrait-height: 316px; --portrait-z: 5; }
-.正式立會舞台-角色--九宮-4 { --portrait-left: 50%; --portrait-bottom: 160px; --portrait-width: 38%; --portrait-height: 332px; --portrait-z: 6; }
-.正式立會舞台-角色--九宮-5 { --portrait-left: 73%; --portrait-bottom: 142px; --portrait-width: 36%; --portrait-height: 316px; --portrait-z: 5; }
-.正式立會舞台-角色--九宮-6 { --portrait-left: 21%; --portrait-bottom: 268px; --portrait-width: 32%; --portrait-height: 272px; --portrait-z: 2; }
-.正式立會舞台-角色--九宮-7 { --portrait-left: 50%; --portrait-bottom: 294px; --portrait-width: 34%; --portrait-height: 288px; --portrait-z: 3; }
-.正式立會舞台-角色--九宮-8 { --portrait-left: 79%; --portrait-bottom: 268px; --portrait-width: 32%; --portrait-height: 272px; --portrait-z: 2; }
+.正式立會舞台-角色--九宮-0 { --portrait-left: 18%; --portrait-bottom: 18px; --portrait-width: 26%; --portrait-height: 155px; --portrait-z: 9; }
+.正式立會舞台-角色--九宮-1 { --portrait-left: 50%; --portrait-bottom: 18px; --portrait-width: 26%; --portrait-height: 155px; --portrait-z: 9; }
+.正式立會舞台-角色--九宮-2 { --portrait-left: 82%; --portrait-bottom: 18px; --portrait-width: 26%; --portrait-height: 155px; --portrait-z: 9; }
+.正式立會舞台-角色--九宮-3 { --portrait-left: 18%; --portrait-bottom: 190px; --portrait-width: 26%; --portrait-height: 155px; --portrait-z: 6; }
+.正式立會舞台-角色--九宮-4 { --portrait-left: 50%; --portrait-bottom: 190px; --portrait-width: 26%; --portrait-height: 155px; --portrait-z: 6; }
+.正式立會舞台-角色--九宮-5 { --portrait-left: 82%; --portrait-bottom: 190px; --portrait-width: 26%; --portrait-height: 155px; --portrait-z: 6; }
+.正式立會舞台-角色--九宮-6 { --portrait-left: 18%; --portrait-bottom: 362px; --portrait-width: 26%; --portrait-height: 155px; --portrait-z: 3; }
+.正式立會舞台-角色--九宮-7 { --portrait-left: 50%; --portrait-bottom: 362px; --portrait-width: 26%; --portrait-height: 155px; --portrait-z: 3; }
+.正式立會舞台-角色--九宮-8 { --portrait-left: 82%; --portrait-bottom: 362px; --portrait-width: 26%; --portrait-height: 155px; --portrait-z: 3; }
 .正式Showcase儲存列 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -4146,6 +4274,32 @@ button.禁用:hover {
   font-size: 12px;
   color: rgba(236, 228, 210, 0.82);
 }
+.世界地圖層-小地圖傳送按鈕 {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  min-width: 72px;
+  padding: 7px 12px;
+  border: 1px solid rgba(122, 169, 255, 0.36);
+  border-radius: 999px;
+  background: rgba(14, 22, 38, 0.88);
+  color: rgba(246, 249, 255, 0.96);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.世界地圖層-小地圖傳送按鈕:hover {
+  transform: translateY(-1px);
+  background: rgba(24, 37, 62, 0.94);
+}
+.世界地圖層-小地圖傳送按鈕[aria-pressed="true"] {
+  border-color: rgba(255, 219, 127, 0.52);
+  background: rgba(90, 65, 20, 0.92);
+  box-shadow: 0 0 0 1px rgba(255, 219, 127, 0.18);
+}
 .世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖標題,
 .世界地圖層-小地圖.世界地圖層-小地圖-放大 .世界地圖層-小地圖說明 {
   opacity: 1;
@@ -4303,15 +4457,17 @@ button.禁用:hover {
 
 .世界地圖層-縮放控制 {
   position: absolute;
-  top: 248px;
-  right: 24px;
+  left: 24px;
+  right: auto;
+  top: auto;
+  bottom: 24px;
   z-index: 25;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 9px;
-  width: 48px;
-  padding: 10px 7px;
+  gap: 12px;
+  width: auto;
+  padding: 10px 14px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 24px;
   background: rgba(8, 12, 20, 0.72);
@@ -4362,7 +4518,7 @@ button.禁用:hover {
   right: 0;
   left: 0;
   pointer-events: none;
-  z-index: 90;
+  z-index: 500;
 }
 
 .音樂浮動面板 {
@@ -4379,6 +4535,8 @@ button.禁用:hover {
   pointer-events: auto;
   display: grid;
   gap: 10px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
 }
 
 .音樂浮動面板-場景 {
@@ -4480,13 +4638,13 @@ button.禁用:hover {
 }
 
 .世界地圖層-縮放滑桿 {
-  width: 18px;
-  height: 150px;
+  width: 150px;
+  height: 18px;
   margin: 0;
   accent-color: #78a7ff;
-  cursor: ns-resize;
-  direction: rtl;
-  writing-mode: vertical-lr;
+  cursor: ew-resize;
+  direction: ltr;
+  writing-mode: horizontal-tb;
 }
 
 /* ============================================================

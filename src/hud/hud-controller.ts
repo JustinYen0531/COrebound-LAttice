@@ -46,6 +46,7 @@ import { 播放音效 } from "../audio/音效管理";
  */
 export class HudController {
   readonly el: HTMLElement;
+  private static readonly 永久雙面板 = true;
 
   private readonly core: CoreTrio;
   private readonly rings: FormationRings;
@@ -142,9 +143,7 @@ export class HudController {
 
     this.el.append(
       ringsHost,
-      stripsHost,
       this.quickPanelHost,
-      this.quickPanelSwitch,
       coreHost,
       memberStatusHost,
       this.hintL,
@@ -181,6 +180,10 @@ export class HudController {
 
   /** 對外公開：直接開啟左側抽屜 */
   openLeftDrawer(): void {
+    if (HudController.永久雙面板) {
+      this.refreshQuickPanel();
+      return;
+    }
     this.activeQuickPanel = "weapon";
     this.setState("left_open");
     // 設定展開比例為 1.0 (全開)
@@ -191,6 +194,10 @@ export class HudController {
 
   /** 對外公開：直接開啟右側抽屜 */
   openRightDrawer(): void {
+    if (HudController.永久雙面板) {
+      this.refreshQuickPanel();
+      return;
+    }
     this.activeQuickPanel = "item";
     this.setState("right_open");
     // 設定展開比例為 1.0 (全開)
@@ -201,6 +208,10 @@ export class HudController {
 
   /** 對外公開：關閉抽屜 */
   closeDrawers(): void {
+    if (HudController.永久雙面板) {
+      this.refreshQuickPanel();
+      return;
+    }
     this.setState("idle");
     this.weaponDrawer.setOpenRatio(0);
     this.itemDrawer.setOpenRatio(0);
@@ -220,6 +231,13 @@ export class HudController {
 
   /** 狀態轉移副作用 */
   private onTransition(prev: HudState, next: HudState): void {
+    if (HudController.永久雙面板) {
+      if (next === "hover_hint") 播放音效("HUD提示");
+      this.hintL.style.opacity = next === "hover_hint" ? "1" : "0";
+      this.hintR.style.opacity = next === "hover_hint" ? "1" : "0";
+      this.refreshQuickPanel();
+      return;
+    }
     // HUD 音效：停留提示 / 左右抽屜展開（收回不出聲，避免自動收回時洗版）。
     if (next === "hover_hint") 播放音效("HUD提示");
     if (next === "left_open" && prev !== "left_open") 播放音效("左抽屜");
@@ -262,6 +280,14 @@ export class HudController {
   }
 
   private refreshQuickPanel(): void {
+    if (HudController.永久雙面板) {
+      this.quickPanelHost.classList.add("is-open", "is-dual-open");
+      this.weaponDrawer.el.classList.remove("is-hidden-panel");
+      this.itemDrawer.el.classList.remove("is-hidden-panel");
+      this.weaponDrawer.setOpenRatio(1);
+      this.itemDrawer.setOpenRatio(1);
+      return;
+    }
     const weaponButton = this.quickPanelSwitch.querySelector<HTMLButtonElement>("[data-panel='weapon']");
     const itemButton = this.quickPanelSwitch.querySelector<HTMLButtonElement>("[data-panel='item']");
     const closeButton = this.quickPanelSwitch.querySelector<HTMLButtonElement>("[data-panel='close']");

@@ -779,13 +779,22 @@
   right: 22px;
   bottom: 92px;
   z-index: 16;
-  pointer-events: none;
-  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: auto;
+  opacity: 1;
   transition: opacity 0.14s ease;
 }
 .hud-quick-panel-host.is-open {
   pointer-events: auto;
   opacity: 1;
+}
+.hud-quick-panel-host.is-dual-open .drawer {
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 .hud-quick-panel-switch {
   position: absolute;
@@ -798,6 +807,9 @@
   background: rgba(7, 9, 16, 0.9);
   border: 1px solid rgba(233, 236, 248, 0.24);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  /* .hud-root 是 pointer-events:none（讓點擊穿透到戰場），這排切換鈕必須自己補回可點， */
+  /* 否則「技/補/×」看得到卻點不到（按了沒反應）。 */
+  pointer-events: auto;
 }
 .hud-quick-panel-switch button {
   width: 32px;
@@ -835,11 +847,11 @@
 }
 .weapon-drawer {
   transform: translateX(-100%);
-  margin-right: 12px;
+  margin-right: 0;
 }
 .item-drawer {
   transform: translateX(100%);
-  margin-left: 12px;
+  margin-left: 0;
 }
 .drawer-dock-right.weapon-drawer,
 .drawer-dock-right.item-drawer {
