@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   root: ".",
+  base: "./",
   publicDir: "assets",
   server: {
     host: "127.0.0.1",
