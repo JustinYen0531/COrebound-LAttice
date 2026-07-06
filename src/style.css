@@ -3906,9 +3906,24 @@ button.禁用:hover {
 
 .音樂浮動面板-列 {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 10px;
+}
+
+.音樂浮動面板-分區 {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(72, 68, 58, 0.12);
+}
+
+.音樂浮動面板-分區標題 {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #5f5747;
+  letter-spacing: 0.04em;
 }
 
 .音樂浮動面板-按鈕 {
@@ -3920,6 +3935,10 @@ button.禁用:hover {
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.音樂浮動面板-按鈕-次要 {
+  min-width: 64px;
 }
 
 .音樂浮動面板-滑桿 {
