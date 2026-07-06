@@ -87,6 +87,7 @@ function slotToLayerRole(slotId: number): { layer: Layer; role: Role } {
 }
 
 export class GameSnapshotSource {
+  private autoFireEnabled = true;
   private moving = false;
   private lastHitAt = 0;
   private lastPlayerHp = 0;
@@ -121,6 +122,7 @@ export class GameSnapshotSource {
 
   /** 每次正式局或訓練局進場時，清除上一局的戰鬥消耗與冷卻。 */
   resetForRun(): void {
+    this.autoFireEnabled = true;
     this.moving = false;
     this.lastHitAt = 0;
     this.lastPlayerHp = 0;
@@ -438,6 +440,22 @@ export class GameSnapshotSource {
   private resolveLayerRoster(roster: RosterMember[], layer: Layer): RosterMember | null {
     const activeRole = ROLE_ORDER[this.activeRoleIndex] ?? "protect";
     return roster.find((member) => member.layer === layer && member.role === activeRole) ?? null;
+  }
+
+  toggleAutoFire(): boolean {
+    this.autoFireEnabled = !this.autoFireEnabled;
+    return this.autoFireEnabled;
+  }
+
+  isAutoFireEnabled(): boolean {
+    return this.autoFireEnabled;
+  }
+
+  /** 世界層每次真正發射前呼叫；一輪多發只扣一次家族耗能。 */
+  authorizeWeaponFire(family: WeaponFamily, energyCost: number): boolean {
+    const weapon = this.weapons.find((entry) => entry.family === family);
+    if (!this.autoFireEnabled || !weapon?.active || weapon.disabledByRoster) return false;
+    return this.energySystem.spend(energyCost);
   }
 
   private buildPartyVitals(runtime: RosterRuntime, captainStar: ControlStar): PartyVital[] {

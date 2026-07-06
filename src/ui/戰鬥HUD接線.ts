@@ -29,6 +29,8 @@ class 戰鬥HUD接線器 {
     window.addEventListener("combat-run-reset", this.onRunReset as EventListener);
     window.addEventListener("combat-tick-progress", this.onCombatTickProgress as EventListener);
     window.addEventListener("combat-tick-pulse", this.onCombatTickPulse as EventListener);
+    window.addEventListener("request-toggle-auto-fire", this.onToggleAutoFire as EventListener);
+    window.addEventListener("request-weapon-fire-authorization", this.onWeaponFireAuthorization as EventListener);
   }
 
   private onRequestCast = (): void => {
@@ -64,6 +66,24 @@ class 戰鬥HUD接線器 {
   private onCombatTickPulse = (): void => {
     this.source.pulseCombatTick();
     this.hud.update(this.source.snapshot(this.currentMode()));
+  };
+
+  private onToggleAutoFire = (raw: Event): void => {
+    const event = raw as CustomEvent<{ resolve?: (enabled: boolean) => void }>;
+    const enabled = this.source.toggleAutoFire();
+    event.detail?.resolve?.(enabled);
+    this.hud.update(this.source.snapshot(this.currentMode()));
+  };
+
+  private onWeaponFireAuthorization = (raw: Event): void => {
+    const event = raw as CustomEvent<{
+      family?: "shield" | "multishot" | "straight" | "mine" | "laser";
+      energyCost?: number;
+      resolve?: (authorized: boolean) => void;
+    }>;
+    const { family, energyCost, resolve } = event.detail ?? {};
+    if (!family || energyCost === undefined || !resolve) return;
+    resolve(this.source.authorizeWeaponFire(family, energyCost));
   };
 
   /** 供驗收控制台讀取目前隊長主動技能的能量/冷卻狀態。 */

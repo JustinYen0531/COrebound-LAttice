@@ -769,9 +769,9 @@ export function 建立世界地圖層(): HTMLElement {
   const updateMiniMapTeleportUi = () => {
     miniMapTeleportButton.textContent = miniMapTeleportArmed ? 雙語("取消傳送", "Cancel Warp") : 雙語("傳送", "Warp");
     miniMapTeleportButton.setAttribute("aria-pressed", miniMapTeleportArmed ? "true" : "false");
-    miniMapTeleportButton.style.borderColor = miniMapTeleportArmed ? "rgba(255, 219, 127, 0.52)" : "rgba(122, 169, 255, 0.36)";
-    miniMapTeleportButton.style.background = miniMapTeleportArmed ? "rgba(90, 65, 20, 0.92)" : "rgba(14, 22, 38, 0.88)";
-    miniMapTeleportButton.style.boxShadow = miniMapTeleportArmed ? "0 0 0 1px rgba(255, 219, 127, 0.18)" : "none";
+    miniMapTeleportButton.style.borderColor = miniMapTeleportArmed ? "rgba(120, 217, 255, 0.58)" : "rgba(255, 224, 145, 0.48)";
+    miniMapTeleportButton.style.background = miniMapTeleportArmed ? "rgba(18, 72, 92, 0.96)" : "rgba(53, 40, 14, 0.94)";
+    miniMapTeleportButton.style.boxShadow = miniMapTeleportArmed ? "0 0 0 1px rgba(120, 217, 255, 0.22)" : "0 6px 18px rgba(0, 0, 0, 0.22)";
     miniMapHint.textContent = miniMapTeleportArmed
       ? 雙語("傳送已啟用，請點小地圖任一位置", "Warp armed. Click anywhere on the mini-map.")
       : 雙語("點一下放大；按傳送後點任一位置；點外面收起", "Tap to expand. Press Warp, then click any point.");
@@ -861,7 +861,20 @@ export function 建立世界地圖層(): HTMLElement {
 
   const exclaim = document.createElement("button");
   exclaim.className = "世界地圖層-驚嘆號";
-  exclaim.innerHTML = "❗";
+  Object.assign(exclaim.style, {
+    width: "auto",
+    minWidth: "178px",
+    height: "auto",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    background: "rgba(16, 15, 12, 0.9)",
+    border: "1px solid rgba(255, 244, 207, 0.78)",
+    color: "#fff8e5",
+    font: "800 12px Georgia, serif",
+    letterSpacing: "0.06em",
+    boxShadow: "0 5px 16px rgba(0,0,0,0.38)",
+    whiteSpace: "nowrap",
+  });
   exclaim.style.display = "none";
   exclaim.onclick = () => 應用程式狀態.點擊驚嘆號提示();
   canvas.appendChild(exclaim);
@@ -876,6 +889,49 @@ export function 建立世界地圖層(): HTMLElement {
   managementButton.title = 雙語("打開管理介面", "Open Management");
   managementButton.onclick = () => 應用程式狀態.進入管理介面("小隊");
   canvas.appendChild(managementButton);
+
+  let autoFireEnabled = true;
+  const autoFireButton = document.createElement("button");
+  autoFireButton.type = "button";
+  autoFireButton.setAttribute("aria-pressed", "true");
+  Object.assign(autoFireButton.style, {
+    position: "absolute",
+    left: "50%",
+    bottom: "270px",
+    transform: "translateX(-50%)",
+    zIndex: "42",
+    minWidth: "178px",
+    padding: "10px 20px",
+    border: "1px solid rgba(255, 220, 128, 0.82)",
+    borderRadius: "999px",
+    background: "rgba(19, 18, 15, 0.9)",
+    color: "#fff4cf",
+    boxShadow: "0 5px 18px rgba(0,0,0,0.34)",
+    font: "800 13px Georgia, serif",
+    letterSpacing: "0.11em",
+    cursor: "pointer",
+  });
+  const refreshAutoFireButton = () => {
+    autoFireButton.textContent = autoFireEnabled ? "AUTO FIRE: ON" : "HOLD FIRE";
+    autoFireButton.setAttribute("aria-pressed", autoFireEnabled ? "true" : "false");
+    autoFireButton.style.opacity = autoFireEnabled ? "1" : "0.72";
+    autoFireButton.style.borderColor = autoFireEnabled
+      ? "rgba(255, 220, 128, 0.82)"
+      : "rgba(220, 226, 235, 0.55)";
+  };
+  autoFireButton.onclick = () => {
+    window.dispatchEvent(new CustomEvent("request-toggle-auto-fire", {
+      detail: {
+        resolve: (enabled: boolean) => {
+          autoFireEnabled = enabled;
+          refreshAutoFireButton();
+          顯示技能提示(enabled ? "AUTO FIRE ENABLED" : "HOLD FIRE — ENERGY RESERVED");
+        },
+      },
+    }));
+  };
+  refreshAutoFireButton();
+  canvas.appendChild(autoFireButton);
 
   const pressed = new Set<string>();
   let rafId = 0;
@@ -950,6 +1006,19 @@ export function 建立世界地圖層(): HTMLElement {
       objectLayer.appendChild(node);
       chestNodes.set(chest.id, node);
     }
+
+    const nearestChest = worldChests
+      .map((chest) => ({ chest, distance: Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) }))
+      .filter((entry) => entry.distance <= 190)
+      .sort((a, b) => a.distance - b.distance)[0];
+    const nearestResource = resourceDrops
+      .map((drop) => ({ drop, distance: Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) }))
+      .filter((entry) => entry.distance <= 190)
+      .sort((a, b) => a.distance - b.distance)[0];
+    const nearestDeathDrop = deathDrops
+      .map((drop) => ({ drop, distance: Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) }))
+      .filter((entry) => entry.distance <= 190)
+      .sort((a, b) => a.distance - b.distance)[0];
     for (const [id, node] of chestNodes) {
       if (liveIds.has(id)) continue;
       node.remove();
@@ -959,7 +1028,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   function 嘗試開啟寶箱(chest: WorldChestInstance): void {
     if (Math.hypot(chest.x - playerPos.x, chest.y - playerPos.y) > 190) {
-      顯示技能提示("靠近寶箱後按 E 開啟");
+      顯示技能提示(雙語("靠近寶箱後按 E 開啟", "Move closer and press E to open"));
       return;
     }
     let handled = false;
@@ -980,7 +1049,7 @@ export function 建立世界地圖層(): HTMLElement {
   function 處理寶箱結果(chest: WorldChestInstance, result: ChestOpenResult): void {
     if (!result.ok || !result.drop) {
       播放音效("交易失敗");
-      顯示技能提示(result.reason ?? "無法開啟寶箱");
+      顯示技能提示(result.reason ?? 雙語("無法開啟寶箱", "Unable to open chest"));
       return;
     }
     播放音效("寶箱開啟");
@@ -990,7 +1059,10 @@ export function 建立世界地圖層(): HTMLElement {
     記錄對局掉落(drop.gems, drop.materials.reduce((total, entry) => total + entry.count, 0));
     標記世界寶箱已開啟(chest.id);
     syncWorldChests(true);
-    顯示技能提示(`禪繞寶箱｜原石 ${drop.gems}｜材料 ${drop.materials.reduce((total, entry) => total + entry.count, 0)}`);
+    顯示技能提示(雙語(
+      `禪繞寶箱｜原石 ${drop.gems}｜材料 ${drop.materials.reduce((total, entry) => total + entry.count, 0)}`,
+      `Zen Chest | Gems ${drop.gems} | Materials ${drop.materials.reduce((total, entry) => total + entry.count, 0)}`,
+    ));
   }
 
   function syncDeathDrops(): void {
@@ -1033,7 +1105,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   function 嘗試拾取死亡遺落(drop: 死亡遺落物): void {
     if (Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) > 190) {
-      顯示技能提示("靠近遺落材料後按 E 取回");
+      顯示技能提示(雙語("靠近遺落材料後按 E 取回", "Move closer and press E to reclaim"));
       return;
     }
     const picked = 拾取死亡遺落物(drop.id);
@@ -1100,6 +1172,13 @@ export function 建立世界地圖層(): HTMLElement {
   // 武器 speed 是「設計單位」(straight=18)，但世界座標尺度極大（怪物在數百~數千）。
   // 乘上此比例把彈速換算到世界座標，讓子彈能在存活時間內真正飛到目標。
   const PROJECTILE_SPEED_SCALE = 40;
+  const WEAPON_ENERGY_COST: Record<Family, number> = {
+    shield: 3,
+    multishot: 2,
+    straight: 2,
+    mine: 4,
+    laser: 0,
+  };
   let 已觸發陣亡 = false;
   let 復活保護到 = 0;
 
@@ -1118,6 +1197,18 @@ export function 建立世界地圖層(): HTMLElement {
     const worldSpeed = weapon.speed * PROJECTILE_SPEED_SCALE;
     if (family === "mine") return worldSpeed * 0.25; // 0.5 秒等減速至停止的位移
     return worldSpeed * DEFAULT_LIFE_SECONDS;
+  }
+
+  function 允許武器發射(family: Family): boolean {
+    let authorized = false;
+    window.dispatchEvent(new CustomEvent("request-weapon-fire-authorization", {
+      detail: {
+        family,
+        energyCost: WEAPON_ENERGY_COST[family],
+        resolve: (result: boolean) => { authorized = result; },
+      },
+    }));
+    return authorized;
   }
 
   // —— 擊殺掉落與擊殺統計（Batch 2）——
@@ -1450,14 +1541,28 @@ export function 建立世界地圖層(): HTMLElement {
     const nearest = near[0];
     if (nearest) {
       exclaim.style.display = "flex";
+      exclaim.textContent = "E  ·  PRESS E TO INTERACT";
       exclaim.style.setProperty("--x", `${playerScreen.x + 26}px`);
       exclaim.style.setProperty("--y", `${playerScreen.y - 36}px`);
-      exclaim.title = `點擊開啟「${nearest.label}」互動`;
+      exclaim.title = `Press E to interact with ${facilityEnglishLabel(nearest)}`;
     } else if (nearestPortal) {
       exclaim.style.display = "flex";
+      exclaim.textContent = "E  ·  PRESS E TO WARP";
       exclaim.style.setProperty("--x", `${playerScreen.x + 26}px`);
       exclaim.style.setProperty("--y", `${playerScreen.y - 36}px`);
       exclaim.title = 雙語(`靠近後按 E 傳送到「${nearestPortal.portalTargetNameZh}」`, `Press E nearby to warp to "${nearestPortal.portalTargetNameEn}"`);
+    } else if (nearestResource || nearestDeathDrop) {
+      exclaim.style.display = "flex";
+      exclaim.textContent = "E  ·  PRESS E TO PICK UP";
+      exclaim.style.setProperty("--x", `${playerScreen.x + 26}px`);
+      exclaim.style.setProperty("--y", `${playerScreen.y - 36}px`);
+      exclaim.title = "Press E to pick up nearby resources";
+    } else if (nearestChest) {
+      exclaim.style.display = "flex";
+      exclaim.textContent = "E  ·  PRESS E TO OPEN";
+      exclaim.style.setProperty("--x", `${playerScreen.x + 26}px`);
+      exclaim.style.setProperty("--y", `${playerScreen.y - 36}px`);
+      exclaim.title = "Press E to open the Zen Chest";
     } else {
       exclaim.style.display = "none";
     }
@@ -1586,6 +1691,7 @@ export function 建立世界地圖層(): HTMLElement {
       familyFireTimers[family] += dt;
       const period = FAMILY_FIRE_PERIOD[family] * TICK_SECONDS;
       if (familyFireTimers[family] < period) continue;
+      if (!允許武器發射(family)) continue;
       familyFireTimers[family] = 0;
       const aim = { x: target.pos.x - playerPos.x, y: target.pos.y - playerPos.y };
       套用世界彈速(
@@ -2139,7 +2245,10 @@ export function 建立世界地圖層(): HTMLElement {
         if (nearbyPickup.materials > 0 || nearbyPickup.gems > 0) {
           // 一般撿取聲由 嘗試拾取資源掉落 逐堆發出；這裡只補死亡遺落回收的重要撿取聲。
           if (nearbyPickup.deathPiles > 0) 播放音效("撿取重要");
-          顯示技能提示(`已拾取附近資源｜材料 ${nearbyPickup.materials}｜原石 ${nearbyPickup.gems}`);
+          顯示技能提示(雙語(
+            `已拾取附近資源｜材料 ${nearbyPickup.materials}｜原石 ${nearbyPickup.gems}`,
+            `Resources Collected | Materials ${nearbyPickup.materials} | Gems ${nearbyPickup.gems}`,
+          ));
           return;
         }
         const nearestChest = worldChests
@@ -2149,7 +2258,10 @@ export function 建立世界地圖層(): HTMLElement {
         if (nearestChest) {
           嘗試開啟寶箱(nearestChest.chest);
         } else {
-          顯示技能提示("靠近資源、寶箱或傳送門後按 E");
+          顯示技能提示(雙語(
+            "靠近資源、寶箱或傳送門後按 E",
+            "Move near a resource, chest, facility, or gate and press E",
+          ));
         }
       }
       return;
@@ -2607,7 +2719,7 @@ function createObjectNode(object: MapObject): HTMLElement {
     const mainImg = document.createElement("img");
     mainImg.className = "世界地圖層-物件-image";
     mainImg.src = imagePath;
-    mainImg.alt = object.label;
+    mainImg.alt = facilityEnglishLabel(object);
     mainImg.draggable = false;
     bodyLayer.appendChild(mainImg);
   } else {
@@ -2621,11 +2733,39 @@ function createObjectNode(object: MapObject): HTMLElement {
 
   const label = document.createElement("span");
   label.className = "世界地圖層-物件-label";
-  label.textContent = object.label;
+  label.textContent = facilityEnglishLabel(object);
 
   node.append(beacon, visualLayer, label);
-  node.title = object.detail ?? object.label;
+  node.title = `${facilityEnglishLabel(object)} | Press E to interact`;
   return node;
+}
+
+function facilityEnglishLabel(object: MapObject): string {
+  const worldName: Record<Exclude<Region, "plaza">, string> = {
+    geometry: "Geometry",
+    organic: "Organic",
+    fractal: "Fractal",
+    mechanical: "Mechanical",
+  };
+  const familyName: Record<Family, string> = {
+    shield: "Shield",
+    multishot: "Multishot",
+    straight: "Straight",
+    mine: "Mine",
+    laser: "Laser",
+  };
+  if (object.kind === "合成") {
+    const number = object.id.match(/_(\d+)$/)?.[1];
+    return `Workbench${number ? ` ${number}` : ""}`;
+  }
+  if (object.kind === "雕像") {
+    const member = object.memberNo ? MEMBERS.find((entry) => entry.no === object.memberNo) : undefined;
+    return `${member?.nameEn ?? "Member"} Statue`;
+  }
+  if (object.kind === "商店") return "Wandering Shop";
+  if (object.kind === "熔爐") return `${object.family ? familyName[object.family] : "Family"} Forge`;
+  if (object.summonType === "cola" || object.region === "plaza") return "COLA Assembly Altar";
+  return `${worldName[object.region]} Guardian Altar`;
 }
 
 function facilityImagePath(object: MapObject): string | null {
