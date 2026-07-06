@@ -41,6 +41,20 @@ This game is **far from finished** and is currently a **playable prototype**.
 
 ---
 
+### ☕ Theme Interpretation & World Concepts
+
+Rather than treating COLA and COFFEE as literal beverages, we chose to interpret both themes as fictional projects and world concepts that shape the entire universe of our game.
+
+🥤 **COLA: COrebound LAttice**
+*   **The Name**: The title of our game, **CO**rebound **LA**ttice, is formed by taking the first two letters of each word (**CO** + **LA**) to spell out **COLA**.
+*   **The Core & The Boss**: COLA represents the central structure that binds together four fractured worlds. Players explore each world, defeat its Guardian, and finally challenge COLA, the core entity that maintains the balance between all realities.
+*   **The Captains' Secret**: The four initial Captains you play as—**C**onductor, **O**perator, **L**auncher, and **A**rchitect—spell out **COLA** with their initials. Far from being mere leaders, they are actually scattered soul shards of the final boss, COLA, striving to reclaim their lost power.
+
+☕ **COFFEE: COoperative Free Frontier Environmental Expedition**
+*   **The Exploration**: COFFEE is interpreted as an exploration initiative within the Corebound universe. Rather than referring to coffee itself, it represents the spirit of venturing into unknown frontiers, uncovering forgotten civilizations, and documenting the world's hidden structures. This concept also lays the foundation for future exploration-oriented content beyond the main campaign.
+
+---
+
 ### 🛠️ Development Backstory
 This project was born out of a desire to create a deeper, more tactical, and slower-paced squad-battler. 
 *   **Preparation**: 2 days of initial framework setup.
