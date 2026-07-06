@@ -223,6 +223,12 @@ const PLAYER_RING_BANDS: Array<{ layer: 玩家戰鬥圈層; inner: number; outer
   { layer: "middle", inner: 140, outer: 220 },
   { layer: "outer", inner: 220, outer: 300 },
 ];
+const PLAYER_RING_CONTACT_PADDING: Record<玩家戰鬥圈層, number> = {
+  captain: 0,
+  inner: 6,
+  middle: 12,
+  outer: 24,
+};
 const REFERENCE_CAMERA_ZOOM = 2.43;
 const DEFAULT_CAMERA_ZOOM = 1.0;
 const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
@@ -1768,9 +1774,10 @@ export function 建立世界地圖層(): HTMLElement {
       .filter(({ layer, inner, outer }) => {
         if (layer === "middle" && 玩家最大展開層級 < 2) return false;
         if (layer === "outer" && 玩家最大展開層級 < 3) return false;
-        const outerWorld = 圖騰半徑轉世界(outer);
+        const paddingWorld = 圖騰半徑轉世界(PLAYER_RING_CONTACT_PADDING[layer]);
+        const outerWorld = 圖騰半徑轉世界(outer) + paddingWorld;
         if (layer === "captain") return distance <= outerWorld + monsterRadius;
-        const innerWorld = 圖騰半徑轉世界(inner);
+        const innerWorld = Math.max(0, 圖騰半徑轉世界(inner) - paddingWorld);
         return distance - monsterRadius <= outerWorld && distance + monsterRadius >= innerWorld;
       })
       .map(({ layer }) => layer);
