@@ -235,15 +235,15 @@ function 合成面板(): HTMLElement {
               }).join("")}
             </div>
             <div style="margin-top: 8px; color: #8d93ad;">${雙語("上陣隊員", "Deployed Members")}:</div>
-            <div style="display: flex; flex-direction: column; gap: 4px; max-height: 122px; overflow-y: auto; padding-right: 4px;">
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 4px;">
               ${squad.map((m, index) => {
                 const canUpgrade = m.star < 3;
                 const matchDef = MEMBERS.find((candidate) => candidate.no === m.memberNo);
                 const name = matchDef ? (應用程式狀態.額外.語言 === "zh" ? matchDef.nameZh : matchDef.nameEn) : `No.${m.memberNo}`;
                 return `
-                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(0,0,0,0.16); padding: 4px 6px; border-radius: 4px;">
-                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name} <b style="color:#ffd24d;">${m.star}★</b></span>
-                    <button class="三級按鈕 上陣升星-btn" data-squad-index="${index}" style="font-size: 0.68rem; padding: 1px 6px;" ${canUpgrade && online ? "" : "disabled"}>${canUpgrade ? 雙語("升星", "Upgrade") : "MAX"}</button>
+                  <div style="display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.16); padding: 5px 6px; border-radius: 4px; min-width: 0;">
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.72rem;">${name} <b style="color:#ffd24d;">${m.star}★</b></span>
+                    <button class="三級按鈕 上陣升星-btn" data-squad-index="${index}" style="font-size: 0.64rem; padding: 2px 0; width: 100%;" ${canUpgrade && online ? "" : "disabled"}>${canUpgrade ? 雙語("升星", "Upgrade") : "MAX"}</button>
                   </div>
                 `;
               }).join("")}
