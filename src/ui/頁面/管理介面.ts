@@ -655,12 +655,19 @@ function 建立管理音量控制(): HTMLElement {
   track.style.color = "#7080a3";
   track.style.textAlign = "right";
 
+  const scene = document.createElement("div");
+  scene.style.gridColumn = "1 / -1";
+  scene.style.fontSize = "0.7rem";
+  scene.style.color = "#8d93ad";
+  scene.style.textAlign = "right";
+
   const render = () => {
     const state = 取得音樂狀態();
     slider.value = String(Math.round(state.volume * 100));
     muteBtn.textContent = state.muted ? 雙語("取消靜音", "Unmute") : 雙語("靜音", "Mute");
     value.textContent = state.muted ? 雙語("已靜音", "Muted") : `${Math.round(state.volume * 100)}%`;
     track.textContent = `${雙語("目前曲目", "Now Playing")}: ${state.trackLabel}`;
+    scene.textContent = `${雙語("目前場景", "Current Scene")}: ${state.sceneLabel}`;
   };
 
   muteBtn.onclick = () => {
@@ -681,7 +688,7 @@ function 建立管理音量控制(): HTMLElement {
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
-  wrap.append(label, muteBtn, slider, value, track);
+  wrap.append(label, muteBtn, slider, value, track, scene);
   render();
   return wrap;
 }

@@ -22,6 +22,7 @@ interface 音樂狀態 {
   volume: number;
   muted: boolean;
   trackLabel: string;
+  sceneLabel: string;
 }
 
 const VOLUME_STORAGE_KEY = "cola-music-volume";
@@ -100,6 +101,23 @@ function 解析戰場音軌(): 音軌鍵 {
   return "showdown";
 }
 
+function 解析音樂場景標籤(): string {
+  const layer = 應用程式狀態.畫面.層;
+  if (layer === "主畫面") return "Lobby";
+  if (layer === "遊戲準備流程") return "Pre-Match Setup";
+  if (layer === "結算頁") return "Settlement";
+  if (layer === "管理介面" || layer === "操作頁面") {
+    if (應用程式狀態.畫面.訓練道場) return "Training Dojo";
+    if (戰場情境.boss === "cola") return "Final Boss";
+    if (戰場情境.boss === "geometry") return "Geometry Guardian";
+    if (戰場情境.boss === "organic") return "Organic Guardian";
+    if (戰場情境.boss === "fractal") return "Fractal Guardian";
+    if (戰場情境.boss === "mechanical") return "Mechanical Guardian";
+    return "Battlefield";
+  }
+  return "Lobby";
+}
+
 function 解析目標音軌(): 音軌鍵 {
   const layer = 應用程式狀態.畫面.層;
   if (layer === "操作頁面" || layer === "管理介面") {
@@ -172,6 +190,7 @@ export function 取得音樂狀態(): 音樂狀態 {
     volume: 音量,
     muted: 靜音,
     trackLabel: 目前音軌 ? 音軌表[目前音軌].label : "未播放",
+    sceneLabel: 解析音樂場景標籤(),
   };
 }
 

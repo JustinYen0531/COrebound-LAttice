@@ -531,6 +531,11 @@ function 英文模式分隔(): string {
 
 function 建立操作頁音樂控制(): HTMLElement {
   const wrap = document.createElement("div");
+  wrap.style.position = "absolute";
+  wrap.style.top = "18px";
+  wrap.style.right = "24px";
+  wrap.style.zIndex = "27";
+  wrap.style.width = "min(420px, calc(100vw - 48px))";
   wrap.style.display = "grid";
   wrap.style.gridTemplateColumns = "auto auto minmax(112px, 148px) auto";
   wrap.style.alignItems = "center";
@@ -574,12 +579,19 @@ function 建立操作頁音樂控制(): HTMLElement {
   track.style.color = "#7080a3";
   track.style.textAlign = "right";
 
+  const scene = document.createElement("div");
+  scene.style.gridColumn = "1 / -1";
+  scene.style.fontSize = "0.7rem";
+  scene.style.color = "#8d93ad";
+  scene.style.textAlign = "right";
+
   const render = () => {
     const state = 取得音樂狀態();
     slider.value = String(Math.round(state.volume * 100));
     muteBtn.textContent = state.muted ? 雙語("取消靜音", "Unmute") : 雙語("靜音", "Mute");
     value.textContent = state.muted ? 雙語("已靜音", "Muted") : `${Math.round(state.volume * 100)}%`;
     track.textContent = `${雙語("目前曲目", "Now Playing")}: ${state.trackLabel}`;
+    scene.textContent = `${雙語("目前場景", "Current Scene")}: ${state.sceneLabel}`;
   };
 
   muteBtn.onclick = () => {
@@ -600,7 +612,7 @@ function 建立操作頁音樂控制(): HTMLElement {
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
-  wrap.append(label, muteBtn, slider, value, track);
+  wrap.append(label, muteBtn, slider, value, track, scene);
   render();
   return wrap;
 }
@@ -617,6 +629,7 @@ export function 渲染操作頁面(容器: HTMLElement) {
   try {
     // 世界地圖層:玩家可走動、靠近設施觸發互動
     root.appendChild(建立世界地圖層());
+    root.appendChild(建立操作頁音樂控制());
 
     if (state.訓練道場) {
       root.appendChild(建立訓練道場快捷面板());

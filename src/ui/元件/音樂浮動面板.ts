@@ -19,6 +19,9 @@ export function 建立音樂浮動面板(): HTMLElement {
   const track = document.createElement("span");
   track.className = "音樂浮動面板-音軌";
 
+  const scene = document.createElement("div");
+  scene.className = "音樂浮動面板-場景";
+
   title.append(titleText, track);
 
   const row = document.createElement("div");
@@ -48,6 +51,7 @@ export function 建立音樂浮動面板(): HTMLElement {
     muteBtn.textContent = state.muted ? 雙語("取消靜音", "Unmute") : 雙語("靜音", "Mute");
     value.textContent = state.muted ? 雙語("已靜音", "Muted") : `${Math.round(state.volume * 100)}%`;
     track.textContent = `${雙語("目前", "Now")}: ${state.trackLabel}`;
+    scene.textContent = `${雙語("場景", "Scene")}: ${state.sceneLabel}`;
     hint.textContent = 雙語("這裡會直接影響主畫面、準備頁、戰場、Boss 與結算音樂。", "This changes the lobby, setup, battlefield, boss, and settlement music.");
     titleText.textContent = 雙語("音樂控制", "Music Control");
   };
@@ -62,7 +66,7 @@ export function 建立音樂浮動面板(): HTMLElement {
   };
 
   row.append(muteBtn, slider, value);
-  wrap.append(title, row, hint);
+  wrap.append(title, row, scene, hint);
 
   const unsubscribe = 訂閱音樂狀態(render);
   const observer = new MutationObserver(() => {

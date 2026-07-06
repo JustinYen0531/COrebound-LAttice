@@ -59,7 +59,9 @@ export function 啟動路由器(根節點: HTMLElement) {
 
     if (浮動容器) {
       浮動容器.innerHTML = "";
-      浮動容器.appendChild(建立音樂浮動面板());
+      if (currentLayer === "主畫面" || currentLayer === "遊戲準備流程" || currentLayer === "結算頁") {
+        浮動容器.appendChild(建立音樂浮動面板());
+      }
     }
   }
 

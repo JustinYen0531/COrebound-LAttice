@@ -3677,7 +3677,7 @@ button.禁用:hover {
 .音樂浮動面板 {
   position: absolute;
   top: 20px;
-  left: 20px;
+  right: 20px;
   width: min(340px, calc(100vw - 32px));
   padding: 14px 16px;
   border-radius: 18px;
@@ -3688,6 +3688,12 @@ button.禁用:hover {
   pointer-events: auto;
   display: grid;
   gap: 10px;
+}
+
+.音樂浮動面板-場景 {
+  font-size: 0.72rem;
+  color: #62708f;
+  text-align: right;
 }
 
 .音樂浮動面板-標題 {
@@ -3749,7 +3755,7 @@ button.禁用:hover {
 @media (max-width: 720px) {
   .音樂浮動面板 {
     top: 12px;
-    left: 12px;
+    right: 12px;
     width: auto;
   }
 }
