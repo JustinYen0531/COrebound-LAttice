@@ -25,6 +25,8 @@ const DETAILED_WORLD_FLOORS_STORAGE_KEY = "cola-detailed-world-floors";
 interface 額外狀態 {
   語言: 語言代碼;
   世界地板細節模式: 世界地板細節模式;
+  Showcase模式: boolean;
+  Showcase移動倍率: number;
   滑動面板: 滑動面板; // R1：左右滑互斥
   圓盤展開階段: 0 | 1 | 2 | 3; // 0=收起, 1=內圈, 2=中圈, 3=外圈
   選中隊長: string | null;
@@ -85,6 +87,8 @@ class 應用程式狀態機 {
   額外: 額外狀態 = {
     語言: 讀取初始語言(),
     世界地板細節模式: 讀取世界地板細節模式偏好(),
+    Showcase模式: false,
+    Showcase移動倍率: 1,
     滑動面板: "無",
     圓盤展開階段: 0,
     選中隊長: null,
@@ -170,7 +174,19 @@ class 應用程式狀態機 {
 
   // ---- 遊戲準備流程 / 進場 ----
   進入遊戲準備流程(來源: "New Game" | "Continue Game" | "再來一場") {
+    if (來源 === "New Game" || 來源 === "再來一場") this.額外.Showcase模式 = false;
     this.更新畫面({ 層: "遊戲準備流程", 來源 });
+  }
+
+  設定Showcase模式(啟用: boolean) {
+    this.額外.Showcase模式 = 啟用;
+    this.額外.Showcase移動倍率 = 1;
+    this.通知();
+  }
+
+  設定Showcase移動倍率(倍率: number) {
+    this.額外.Showcase移動倍率 = Math.max(0.5, Math.min(2, 倍率));
+    this.通知();
   }
 
   確認進場(訓練道場 = false) {
@@ -179,6 +195,7 @@ class 應用程式狀態機 {
     this.額外.縮圈警戒 = false;
     this.額外.滑動面板 = "無";
     this.額外.圓盤展開階段 = 0;
+    if (訓練道場) this.額外.Showcase模式 = false;
     // 正式遊玩進場時把玩家生命補滿（訓練道場另由其狀態自行管理）。
     if (!訓練道場) {
       if (進場來源 !== "Continue Game") 套用起始成員配置();

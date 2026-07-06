@@ -247,6 +247,22 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
 
   root.appendChild(畫質區);
 
+  if (state.來源 !== "Continue Game") {
+    const showcase = document.createElement("label");
+    showcase.className = `準備流程-Showcase ${應用程式狀態.額外.Showcase模式 ? "作用中" : ""}`;
+    showcase.innerHTML = `
+      <input type="checkbox" ${應用程式狀態.額外.Showcase模式 ? "checked" : ""} />
+      <span class="準備流程-Showcase勾選"></span>
+      <span>
+        <strong>${雙語("開啟 Showcase 模式", "Enable Showcase Mode")}</strong>
+        <small>${雙語("在正常對局中開放召敵、回復、資源、進度與速度等沙盒工具；戰鬥、掉落與結算仍使用正式規則。", "Unlock sandbox tools for spawning, healing, resources, progression, and speed inside a normal run. Combat, drops, and settlement still use the formal rules.")}</small>
+      </span>
+    `;
+    const checkbox = showcase.querySelector<HTMLInputElement>("input")!;
+    checkbox.onchange = () => 應用程式狀態.設定Showcase模式(checkbox.checked);
+    root.appendChild(showcase);
+  }
+
   const 底部按鈕列 = document.createElement("div");
   底部按鈕列.className = "按鈕列";
   const 取消 = document.createElement("button");

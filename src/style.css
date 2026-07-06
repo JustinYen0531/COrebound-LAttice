@@ -3366,6 +3366,62 @@ button.禁用:hover {
   will-change: transform;
   transition: filter 180ms ease;
 }
+
+.準備流程-Showcase {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid rgba(141, 106, 55, 0.28);
+  border-radius: 14px;
+  background: linear-gradient(120deg, rgba(255, 247, 220, 0.78), rgba(218, 199, 157, 0.28));
+  cursor: pointer;
+}
+
+.準備流程-Showcase.作用中 {
+  border-color: rgba(174, 116, 31, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 244, 191, 0.72), 0 8px 24px rgba(91, 64, 27, 0.12);
+}
+
+.準備流程-Showcase input { position: absolute; opacity: 0; pointer-events: none; }
+.準備流程-Showcase勾選 {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #8c6a38;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.72);
+}
+.準備流程-Showcase.作用中 .準備流程-Showcase勾選 {
+  background: #b77924;
+  box-shadow: inset 0 0 0 5px #f8edcf;
+}
+.準備流程-Showcase strong { display: block; color: #4c351d; font-size: 0.96rem; }
+.準備流程-Showcase small { display: block; margin-top: 5px; color: #745b3e; line-height: 1.55; }
+
+.Showcase控制台 {
+  position: absolute;
+  top: 76px;
+  left: 20px;
+  z-index: 28;
+  width: min(390px, calc(100vw - 40px));
+  padding: 14px;
+  border: 1px solid rgba(229, 185, 91, 0.55);
+  border-radius: 14px;
+  background: rgba(13, 16, 24, 0.94);
+  box-shadow: 0 18px 46px rgba(0,0,0,0.4);
+  color: #eef1ff;
+}
+.Showcase控制台 header { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.Showcase控制台 header small { display: block; color: #e4b85f; letter-spacing: 0.14em; }
+.Showcase控制台 header strong { display: block; margin-top: 3px; color: #f5e8c9; }
+.Showcase控制台-內容 { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; max-height: calc(100vh - 160px); overflow-y: auto; }
+.Showcase控制台-內容[hidden] { display: none; }
+.Showcase控制台-狀態 { padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); color: #b9c2da; font-size: 0.74rem; }
+.Showcase控制台-列 { display: flex; flex-wrap: wrap; gap: 7px; margin: 0; }
+.Showcase控制台 label { display: flex; flex-direction: column; gap: 6px; color: #d9c79f; font-size: 0.76rem; }
+.Showcase控制台 select { width: 100%; padding: 9px 10px; border: 1px solid rgba(229,185,91,0.32); border-radius: 8px; background: #171c29; color: #eef1ff; }
 .世界地圖層-玩家 svg {
   width: 100%;
   height: 100%;
@@ -3378,7 +3434,8 @@ button.禁用:hover {
   transition: opacity 160ms ease;
 }
 .世界地圖層-玩家 .玩家標記圖騰-隊長核心 {
-  transform-origin: center;
+  transform-box: view-box;
+  transform-origin: 160px 160px;
   transition: transform 180ms ease, filter 180ms ease;
 }
 .世界地圖層-玩家.世界地圖層-玩家-tick-hit {

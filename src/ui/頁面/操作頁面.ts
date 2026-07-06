@@ -33,7 +33,7 @@ import {
   隊員累計總星級,
   重置養成,
 } from "../../progression/養成狀態";
-import { 刷新正式最大生命 } from "../正式對局小隊狀態";
+import { 刷新正式最大生命, 回滿正式玩家生命, 取得正式小隊摘要 } from "../正式對局小隊狀態";
 import { 對局進度摘要, 記錄世界擊殺, 重置對局進度 } from "../對局進度狀態";
 import { 重置驗收場狀態, 取得驗收場快照 } from "../驗收場狀態";
 import { 隊長清單 } from "../資料/隊長清單";
@@ -65,6 +65,82 @@ function 家族顯示名(family: string): string {
 
 function 發送訓練場事件(type: string): void {
   window.dispatchEvent(new CustomEvent("dojo-acceptance-action", { detail: { type } }));
+}
+
+function 發送Showcase事件(type: string, detail: Record<string, unknown> = {}): void {
+  window.dispatchEvent(new CustomEvent("showcase-action", { detail: { type, ...detail } }));
+}
+
+function 建立Showcase快捷面板(): HTMLElement {
+  const panel = document.createElement("aside");
+  panel.className = "Showcase控制台";
+  let 收合 = false;
+
+  const render = () => {
+    const hp = 取得正式小隊摘要();
+    const catalog = 取得可召喚怪物圖鑑();
+    const selectedId = 取得訓練道場摘要().selectedEnemyMonsterId || catalog[0]?.id || "";
+    panel.innerHTML = `
+      <header><div><small>SHOWCASE MODE</small><strong>${雙語("正式對局沙盒工具", "Formal Run Sandbox")}</strong></div><button class="二級按鈕" data-collapse>${收合 ? "+" : "−"}</button></header>
+      <div class="Showcase控制台-內容" ${收合 ? "hidden" : ""}>
+        <div class="Showcase控制台-狀態">${雙語("正式生命", "Formal HP")} ${hp.playerHp}/${hp.playerMaxHp} · ${雙語("工具只影響本局", "Tools affect this run only")}</div>
+        <div class="Showcase控制台-列"><button class="一級按鈕" data-management>${雙語("管理介面", "Management")}</button><button class="二級按鈕" data-heal>${雙語("回滿生命", "Restore HP")}</button><button class="二級按鈕" data-clear>${雙語("清空敵群", "Clear Enemies")}</button></div>
+        <label>${雙語("就地召敵", "Spawn Enemies Here")}<select data-enemy></select></label>
+        <div class="Showcase控制台-列"><button class="一級按鈕" data-spawn="1">${雙語("召喚 1", "Spawn 1")}</button><button class="二級按鈕" data-spawn="3">${雙語("召喚 3", "Spawn 3")}</button><button class="二級按鈕" data-spawn="6">${雙語("召喚 6", "Spawn 6")}</button></div>
+        <label>${雙語("移動速度", "Move Speed")}<div class="Showcase控制台-列" data-speed></div></label>
+        <div class="Showcase控制台-列"><button class="二級按鈕" data-resources>${雙語("給測試資源", "Give Test Resources")}</button><button class="二級按鈕" data-upgrade>${雙語("全員升星", "Upgrade All")}</button></div>
+        <div class="Showcase控制台-列"><button class="二級按鈕" data-guardians>${雙語("達成並召喚守護者", "Ready & Spawn Guardians")}</button><button class="二級按鈕" data-cola>${雙語("召喚 COLA", "Spawn COLA")}</button></div>
+      </div>`;
+
+    panel.querySelector<HTMLButtonElement>("[data-collapse]")!.onclick = () => { 收合 = !收合; render(); };
+    panel.querySelector<HTMLButtonElement>("[data-management]")!.onclick = () => 應用程式狀態.進入管理介面("小隊");
+    panel.querySelector<HTMLButtonElement>("[data-heal]")!.onclick = () => { 回滿正式玩家生命(); render(); };
+    panel.querySelector<HTMLButtonElement>("[data-clear]")!.onclick = () => 發送Showcase事件("clear_enemies");
+
+    const enemySelect = panel.querySelector<HTMLSelectElement>("[data-enemy]")!;
+    for (const monster of catalog) {
+      const option = document.createElement("option");
+      option.value = monster.id;
+      option.selected = monster.id === selectedId;
+      option.textContent = `T${monster.tier} | ${monster.no.toString().padStart(2, "0")} ${應用程式狀態.額外.語言 === "zh" ? monster.nameZh : monster.nameEn}`;
+      enemySelect.appendChild(option);
+    }
+    enemySelect.onchange = () => 設定訓練預選怪物(enemySelect.value);
+    panel.querySelectorAll<HTMLButtonElement>("[data-spawn]").forEach((button) => {
+      button.onclick = () => 發送Showcase事件("spawn_enemies", { monsterId: enemySelect.value, count: Number(button.dataset.spawn) });
+    });
+
+    const speedRow = panel.querySelector<HTMLElement>("[data-speed]")!;
+    [0.5, 1, 1.5, 2].forEach((scale) => {
+      const button = document.createElement("button");
+      button.className = Math.abs(應用程式狀態.額外.Showcase移動倍率 - scale) < 0.01 ? "一級按鈕" : "二級按鈕";
+      button.textContent = `${scale}x`;
+      button.onclick = () => 應用程式狀態.設定Showcase移動倍率(scale);
+      speedRow.appendChild(button);
+    });
+
+    panel.querySelector<HTMLButtonElement>("[data-resources]")!.onclick = () => {
+      背包.加入原石(2000);
+      for (const family of ["shield", "multishot", "straight", "mine", "laser"] as const) 背包.加入碎片(family, 100);
+      for (let no = 1; no <= 24; no += 1) 背包.加入材料(no, 20);
+      render();
+    };
+    panel.querySelector<HTMLButtonElement>("[data-upgrade]")!.onclick = () => {
+      for (let round = 0; round < 6; round += 1) for (let index = 0; index < 取得上陣養成().length; index += 1) 升星上陣隊員(index);
+      刷新正式最大生命();
+      render();
+    };
+    panel.querySelector<HTMLButtonElement>("[data-guardians]")!.onclick = () => {
+      for (const world of ["geometry", "organic", "fractal", "mechanical"] as const) {
+        for (let kind = 0; kind < 3; kind += 1) for (let count = 0; count < 5; count += 1) 記錄世界擊殺(world, 1, `showcase_t${kind}`, "formal");
+        for (let elite = 0; elite < 3; elite += 1) 記錄世界擊殺(world, 2, undefined, "formal");
+      }
+      發送Showcase事件("summon_guardians");
+    };
+    panel.querySelector<HTMLButtonElement>("[data-cola]")!.onclick = () => 發送Showcase事件("summon_cola", { bypass: true });
+  };
+  render();
+  return panel;
 }
 
 function 建立訓練道場快捷面板(): HTMLElement {
@@ -633,6 +709,8 @@ export function 渲染操作頁面(容器: HTMLElement) {
 
     if (state.訓練道場) {
       root.appendChild(建立訓練道場快捷面板());
+    } else if (額外.Showcase模式) {
+      root.appendChild(建立Showcase快捷面板());
     }
 
     const hud掛載區 = document.createElement("div");

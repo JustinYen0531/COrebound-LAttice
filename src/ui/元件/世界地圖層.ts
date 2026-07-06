@@ -33,7 +33,7 @@ import { PLAYABLE_FAMILIES, FAMILY_FIRE_PERIOD, type EnemyTier } from "../../dat
 import { STAR_MULTIPLIER, type StarLevel } from "../../data/成員型別";
 import { computeFamilyWeaponStatus, type DeployedMember } from "../../skills/技能管理";
 import { MEMBERS } from "../../data/成員資料庫";
-import { findMonster } from "../../data/怪物資料庫";
+import { findMonster, findMonsterById } from "../../data/怪物資料庫";
 import { findMaterial, materialImagePath, type MaterialUse } from "../../data/素材資料庫";
 import { rollMonsterDrop } from "../../economy/資源掉落系統";
 import * as 背包 from "../../economy/背包狀態";
@@ -58,7 +58,7 @@ import {
 } from "../對局進度狀態";
 import { EROSION_DAMAGE_RATIO_PER_TICK } from "../../data/戰鬥原語";
 import { EROSION_START_SECOND } from "../../data/戰鬥原語";
-import { controlEffectAtStar } from "../../data/控制引擎";
+import { captainStatsAtStar, controlEffectAtStar } from "../../data/控制引擎";
 import {
   FACILITY_GLYPH,
   MAP_HORIZONTAL_DIVIDER,
@@ -77,7 +77,7 @@ import {
 import { ENV_OBJECTS, type EnvObjectInstance } from "../../data/環境物件資料";
 import type { MonsterInstance } from "../../data/怪物實例資料";
 import { decideEnemyAction } from "../../enemies/敵人AI";
-import { circlesOverlap, settleContactTick } from "../../combat/碰撞解析";
+import { circlesOverlap } from "../../combat/碰撞解析";
 import { TICK_SECONDS } from "../../data/戰鬥原語";
 import type { Family, World } from "../../data/成員型別";
 import { buildEinsteinHatSupertile, type EinsteinPoint } from "../../world/愛因斯坦地板";
@@ -165,6 +165,12 @@ function 發送戰鬥Tick脈衝(): void {
   window.dispatchEvent(new CustomEvent("combat-tick-pulse"));
 }
 
+function 訓練槽位圈層(slotId: number): 玩家戰鬥圈層 {
+  if (slotId <= 2) return "inner";
+  if (slotId <= 5) return "middle";
+  return "outer";
+}
+
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
 // 建築（熔爐/雕像/商店/工作台/祭壇等設施）視覺尺寸縮為 0.8 倍；
 // 環境物件（障礙/礦/機關）不套用，維持原尺寸。
@@ -210,6 +216,13 @@ const PLAYER_SIZE_AT_REFERENCE_ZOOM = 700;
 const PLAYER_TOTEM_RENDER_SIZE = 660;
 const PLAYER_TOTEM_VIEWBOX_SIZE = 320;
 const PLAYER_RING_OUTER_RADIUS: Record<1 | 2 | 3, number> = { 1: 140, 2: 220, 3: 300 };
+type 玩家戰鬥圈層 = "captain" | "inner" | "middle" | "outer";
+const PLAYER_RING_BANDS: Array<{ layer: 玩家戰鬥圈層; inner: number; outer: number }> = [
+  { layer: "captain", inner: 0, outer: 55 },
+  { layer: "inner", inner: 55, outer: 140 },
+  { layer: "middle", inner: 140, outer: 220 },
+  { layer: "outer", inner: 220, outer: 300 },
+];
 const REFERENCE_CAMERA_ZOOM = 2.43;
 const DEFAULT_CAMERA_ZOOM = 1.0;
 const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
@@ -1495,11 +1508,8 @@ export function 建立世界地圖層(): HTMLElement {
     // 攻擊 TICK 只有在「圖騰碰撞體積碰到任意可攻擊的怪物」時才加載：
     // 沒有敵人進入圖騰接觸範圍時，發射計時凍結（不累加、不歸零），
     // 一有敵人接觸就從當前進度繼續充能並開火。
-    const totemRadius = 玩家圖騰碰撞半徑();
     const 圖騰接觸敵人 = monsters.some(
-      (m) =>
-        是戰鬥Tick有效小怪(m) &&
-        circlesOverlap(playerPos, totemRadius, m.pos, 訓練敵人碰撞半徑(m.inst.tier)),
+      (m) => 是戰鬥Tick有效小怪(m) && 怪物接觸戰鬥圈層(m).length > 0,
     );
     if (!圖騰接觸敵人) return;
 
@@ -1701,6 +1711,69 @@ export function 建立世界地圖層(): HTMLElement {
     return (PLAYER_SIZE_AT_REFERENCE_ZOOM / REFERENCE_CAMERA_ZOOM) * (ringRadius / PLAYER_TOTEM_VIEWBOX_SIZE);
   }
 
+  function 圖騰半徑轉世界(viewboxRadius: number): number {
+    return (PLAYER_SIZE_AT_REFERENCE_ZOOM / REFERENCE_CAMERA_ZOOM) * (viewboxRadius / PLAYER_TOTEM_VIEWBOX_SIZE);
+  }
+
+  function 可用戰鬥圈層(): 玩家戰鬥圈層[] {
+    const layers: 玩家戰鬥圈層[] = ["captain", "inner"];
+    if (玩家最大展開層級 >= 2) layers.push("middle");
+    if (玩家最大展開層級 >= 3) layers.push("outer");
+    return layers;
+  }
+
+  function 讀取正式圈層攻擊力(): Record<玩家戰鬥圈層, number> {
+    const captain = captainStatsAtStar(小隊屬性摘要().captainId, 當前隊長星級());
+    const layerAtk: Record<玩家戰鬥圈層, number> = {
+      captain: captain.atk,
+      inner: 0,
+      middle: 0,
+      outer: 0,
+    };
+    for (const member of 取得上陣養成()) {
+      const def = MEMBERS.find((entry) => entry.no === member.memberNo);
+      if (!def) continue;
+      const stats = STAR_MULTIPLIER[member.star];
+      const atk = Math.round(def.base.atk * stats);
+      if (member.layer === "inner") layerAtk.inner += atk;
+      else if (member.layer === "middle") layerAtk.middle += atk;
+      else layerAtk.outer += atk;
+    }
+    return layerAtk;
+  }
+
+  function 讀取訓練圈層攻擊力(): Record<玩家戰鬥圈層, number> {
+    const summary = 取得訓練道場摘要();
+    const captain = captainStatsAtStar(summary.captainId, summary.captainStar);
+    const layerAtk: Record<玩家戰鬥圈層, number> = {
+      captain: captain.atk,
+      inner: 0,
+      middle: 0,
+      outer: 0,
+    };
+    for (const member of summary.members) {
+      layerAtk[訓練槽位圈層(member.slot.slotId)] += member.stats.atk;
+    }
+    return layerAtk;
+  }
+
+  function 怪物接觸戰鬥圈層(monster: MonsterRuntime): 玩家戰鬥圈層[] {
+    const monsterRadius = 訓練敵人碰撞半徑(monster.inst.tier);
+    const dx = monster.pos.x - playerPos.x;
+    const dy = monster.pos.y - playerPos.y;
+    const distance = Math.hypot(dx, dy);
+    return PLAYER_RING_BANDS
+      .filter(({ layer, inner, outer }) => {
+        if (layer === "middle" && 玩家最大展開層級 < 2) return false;
+        if (layer === "outer" && 玩家最大展開層級 < 3) return false;
+        const outerWorld = 圖騰半徑轉世界(outer);
+        if (layer === "captain") return distance <= outerWorld + monsterRadius;
+        const innerWorld = 圖騰半徑轉世界(inner);
+        return distance - monsterRadius <= outerWorld && distance + monsterRadius >= innerWorld;
+      })
+      .map(({ layer }) => layer);
+  }
+
   function 訓練敵人碰撞半徑(tier: EnemyTier): number {
     return MONSTER_COLLISION_RADIUS[tier];
   }
@@ -1712,17 +1785,13 @@ export function 建立世界地圖層(): HTMLElement {
     //   正式遊玩 → 正式對局小隊狀態（隊長 + 預設編隊）
     if (訓練道場中) {
       const summary = 取得訓練道場摘要();
-      const playerRadius = Math.max(訓練玩家碰撞半徑(summary.totalWeight), 玩家圖騰碰撞半徑());
-      const contacts = monsters.filter(
-        (monster) =>
-          monster.inst.hp > 0 &&
-          circlesOverlap(
-            playerPos,
-            playerRadius,
-            monster.pos,
-            訓練敵人碰撞半徑(monster.inst.tier),
-          ),
-      );
+      const layerAtk = 讀取訓練圈層攻擊力();
+      const contacts = monsters
+        .map((monster) => ({
+          monster,
+          touchedLayers: monster.inst.hp > 0 ? 怪物接觸戰鬥圈層(monster) : [],
+        }))
+        .filter((entry) => entry.touchedLayers.length > 0);
 
       if (contacts.length === 0) {
         設定訓練碰撞接觸中([], []);
@@ -1732,47 +1801,35 @@ export function 建立世界地圖層(): HTMLElement {
       }
 
       設定訓練碰撞接觸中(
-        contacts.map((monster) => monster.inst.id),
-        contacts.map((monster) => 怪物顯示名(monster.inst)),
+        contacts.map(({ monster }) => monster.inst.id),
+        contacts.map(({ monster }) => 怪物顯示名(monster.inst)),
       );
 
       collisionTickCarry += dt;
       發送戰鬥Tick進度(collisionTickCarry / TICK_SECONDS);
       while (collisionTickCarry >= TICK_SECONDS) {
-        const resolutions = settleContactTick(
-          summary.totalAtk,
-          contacts.map((monster) => ({
-            id: monster.inst.id,
-            position: monster.pos,
-            radius: 訓練敵人碰撞半徑(monster.inst.tier),
-            hp: monster.inst.hp,
-            weight: monster.inst.weight,
-            dead: monster.inst.hp <= 0,
-          })),
-        );
-
         let squadDamageTaken = 0;
         let enemyWeight = 0;
-        for (const monster of contacts) {
+        for (const { monster, touchedLayers } of contacts) {
           enemyWeight += monster.inst.weight;
-          squadDamageTaken += monster.inst.atk;
+          squadDamageTaken += monster.inst.atk * touchedLayers.length;
         }
 
         let dealtTotal = 0;
-        for (const result of resolutions) {
-          const runtime = contacts.find((monster) => monster.inst.id === result.id);
-          if (!runtime) continue;
-          runtime.inst.hp = Math.max(0, runtime.inst.hp - result.damage);
-          更新怪物血條(runtime);
-          if (result.dead) runtime.node.style.display = "none";
-          dealtTotal += result.damage;
+        for (const { monster, touchedLayers } of contacts) {
+          const damage = touchedLayers.reduce((sum, layer) => sum + layerAtk[layer], 0);
+          if (damage <= 0) continue;
+          monster.inst.hp = Math.max(0, monster.inst.hp - damage);
+          更新怪物血條(monster);
+          if (monster.inst.hp <= 0) monster.node.style.display = "none";
+          dealtTotal += damage;
         }
 
         手動設定訓練玩家生命(summary.playerHp - squadDamageTaken);
         記錄訓練碰撞({
           atMs: Date.now(),
-          enemyIds: contacts.map((monster) => monster.inst.id),
-          enemyNames: contacts.map((monster) => 怪物顯示名(monster.inst)),
+          enemyIds: contacts.map(({ monster }) => monster.inst.id),
+          enemyNames: contacts.map(({ monster }) => 怪物顯示名(monster.inst)),
           squadWeight: summary.totalWeight,
           enemyWeight,
           squadDamage: dealtTotal,
@@ -1798,17 +1855,13 @@ export function 建立世界地圖層(): HTMLElement {
     // —— 正式遊玩碰撞結算 ——
     if (performance.now() < 復活保護到) return;
     const summary = 取得正式小隊摘要();
-    const playerRadius = 玩家圖騰碰撞半徑();
-    const contacts = monsters.filter(
-      (monster) =>
-        monster.inst.hp > 0 &&
-        circlesOverlap(
-          playerPos,
-          playerRadius,
-          monster.pos,
-          訓練敵人碰撞半徑(monster.inst.tier),
-        ),
-    );
+    const layerAtk = 讀取正式圈層攻擊力();
+    const contacts = monsters
+      .map((monster) => ({
+        monster,
+        touchedLayers: monster.inst.hp > 0 ? 怪物接觸戰鬥圈層(monster) : [],
+      }))
+      .filter((entry) => entry.touchedLayers.length > 0);
 
     if (contacts.length === 0) {
       collisionTickCarry = 0;
@@ -1819,32 +1872,20 @@ export function 建立世界地圖層(): HTMLElement {
     collisionTickCarry += dt;
     發送戰鬥Tick進度(collisionTickCarry / TICK_SECONDS);
     while (collisionTickCarry >= TICK_SECONDS) {
-      const resolutions = settleContactTick(
-        summary.totalAtk,
-        contacts.map((monster) => ({
-          id: monster.inst.id,
-          position: monster.pos,
-          radius: 訓練敵人碰撞半徑(monster.inst.tier),
-          hp: monster.inst.hp,
-          weight: monster.inst.weight,
-          dead: monster.inst.hp <= 0,
-        })),
-      );
-
       // 接觸期間，玩家每 Tick 承受所有接觸怪物的 ATK 加總（§1.3）。
       let squadDamageTaken = 0;
-      for (const monster of contacts) {
-        squadDamageTaken += monster.inst.atk;
+      for (const { monster, touchedLayers } of contacts) {
+        squadDamageTaken += monster.inst.atk * touchedLayers.length;
       }
 
-      for (const result of resolutions) {
-        const runtime = contacts.find((monster) => monster.inst.id === result.id);
-        if (!runtime) continue;
-        const appliedDamage = Math.min(runtime.inst.hp, result.damage);
-        runtime.inst.hp = Math.max(0, runtime.inst.hp - appliedDamage);
-        更新怪物血條(runtime);
+      for (const { monster, touchedLayers } of contacts) {
+        const damage = touchedLayers.reduce((sum, layer) => sum + layerAtk[layer], 0);
+        if (damage <= 0) continue;
+        const appliedDamage = Math.min(monster.inst.hp, damage);
+        monster.inst.hp = Math.max(0, monster.inst.hp - appliedDamage);
+        更新怪物血條(monster);
         記錄對局傷害(appliedDamage);
-        if (result.dead) runtime.node.style.display = "none";
+        if (monster.inst.hp <= 0) monster.node.style.display = "none";
       }
 
       const appliedSquadDamage = Math.min(summary.playerHp, squadDamageTaken);
@@ -1853,6 +1894,37 @@ export function 建立世界地圖層(): HTMLElement {
       collisionTickCarry -= TICK_SECONDS;
       發送戰鬥Tick脈衝();
       發送戰鬥Tick進度(collisionTickCarry / TICK_SECONDS);
+    }
+  }
+
+  function Showcase召喚怪物(def: MonsterDef, count: number): void {
+    for (let index = 0; index < Math.max(1, Math.min(12, count)); index += 1) {
+      const angle = (Math.PI * 2 * index) / Math.max(1, count) + Math.PI / 6;
+      const distance = 420 + (index % 2) * 120;
+      const x = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, playerPos.x + Math.cos(angle) * distance));
+      const y = Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, playerPos.y + Math.sin(angle) * distance));
+      const inst: MonsterInstance = {
+        id: `showcase_${def.id}_${Date.now()}_${index}`,
+        monsterNo: def.no,
+        world: (def.world === "core" ? "mechanical" : def.world) as World,
+        tier: def.tier,
+        nameZh: def.nameZh,
+        spritePath: def.tier >= 3 ? BOSS_BATTLE_SPRITE[def.world] : `/images/enemies/${def.world}/${def.id}.png`,
+        x, y,
+        hp: def.stats.hp,
+        maxHp: def.stats.hp,
+        atk: def.stats.atk,
+        weight: def.stats.weight,
+        speed: def.stats.speed,
+        ranged: def.armament.weapons.length > 0,
+        attackRange: def.tier === 0 ? 0 : def.tier === 1 ? 320 : def.tier === 2 ? 460 : 620,
+        nonHostileInitially: false,
+      };
+      const node = createMonsterNode(inst);
+      monsterLayer.appendChild(node);
+      const persistent = { inst, x, y, dropped: false } satisfies 正式戰場怪物;
+      加入正式戰場怪物(persistent);
+      monsters.push({ inst, pos: { x, y }, node, persistent });
     }
   }
 
@@ -1878,7 +1950,11 @@ export function 建立世界地圖層(): HTMLElement {
     lastNow = now;
 
     if (應用程式狀態.畫面.層 === "操作頁面") {
-      const moveScale = 訓練道場中 ? 取得訓練道場摘要().moveSpeedScale : 1;
+      const moveScale = 訓練道場中
+        ? 取得訓練道場摘要().moveSpeedScale
+        : 應用程式狀態.額外.Showcase模式
+          ? 應用程式狀態.額外.Showcase移動倍率
+          : 1;
       // 指導者加速：生效期間全隊移速倍率提升。
       const 速度增益 = now < 速度增益到期 ? 速度增益倍率 : 1;
       let axisX = 0;
@@ -2057,6 +2133,7 @@ export function 建立世界地圖層(): HTMLElement {
     document.removeEventListener("pointerdown", onMiniMapOutsidePointerDown);
     root.removeEventListener("wheel", onWheel);
     window.removeEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
+    window.removeEventListener("showcase-action", onShowcaseAction as EventListener);
     window.removeEventListener("captain-active-cast", onCaptainCast as EventListener);
     window.removeEventListener("combat-tick-pulse", onCombatTickPulse as EventListener);
     if (玩家戰鬥Tick特效計時) window.clearTimeout(玩家戰鬥Tick特效計時);
@@ -2236,7 +2313,31 @@ export function 建立世界地圖層(): HTMLElement {
     }
   }
 
+  function onShowcaseAction(raw: Event): void {
+    if (訓練道場中 || !應用程式狀態.額外.Showcase模式) return;
+    const event = raw as CustomEvent<{ type?: string; monsterId?: string; count?: number; bypass?: boolean }>;
+    switch (event.detail?.type) {
+      case "spawn_enemies": {
+        const def = event.detail.monsterId ? findMonsterById(event.detail.monsterId) : undefined;
+        if (def) Showcase召喚怪物(def, event.detail.count ?? 1);
+        break;
+      }
+      case "clear_enemies":
+        清空場上敵軍與彈體();
+        break;
+      case "summon_guardians":
+        召喚目前可用守護者();
+        break;
+      case "summon_cola":
+        if (event.detail.bypass) 生成Boss到場(finalBoss(), "cola");
+        else 召喚COLABoss();
+        break;
+    }
+    render();
+  }
+
   window.addEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
+  window.addEventListener("showcase-action", onShowcaseAction as EventListener);
   window.addEventListener("captain-active-cast", onCaptainCast as EventListener);
   window.addEventListener("combat-tick-pulse", onCombatTickPulse as EventListener);
 
