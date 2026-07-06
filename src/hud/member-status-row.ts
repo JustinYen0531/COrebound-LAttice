@@ -35,14 +35,17 @@ export class MemberStatusRow {
   render(snapshot: HudSnapshot): void {
     this.el.innerHTML = "";
     LAYER_ORDER.forEach((layer) => {
-      this.el.appendChild(this.createMemberCard(layer, snapshot.layerRoster[layer]));
+      this.el.appendChild(this.createMemberCard(layer, snapshot.layerRoster[layer], snapshot.roster));
     });
     this.el.style.display = "flex";
   }
 
-  private createMemberCard(layer: Layer, member: RosterMember | null): HTMLElement {
+  private createMemberCard(layer: Layer, member: RosterMember | null, roster: RosterMember[]): HTMLElement {
     const 層標籤 = LAYER_LABEL();
     const 方向標籤 = DIR_LABEL();
+    const layerMembers = roster.filter((entry) => entry.layer === layer);
+    const currentIndex = member ? Math.max(0, layerMembers.findIndex((entry) => entry.id === member.id)) : -1;
+    const counterText = layerMembers.length > 0 ? `${currentIndex + 1}/${layerMembers.length}` : "0/0";
     const card = document.createElement("article");
     const accent = member?.role ?? "protect";
     card.className = `hud-member-status-card hud-member-status-card--${layer} hud-member-status-card--${accent}`;
@@ -54,6 +57,7 @@ export class MemberStatusRow {
     card.innerHTML = `
       <button class="hud-member-cycle hud-member-cycle--left" type="button" data-layer="${layer}" data-dir="-1" aria-label="${層標籤[layer]} ${方向標籤[-1]}">◀</button>
       <button class="hud-member-cycle hud-member-cycle--right" type="button" data-layer="${layer}" data-dir="1" aria-label="${層標籤[layer]} ${方向標籤[1]}">▶</button>
+      <div class="hud-member-counter" aria-label="${層標籤[layer]} ${雙語("目前顯示第", "Showing")} ${counterText} ${雙語("位", "")}">${counterText}</div>
       ${body}
     `;
     return card;

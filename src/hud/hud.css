@@ -212,6 +212,19 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.42);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
+.hud-member-counter {
+  position: absolute;
+  top: 4px;
+  right: 24px;
+  min-width: 28px;
+  padding: 1px 5px;
+  border: 1px solid color-mix(in srgb, var(--member-accent) 62%, white);
+  background: rgba(7, 9, 16, 0.9);
+  color: var(--member-accent);
+  font-size: 8px;
+  line-height: 1.2;
+  text-align: center;
+}
 .hud-member-status-card.is-empty {
   border-style: dashed;
   background: rgba(6, 7, 12, 0.78);
@@ -222,15 +235,17 @@
 .hud-member-cycle {
   position: absolute;
   bottom: 2px;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 18px;
   border: 1px solid color-mix(in srgb, var(--member-accent) 70%, white);
   background: rgba(8, 9, 16, 0.88);
   color: var(--member-accent);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1;
   cursor: pointer;
   pointer-events: auto;
+  display: grid;
+  place-items: center;
 }
 .hud-member-cycle:hover {
   background: color-mix(in srgb, var(--member-accent) 18%, rgba(8, 9, 16, 0.88));
@@ -593,7 +608,7 @@
  * ============================================================ */
 .hud-strips-host {
   position: absolute;
-  bottom: 132px;
+  bottom: 162px;
   left: 50%;
   transform: translateX(-50%) scale(var(--hud-scale));
   transform-origin: center bottom;
@@ -605,11 +620,11 @@
 }
 .skill-strips {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   position: relative;
-  padding: 8px 10px;
+  padding: 7px 12px;
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(8, 10, 17, 0.94), rgba(8, 10, 17, 0.78));
   border: 1px solid rgba(233, 236, 248, 0.14);
@@ -618,12 +633,28 @@
 .weapon-strip,
 .periodic-strip {
   display: flex;
-  gap: 4px;
+  gap: 5px;
   align-items: center;
   justify-content: center;
   min-height: 32px;
 }
+.periodic-strip {
+  position: relative;
+  padding-left: 10px;
+}
+.periodic-strip::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: rgba(233, 236, 248, 0.16);
+}
 .periodic-strip:empty {
+  display: none;
+}
+.periodic-strip:empty::before {
   display: none;
 }
 .weapon-icon,
