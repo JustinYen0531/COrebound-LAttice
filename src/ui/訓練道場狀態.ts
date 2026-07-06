@@ -13,6 +13,7 @@ import { MEMBERS } from "../data/成員資料庫";
 import type { MemberDef, StarLevel, World } from "../data/成員型別";
 import { statsAtStar } from "../data/成員型別";
 import { monstersByWorld, type MonsterDef } from "../data/怪物資料庫";
+import type { EnemyTier } from "../data/戰鬥原語";
 import { captainStatsAtStar } from "../data/控制引擎";
 import type { CaptainId } from "../data/戰鬥原語";
 import { MAP_BOUNDS, MAP_ZONES } from "../data/地圖物件資料";
@@ -30,7 +31,7 @@ export interface 訓練召喚敵人 {
   nameZh: string;
   nameEn: string;
   world: World;
-  tier: 0 | 1 | 2;
+  tier: EnemyTier;
   spritePath: string;
   x: number;
   y: number;
@@ -89,13 +90,11 @@ interface 訓練道場內部狀態 {
 }
 
 const 訓練世界清單: World[] = ["geometry", "organic", "fractal", "mechanical"];
-const 全部可召喚怪物: MonsterDef[] = 訓練世界清單.flatMap((world) =>
-  monstersByWorld(world).filter((monster) => monster.tier <= 2),
-);
+const 全部可召喚怪物: MonsterDef[] = 訓練世界清單.flatMap((world) => monstersByWorld(world));
 const 訓練場景半徑 = 1120;
 
 function 該世界可召喚怪物(world: World): MonsterDef[] {
-  return monstersByWorld(world).filter((monster) => monster.tier <= 2);
+  return monstersByWorld(world);
 }
 
 function 找到怪物所屬世界(monsterId: string): World | null {
@@ -214,7 +213,7 @@ function spritePathForMonster(monster: MonsterDef): string {
   return `/images/enemies/${monster.world}/${monster.id}.png`;
 }
 
-function attackRangeForTier(tier: 0 | 1 | 2): number {
+function attackRangeForTier(tier: EnemyTier): number {
   switch (tier) {
     case 0:
       return 0;
@@ -222,6 +221,8 @@ function attackRangeForTier(tier: 0 | 1 | 2): number {
       return 320;
     case 2:
       return 460;
+    default:
+      return 620;
   }
 }
 
@@ -434,7 +435,7 @@ export function 召喚訓練敵人(monsterId: string, count: number, around: { x
       nameZh: monster.nameZh,
       nameEn: monster.nameEn,
       world: monster.world as World,
-      tier: monster.tier as 0 | 1 | 2,
+      tier: monster.tier,
       spritePath: spritePathForMonster(monster),
       x,
       y,
@@ -444,7 +445,7 @@ export function 召喚訓練敵人(monsterId: string, count: number, around: { x
       weight: monster.stats.weight,
       speed: monster.stats.speed,
       ranged: isRanged(monster),
-      attackRange: attackRangeForTier(monster.tier as 0 | 1 | 2),
+      attackRange: attackRangeForTier(monster.tier),
       nonHostileInitially: monster.nonHostileInitially ?? monster.tier === 2,
       spawnedAtMs: Date.now(),
     });

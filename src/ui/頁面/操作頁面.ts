@@ -706,7 +706,6 @@ export function 渲染操作頁面(容器: HTMLElement) {
   try {
     // 世界地圖層:玩家可走動、靠近設施觸發互動
     root.appendChild(建立世界地圖層());
-    root.appendChild(建立操作頁音樂控制());
 
     if (state.訓練道場) {
       root.appendChild(建立訓練道場快捷面板());
