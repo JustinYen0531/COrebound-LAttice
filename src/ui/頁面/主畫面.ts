@@ -625,8 +625,8 @@ function 新手入門子頁(): HTMLElement {
       const res = await fetch("/教學.md");
       if (!res.ok) throw new Error("fetch failed");
       const text = await res.text();
-      const html = marked.parse(text);
-      打開教學視窗(html);
+      const pages = text.split(/\n---\s*\n/).filter((p) => p.trim().length > 0);
+      打開教學視窗(pages);
     } catch (e) {
       alert("Tutorial file not found!");
     }
@@ -731,7 +731,13 @@ function 打開教學視窗(htmlContentList: string[]) {
 
   const 渲染頁面 = () => {
     const rawHtml = marked.parse(htmlContentList[currentPage]);
-    content.innerHTML = rawHtml;
+    if (typeof rawHtml === "string") {
+      content.innerHTML = rawHtml;
+    } else {
+      rawHtml.then((html) => {
+        content.innerHTML = html;
+      });
+    }
 
     content.querySelectorAll("h1, h2, h3").forEach(h => {
       (h as HTMLElement).style.color = "var(--ink-warm)";

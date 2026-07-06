@@ -48,6 +48,7 @@ export interface MonsterInstance {
   world: World;
   tier: EnemyTier;
   nameZh: string;
+  nameEn: string;
   /** 去背立繪路徑 */
   spritePath: string;
   /** 初始世界座標 */
@@ -63,7 +64,7 @@ export interface MonsterInstance {
   ranged: boolean;
   /** 攻擊射程（世界座標） */
   attackRange: number;
-  /** 開局非主動敵對（T2 精英，新手保護期內待命） */
+  /** 開局是否非主動敵對(T2 精英,前 10 分鐘) */
   nonHostileInitially: boolean;
 }
 
@@ -114,6 +115,7 @@ function buildMonsterInstances(): MonsterInstance[] {
           world,
           tier: def.tier,
           nameZh: def.nameZh,
+          nameEn: def.nameEn,
           spritePath: spritePathFor(def),
           x: point.x,
           y: point.y,

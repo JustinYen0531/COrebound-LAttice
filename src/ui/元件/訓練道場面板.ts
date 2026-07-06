@@ -444,7 +444,19 @@ function 建立正式軌道預覽(selectedSlotId: number, 刷新: () => void): H
         node.style.setProperty("--slot-angle", `${item.angle}deg`);
         node.style.setProperty("--slot-radius", `${軌道半徑[item.ring]}px`);
         node.style.setProperty("--slot-color", role.color);
-        node.title = `${取得層級標籤(item.ring)} | ${slot.member ? (應用程式狀態.額外.語言 === "zh" ? slot.member.nameZh : slot.member.nameEn) : 雙語("未配置", "Unassigned")}`;
+
+        let nameStr = 雙語("未配置", "Unassigned");
+        let initStr = "-";
+        if (slot?.member) {
+          const memberNo = slot.member.memberNo;
+          const matchDef = MEMBERS.find((candidate) => candidate.no === memberNo);
+          if (matchDef) {
+            nameStr = 應用程式狀態.額外.語言 === "zh" ? matchDef.nameZh : matchDef.nameEn;
+            initStr = nameStr.slice(0, 1);
+          }
+        }
+
+        node.title = `${取得層級標籤(item.ring)} | ${nameStr}`;
         node.onclick = () => {
           應用程式狀態.額外.選中的小隊成員展示位 = item.slotId;
           刷新();
@@ -456,7 +468,7 @@ function 建立正式軌道預覽(selectedSlotId: number, 刷新: () => void): H
 
         const initial = document.createElement("span");
         initial.className = "訓練軌道編排器-縮寫";
-        initial.textContent = slot.member ? (應用程式狀態.額外.語言 === "zh" ? slot.member.nameZh : slot.member.nameEn).slice(0, 1) : "-";
+        initial.textContent = initStr;
 
         node.append(num, initial);
         ring.appendChild(node);
@@ -828,12 +840,27 @@ function 建立正式槽位格(selectedSlotId: number, 刷新: () => void): HTML
 
     const main = document.createElement("div");
     main.className = "訓練軌道編排器-槽位主文";
-    main.textContent = slot.member ? `${slot.member.memberNo.toString().padStart(2, "0")} ${應用程式狀態.額外.語言 === "zh" ? slot.member.nameZh : slot.member.nameEn}` : 雙語("（未配置）", "(Unassigned)");
+    let nameStr = 雙語("（未配置）", "(Unassigned)");
+    if (slot.member) {
+      const matchDef = MEMBERS.find((entry) => entry.no === slot.member?.memberNo);
+      if (matchDef) {
+        nameStr = `${slot.member.memberNo.toString().padStart(2, "0")} ${應用程式狀態.額外.語言 === "zh" ? matchDef.nameZh : matchDef.nameEn}`;
+      }
+    }
+    main.textContent = nameStr;
     card.appendChild(main);
 
     const sub = document.createElement("div");
     sub.className = "訓練軌道編排器-槽位副文";
-    sub.textContent = slot.member ? `${世界顯示名(MEMBERS.find((entry) => entry.no === slot.member?.memberNo)?.world ?? "geometry")} | ${家族顯示名(slot.member.family)}` : 雙語("請從下方成員庫指派", "Assign a member from the library below.");
+    let descStr = 雙語("請從下方成員庫指派", "Assign a member from the library below.");
+    if (slot.member) {
+      const memberNo = slot.member.memberNo;
+      const matchDef = MEMBERS.find((entry) => entry.no === memberNo);
+      if (matchDef) {
+        descStr = `${世界顯示名(matchDef.world)} | ${家族顯示名(matchDef.family as any)}`;
+      }
+    }
+    sub.textContent = descStr;
     card.appendChild(sub);
     grid.appendChild(card);
   });

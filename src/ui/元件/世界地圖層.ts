@@ -1184,6 +1184,7 @@ export function 建立世界地圖層(): HTMLElement {
       world: (def.world === "core" ? "mechanical" : def.world) as World,
       tier: def.tier,
       nameZh: def.nameZh,
+      nameEn: def.nameEn,
       spritePath,
       x: spawnX,
       y: spawnY,
@@ -1214,7 +1215,13 @@ export function 建立世界地圖層(): HTMLElement {
         star: entry.slot.star,
       }));
     }
-    return 取得上陣養成().map((entry) => ({ family: entry.family, star: entry.star }));
+    return 取得上陣養成().map((entry) => {
+      const member = MEMBERS.find((m) => m.no === entry.memberNo);
+      return {
+        family: (member ? member.family : "straight") as Family,
+        star: entry.star,
+      };
+    });
   }
 
   /** 找最近的存活怪物（限 FIRE_RANGE 內）。 */
@@ -1929,6 +1936,7 @@ export function 建立世界地圖層(): HTMLElement {
         world: (def.world === "core" ? "mechanical" : def.world) as World,
         tier: def.tier,
         nameZh: def.nameZh,
+        nameEn: def.nameEn,
         spritePath: def.tier >= 3 ? BOSS_BATTLE_SPRITE[def.world] : `/images/enemies/${def.world}/${def.id}.png`,
         x, y,
         hp: def.stats.hp,
@@ -2405,7 +2413,11 @@ function 建立驗收面板(cb: 驗收面板回呼): HTMLElement {
       <div>碎片：${碎片列}</div>
       <div>全隊 ATK <b>${squad.totalAtk}</b> ｜ HP <b>${squad.totalHp}</b> ｜ 隊長 ${當前隊長星級()}★（累計 ${隊員累計總星級()}★）</div>
       <div class="驗收面板-隊員">${roster
-        .map((r) => `${應用程式狀態.額外.語言 === "zh" ? r.nameZh : r.nameEn}${r.star}★`)
+        .map((r) => {
+          const m = MEMBERS.find((candidate) => candidate.no === r.memberNo);
+          const name = m ? (應用程式狀態.額外.語言 === "zh" ? m.nameZh : m.nameEn) : `No.${r.memberNo}`;
+          return `${name}${r.star}★`;
+        })
         .join("、")}</div>
     `;
     panel.appendChild(info);

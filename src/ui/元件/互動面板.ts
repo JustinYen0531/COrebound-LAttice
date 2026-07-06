@@ -232,9 +232,11 @@ function 合成面板(): HTMLElement {
             <div style="display: flex; flex-direction: column; gap: 4px; max-height: 122px; overflow-y: auto; padding-right: 4px;">
               ${squad.map((m, index) => {
                 const canUpgrade = m.star < 3;
+                const matchDef = MEMBERS.find((candidate) => candidate.no === m.memberNo);
+                const name = matchDef ? (應用程式狀態.額外.語言 === "zh" ? matchDef.nameZh : matchDef.nameEn) : `No.${m.memberNo}`;
                 return `
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(0,0,0,0.16); padding: 4px 6px; border-radius: 4px;">
-                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${應用程式狀態.額外.語言 === "zh" ? m.nameZh : m.nameEn} <b style="color:#ffd24d;">${m.star}★</b></span>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name} <b style="color:#ffd24d;">${m.star}★</b></span>
                     <button class="三級按鈕 上陣升星-btn" data-squad-index="${index}" style="font-size: 0.68rem; padding: 1px 6px;" ${canUpgrade && online ? "" : "disabled"}>${canUpgrade ? 雙語("升星", "Upgrade") : "MAX"}</button>
                   </div>
                 `;
@@ -284,9 +286,11 @@ function 合成面板(): HTMLElement {
         return;
       }
       const member = 取得上陣養成()[index];
+      const matchDef = MEMBERS.find((candidate) => candidate.no === member?.memberNo);
+      const name = matchDef ? (應用程式狀態.額外.語言 === "zh" ? matchDef.nameZh : matchDef.nameEn) : `No.${member?.memberNo}`;
       刷新正式最大生命();
       播放音效("升級完成");
-      alert(`${雙語("升星成功", "Upgrade successful")}: ${應用程式狀態.額外.語言 === "zh" ? member.nameZh : member.nameEn} ${雙語("已提升到", "is now")} ${result.newStar}★.`);
+      alert(`${雙語("升星成功", "Upgrade successful")}: ${name} ${雙語("已提升到", "is now")} ${result.newStar}★.`);
       應用程式狀態.進入管理介面("互動");
     });
   });

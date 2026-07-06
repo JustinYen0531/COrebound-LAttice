@@ -28,6 +28,7 @@ export interface 訓練召喚敵人 {
   monsterNo: number;
   monsterId: string;
   nameZh: string;
+  nameEn: string;
   world: World;
   tier: 0 | 1 | 2;
   spritePath: string;
@@ -431,6 +432,7 @@ export function 召喚訓練敵人(monsterId: string, count: number, around: { x
       monsterNo: monster.no,
       monsterId: monster.id,
       nameZh: monster.nameZh,
+      nameEn: monster.nameEn,
       world: monster.world as World,
       tier: monster.tier as 0 | 1 | 2,
       spritePath: spritePathForMonster(monster),

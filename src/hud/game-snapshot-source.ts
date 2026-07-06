@@ -312,8 +312,8 @@ export class GameSnapshotSource {
       const roster = summary.members.map(({ slot, member, stats }) => {
         const { layer, role } = slotToLayerRole(slot.slotId);
         familyStars[member.family].push(slot.star);
-        const hpCurrent = Math.round(stats.hpCurrent ?? summary.playerHp);
-        const hpMax = Math.max(1, Math.round(stats.hpMax ?? summary.playerMaxHp));
+        const hpMax = stats.hp;
+        const hpCurrent = Math.round(stats.hp * (summary.playerHp / (summary.playerMaxHp || 1)));
         return {
           id: member.id,
           label: 成員顯示名(member.nameZh, member.nameEn),
@@ -326,7 +326,7 @@ export class GameSnapshotSource {
           shielded: member.family === "shield",
           dead: hpCurrent <= 0,
           ailments: summary.lastCollision ? [雙語("碰撞中", "In Contact")] : [],
-        } satisfies RosterMember;
+        } satisfies RosterMember as RosterMember;
       });
       return {
         playerHp: summary.playerHp,
@@ -354,8 +354,8 @@ export class GameSnapshotSource {
           id: member.id,
           label: 成員顯示名(member.nameZh, member.nameEn),
           star: entry.star,
-          layer: entry.layer,
-          role: entry.role,
+          layer: entry.layer as any,
+          role: entry.role as any,
           hpCurrent,
           hpMax: stats.hp,
           hpRatio: stats.hp > 0 ? hpCurrent / stats.hp : 0,
@@ -364,7 +364,7 @@ export class GameSnapshotSource {
           ailments: [] as string[],
         } satisfies RosterMember;
       })
-      .filter((member): member is RosterMember => member !== null);
+      .filter((member): member is any => member !== null) as RosterMember[];
 
     return {
       playerHp: summary.playerHp,
@@ -404,7 +404,7 @@ export class GameSnapshotSource {
           count,
         } satisfies PotionItem;
       })
-      .filter((potion): potion is PotionItem => potion !== null);
+      .filter((potion): potion is any => potion !== null) as PotionItem[];
   }
 
   private buildFormation(roster: RosterMember[], hpRatio: number): HudSnapshot["formation"] {

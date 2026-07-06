@@ -7,6 +7,7 @@
  *              靠近熔爐/雕像/工作台/商店/祭壇時自動觸發靠近狀態並顯示驚嘆號。
  */
 import type { World } from "../../data/成員型別";
+import { MEMBERS } from "../../data/成員資料庫";
 import { 應用程式狀態 } from "../應用程式狀態";
 import { 戰鬥HUD接線 } from "../戰鬥HUD接線";
 import { 建立世界地圖層, 讀取玩家位置 } from "../元件/世界地圖層";
@@ -284,7 +285,7 @@ function 建立訓練道場快捷面板(): HTMLElement {
       <div style="font-size:0.75rem;color:#e9ecf8;">${雙語("擊殺", "Kills")} <b>${acceptance.kills}</b> ｜ ${雙語("原石", "Gems")} <b>${bag.原石}</b> ｜ ${雙語("材料", "Materials")} <b>${bag.材料總數}</b></div>
       <div style="font-size:0.74rem;color:#8d93ad;">${雙語("碎片", "Shards")}：${shardSummary}</div>
       <div style="font-size:0.75rem;color:#e9ecf8;">${雙語("正式", "Live")} ATK <b>${squad.totalAtk}</b> | HP <b>${squad.totalHp}</b> | ${雙語("隊長", "Captain")} ${當前隊長星級()}★ | ${雙語("累計", "Total")} ${隊員累計總星級()}★</div>
-      <div style="font-size:0.74rem;color:#8d93ad;">${雙語("上陣星級", "Deployed Stars")}：${roster.map((member) => `${應用程式狀態.額外.語言 === "zh" ? member.nameZh : member.nameEn}${member.star}★`).join(" / ")}</div>
+      <div style="font-size:0.74rem;color:#8d93ad;">${雙語("上陣星級", "Deployed Stars")}：${roster.map((member) => { const m = MEMBERS.find(candidate => candidate.no === member.memberNo); return `${m ? (應用程式狀態.額外.語言 === "zh" ? m.nameZh : m.nameEn) : ""}${member.star}★`; }).join(" / ")}</div>
       <div style="font-size:0.74rem;color:#e9ecf8;">${雙語("守護者", "Guardians")}：${guardianSummary}</div>
       <div style="font-size:0.74rem;color:#e9ecf8;">${雙語("印記", "Sigils")} ${prog.印記數}/4 | COLA ${prog.可召喚COLA ? 雙語("可召喚", "Ready") : 雙語("未集齊", "Not Ready")} | ${雙語("全世界狂暴", "All-World Enrage")} ${prog.全守護者已倒 ? 雙語("是", "Yes") : 雙語("否", "No")}</div>
       <div style="font-size:0.72rem;color:#8d93ad;">${雙語("擊殺分布", "Kill Spread")}：${killSummary}</div>
