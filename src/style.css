@@ -438,7 +438,6 @@ button.禁用:hover {
   overflow: visible;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.5s ease, visibility 0.5s ease;
 }
 .主畫面-已進場 .主畫面-繁星群 {
   opacity: 1;
