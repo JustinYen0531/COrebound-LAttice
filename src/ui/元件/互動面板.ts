@@ -358,11 +358,11 @@ function 熔爐面板(): HTMLElement {
       <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;">
         <div>
         <h4 style="margin: 0 0 8px; color: #ff8a3b; font-size: 0.85rem;">🛡️ ${雙語("持有碎片庫", "Stored Shards")}</h4>
-          <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem;">
+          <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; font-size: 0.72rem;">
             ${(Object.keys(realInventory.碎片) as Family[]).map((f) => {
               return `
-                <div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;">
-                  <span>${家族顯示名(f)}</span>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; background: rgba(0,0,0,0.2); padding: 6px 4px; border-radius: 4px; min-width: 0;">
+                  <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${家族顯示名(f)}</span>
                   <span style="color: #4d8dff; font-weight: bold;">${realInventory.碎片[f]}</span>
                 </div>
               `;
