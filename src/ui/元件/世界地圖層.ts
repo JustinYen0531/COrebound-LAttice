@@ -72,7 +72,6 @@ import {
   MAP_VERTICAL_DIVIDER,
   MAP_ZONES,
   PLAZA_RADIUS,
-  REGION_DIRECTION,
   REGION_LABEL,
   type MapObject,
   type MapZone,
@@ -2674,11 +2673,6 @@ function 建立驗收面板(cb: 驗收面板回呼): HTMLElement {
     render();
   }, 300);
   return panel;
-}
-
-function regionDirSafe(region: Region): { dx: number; dy: number } {
-  if (region === "plaza") return { dx: 0, dy: 1 };
-  return REGION_DIRECTION[region];
 }
 
 function createObjectNode(object: MapObject): HTMLElement {
