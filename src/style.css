@@ -3366,26 +3366,55 @@ button.禁用:hover {
   will-change: transform;
   transition: filter 180ms ease;
 }
+.正式立會舞台-框--九人 {
+  min-height: 560px;
+}
+.正式立會舞台-框--九人::after {
+  left: 4%;
+  right: 4%;
+  bottom: 38px;
+  height: 132px;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.12) 46%, rgba(255,255,255,0) 78%);
+}
 .正式立會舞台-框--九人 .正式立會舞台-角色 {
-  width: 24%;
-  bottom: auto;
-  z-index: 3;
+  left: var(--portrait-left);
+  right: auto;
+  bottom: var(--portrait-bottom);
+  width: var(--portrait-width);
+  transform: translateX(-50%);
+  z-index: var(--portrait-z);
 }
-.正式立會舞台-框--九人 .正式立會舞台-角色 img { height: 138px; }
-.正式立會舞台-框--九人 .正式立會舞台-名牌 { margin-top: -10px; padding: 2px 6px; font-size: 0.56rem; }
+.正式立會舞台-框--九人 .正式立會舞台-角色 img {
+  height: var(--portrait-height);
+  filter: drop-shadow(0 12px 7px rgba(38, 31, 23, 0.32));
+}
+.正式立會舞台-框--九人 .正式立會舞台-名牌 {
+  margin-top: -12px;
+  padding: 2px 7px;
+  font-size: 0.56rem;
+}
 .正式立會舞台-框--九人 .正式立會舞台-隊長 {
-  width: 16%;
-  bottom: -8px;
-  z-index: 8;
+  width: 18%;
+  bottom: -18px;
+  z-index: 12;
 }
-.正式立會舞台-框--九人 .正式立會舞台-隊長 img { height: 142px; }
-.正式立會舞台-框--九人 .正式立會舞台-名牌--隊長 { margin-top: -12px; font-size: 0.56rem; }
-.正式立會舞台-角色--九宮-0, .正式立會舞台-角色--九宮-3, .正式立會舞台-角色--九宮-6 { left: 5%; }
-.正式立會舞台-角色--九宮-1, .正式立會舞台-角色--九宮-4, .正式立會舞台-角色--九宮-7 { left: 38%; }
-.正式立會舞台-角色--九宮-2, .正式立會舞台-角色--九宮-5, .正式立會舞台-角色--九宮-8 { right: 5%; }
-.正式立會舞台-角色--九宮-0, .正式立會舞台-角色--九宮-1, .正式立會舞台-角色--九宮-2 { bottom: 36px; }
-.正式立會舞台-角色--九宮-3, .正式立會舞台-角色--九宮-4, .正式立會舞台-角色--九宮-5 { bottom: 168px; }
-.正式立會舞台-角色--九宮-6, .正式立會舞台-角色--九宮-7, .正式立會舞台-角色--九宮-8 { bottom: 300px; }
+.正式立會舞台-框--九人 .正式立會舞台-隊長 img {
+  height: 150px;
+  filter: drop-shadow(0 16px 8px rgba(38, 31, 23, 0.34));
+}
+.正式立會舞台-框--九人 .正式立會舞台-名牌--隊長 {
+  margin-top: -14px;
+  font-size: 0.56rem;
+}
+.正式立會舞台-角色--九宮-0 { --portrait-left: 18%; --portrait-bottom: 48px; --portrait-width: 28%; --portrait-height: 178px; --portrait-z: 8; }
+.正式立會舞台-角色--九宮-1 { --portrait-left: 50%; --portrait-bottom: 62px; --portrait-width: 30%; --portrait-height: 188px; --portrait-z: 9; }
+.正式立會舞台-角色--九宮-2 { --portrait-left: 82%; --portrait-bottom: 48px; --portrait-width: 28%; --portrait-height: 178px; --portrait-z: 8; }
+.正式立會舞台-角色--九宮-3 { --portrait-left: 27%; --portrait-bottom: 150px; --portrait-width: 24%; --portrait-height: 158px; --portrait-z: 5; }
+.正式立會舞台-角色--九宮-4 { --portrait-left: 50%; --portrait-bottom: 174px; --portrait-width: 25%; --portrait-height: 166px; --portrait-z: 6; }
+.正式立會舞台-角色--九宮-5 { --portrait-left: 73%; --portrait-bottom: 150px; --portrait-width: 24%; --portrait-height: 158px; --portrait-z: 5; }
+.正式立會舞台-角色--九宮-6 { --portrait-left: 21%; --portrait-bottom: 264px; --portrait-width: 21%; --portrait-height: 136px; --portrait-z: 2; }
+.正式立會舞台-角色--九宮-7 { --portrait-left: 50%; --portrait-bottom: 292px; --portrait-width: 22%; --portrait-height: 144px; --portrait-z: 3; }
+.正式立會舞台-角色--九宮-8 { --portrait-left: 79%; --portrait-bottom: 264px; --portrait-width: 21%; --portrait-height: 136px; --portrait-z: 2; }
 .正式小隊摘要列--Showcase {
   padding: 10px;
   border: 1px solid rgba(121, 90, 43, 0.2);

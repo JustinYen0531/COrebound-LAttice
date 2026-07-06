@@ -342,9 +342,12 @@ function 建立正式小隊立繪舞台(captain: (typeof 隊長清單)[number]):
   const roster = 取得上陣養成();
   const root = document.createElement("div");
   root.className = "正式立會舞台";
+  const stageCopy = 應用程式狀態.額外.Showcase模式
+    ? 雙語("九名 Showcase 成員以後排／中排／前排的大合照站位呈現。", "Shows the nine Showcase members as a layered group portrait.")
+    : 雙語("預設展示三名正式上陣成員的合照站位，含隊長前景。", "Shows the deployed members and captain as a group portrait on the stage.");
   root.innerHTML = `
     <div class="訓練軌道編排器-圖騰預覽標題">${雙語("小隊立會舞台", "Squad Stage")}</div>
-    <div class="訓練軌道編排器-圖騰預覽說明">${雙語("預設展示三名正式上陣成員的合照站位，不含隊長。", "Shows the three deployed members as a group portrait on the stage.")}</div>
+    <div class="訓練軌道編排器-圖騰預覽說明">${stageCopy}</div>
   `;
 
   const stage = document.createElement("div");
