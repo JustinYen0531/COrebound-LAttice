@@ -1005,7 +1005,3 @@ export function 渲染主畫面(容器: HTMLElement) {
   root.appendChild(版面);
   容器.appendChild(root);
 }
-  任意處提示.onclick = (event) => {
-    event.stopPropagation();
-    完成進場();
-  };
