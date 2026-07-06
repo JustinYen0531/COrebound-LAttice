@@ -395,6 +395,7 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
   // 2. 中央隊長圖騰(6 重對稱,獨立自旋)
   const 隊長筆畫 = 隊長.星級筆畫[隊長等級 - 1];
   const 隊長G = 建立元素("g", { id: "pm-ring-隊長" });
+  隊長G.classList.add("玩家標記圖騰-隊長核心");
   let 隊長角 = 0;
   const 隊長速度 = 0.03;
   for (let i = 0; i < 6; i++) {

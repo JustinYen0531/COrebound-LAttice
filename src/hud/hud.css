@@ -35,6 +35,7 @@
 
   position: fixed;
   inset: 0;
+  z-index: 120;
   pointer-events: none; /* 容器不擋戰場,只有子元件可互動 */
   font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
   color: var(--c-ink);
@@ -185,7 +186,7 @@
 .hud-member-status-host {
   position: absolute;
   left: 50%;
-  bottom: 10px;
+  bottom: -8px;
   transform: translateX(-50%) scale(var(--hud-scale));
   transform-origin: center bottom;
   z-index: 11;
@@ -193,7 +194,7 @@
 }
 .hud-member-status-row {
   display: flex;
-  gap: 8px;
+  gap: 16px;
   align-items: stretch;
 }
 .hud-member-status-card {
@@ -203,8 +204,8 @@
   grid-template-columns: 34px 100px;
   gap: 6px;
   align-items: center;
-  min-width: 142px;
-  padding: 4px 18px 12px 4px;
+  min-width: 132px;
+  padding: 4px 16px 12px 4px;
   border: 1px solid color-mix(in srgb, var(--member-accent) 58%, var(--c-border));
   border-bottom: 3px solid var(--member-accent);
   background: rgba(6, 7, 12, 0.92);
@@ -221,7 +222,7 @@
 .hud-member-cycle {
   position: absolute;
   bottom: 2px;
-  width: 18px;
+  width: 16px;
   height: 16px;
   border: 1px solid color-mix(in srgb, var(--member-accent) 70%, white);
   background: rgba(8, 9, 16, 0.88);
@@ -427,7 +428,7 @@
 .core-trio .captain-tick-track {
   position: absolute;
   left: 50%;
-  bottom: 2px;
+  bottom: 12px;
   width: 56px;
   height: 8px;
   transform: translateX(-50%);

@@ -146,6 +146,7 @@ export class GameSnapshotSource {
     while (this.tickProgress >= 1) {
       this.tickProgress -= 1;
       this.tickPulseAt = Date.now();
+      window.dispatchEvent(new CustomEvent("hud-tick-pulse"));
     }
   }
 
