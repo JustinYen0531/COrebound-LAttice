@@ -509,6 +509,115 @@ function isVisible(point: { x: number; y: number }, viewport: { w: number; h: nu
   );
 }
 
+function 建立世界導覽內層(hostClassName: string, player: { x: number; y: number }): HTMLElement {
+  const miniMap = document.createElement("div");
+  miniMap.className = hostClassName;
+
+  const miniMapInner = document.createElement("div");
+  miniMapInner.className = "世界地圖層-小地圖內層";
+  miniMap.appendChild(miniMapInner);
+
+  const miniSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  miniSvg.setAttribute("class", "世界地圖層-小地圖圖層");
+  miniSvg.setAttribute("width", "100%");
+  miniSvg.setAttribute("height", "100%");
+  miniMapInner.appendChild(miniSvg);
+
+  const miniRegionPaths = createMiniRegionPaths(miniSvg);
+  const miniPlaza = createMiniPlaza(miniSvg);
+  const miniGeometryCore = createMiniGeometryCore(miniSvg);
+  const miniFractalCore = createMiniFractalCore(miniSvg);
+  const miniOrganicCore = createMiniOrganicCore(miniSvg);
+  const miniMechanicalCore = createMiniMechanicalCore(miniSvg);
+  const miniDividerPaths = createMiniDividerPaths(miniSvg);
+
+  initMiniStaticPaths(
+    miniMapInner,
+    miniRegionPaths,
+    miniGeometryCore,
+    geometryCoreBoundaries,
+    miniFractalCore,
+    fractalCoreBoundaries,
+    miniOrganicCore,
+    organicCoreBoundaries,
+    miniMechanicalCore,
+    mechanicalCoreBoundaries,
+    miniDividerPaths,
+  );
+  initMiniPlaza(miniPlaza);
+  createMiniCornerCores(miniSvg);
+
+  const miniObjectNodes = new Map<string, HTMLElement>();
+  const miniMarkers: MiniMapMarker[] = [];
+  for (const object of MAP_OBJECTS) {
+    const marker = miniMarkerForObject(object);
+    const node = document.createElement("div");
+    node.className = `世界地圖層-小地圖點 世界地圖層-小地圖點-${object.kind}`;
+    node.title = marker.title;
+    const icon = document.createElement("span");
+    icon.className = "世界地圖層-小地圖點圖示";
+    icon.textContent = marker.icon;
+    const label = document.createElement("span");
+    label.className = "世界地圖層-小地圖點標籤";
+    label.textContent = marker.label;
+    node.append(icon, label);
+    miniMapInner.appendChild(node);
+    miniObjectNodes.set(object.id, node);
+    miniMarkers.push(marker);
+  }
+  for (const env of ENV_OBJECTS) {
+    const marker = miniMarkerForEnvObject(env);
+    const node = document.createElement("div");
+    node.className = `世界地圖層-小地圖點 世界地圖層-小地圖點-環境物件 世界地圖層-小地圖點-${env.category}`;
+    node.title = marker.title;
+    const icon = document.createElement("span");
+    icon.className = "世界地圖層-小地圖點圖示";
+    icon.textContent = marker.icon;
+    const label = document.createElement("span");
+    label.className = "世界地圖層-小地圖點標籤";
+    label.textContent = marker.label;
+    node.append(icon, label);
+    miniMapInner.appendChild(node);
+    miniObjectNodes.set(env.id, node);
+    miniMarkers.push(marker);
+  }
+
+  const miniPlayer = document.createElement("div");
+  miniPlayer.className = "世界地圖層-小地圖玩家";
+  miniMapInner.appendChild(miniPlayer);
+
+  const render = () => {
+    initMiniStaticPaths(
+      miniMapInner,
+      miniRegionPaths,
+      miniGeometryCore,
+      geometryCoreBoundaries,
+      miniFractalCore,
+      fractalCoreBoundaries,
+      miniOrganicCore,
+      organicCoreBoundaries,
+      miniMechanicalCore,
+      mechanicalCoreBoundaries,
+      miniDividerPaths,
+    );
+    renderMiniMapDynamic(miniMapInner, miniMarkers, miniObjectNodes, miniPlayer, player);
+  };
+
+  requestAnimationFrame(render);
+  if (typeof ResizeObserver !== "undefined") {
+    const observer = new ResizeObserver(render);
+    observer.observe(miniMapInner);
+  } else {
+    window.setTimeout(render, 0);
+  }
+
+  return miniMap;
+}
+
+export function 建立世界導覽圖(player: { x: number; y: number } = 讀取玩家位置()): HTMLElement {
+  return 建立世界導覽內層("世界地圖層-小地圖 世界地圖層-小地圖-嵌入版", player);
+}
+
 export function 建立世界地圖層(): HTMLElement {
   const 訓練道場中 =
     應用程式狀態.畫面.層 === "操作頁面" && 應用程式狀態.畫面.訓練道場;
@@ -667,10 +776,8 @@ export function 建立世界地圖層(): HTMLElement {
   canvas.appendChild(playerNode);
   let 玩家戰鬥Tick特效計時 = 0;
 
-  const miniMap = document.createElement("div");
-  miniMap.className = "世界地圖層-小地圖";
+  const miniMap = 建立世界導覽內層("世界地圖層-小地圖", playerPos);
   canvas.appendChild(miniMap);
-
   const miniMapTitle = document.createElement("div");
   miniMapTitle.className = "世界地圖層-小地圖標題";
   miniMapTitle.textContent = "世界總覽";
@@ -681,95 +788,26 @@ export function 建立世界地圖層(): HTMLElement {
   miniMapHint.textContent = "點一下放大；在沙盒面板按傳送後點任一位置；點外面收起";
   miniMap.appendChild(miniMapHint);
 
-  const miniMapInner = document.createElement("div");
-  miniMapInner.className = "世界地圖層-小地圖內層";
-  miniMap.appendChild(miniMapInner);
-
-  const miniSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  miniSvg.setAttribute("class", "世界地圖層-小地圖圖層");
-  miniSvg.setAttribute("width", "100%");
-  miniSvg.setAttribute("height", "100%");
-  miniMapInner.appendChild(miniSvg);
-
-  const miniRegionPaths = createMiniRegionPaths(miniSvg);
-  const miniPlaza = createMiniPlaza(miniSvg);
-  const miniGeometryCore = createMiniGeometryCore(miniSvg);
-  const miniFractalCore = createMiniFractalCore(miniSvg);
-  const miniOrganicCore = createMiniOrganicCore(miniSvg);
-  const miniMechanicalCore = createMiniMechanicalCore(miniSvg);
-  const miniDividerPaths = createMiniDividerPaths(miniSvg);
+  const miniMapInner = miniMap.querySelector<HTMLElement>(".世界地圖層-小地圖內層")!;
   // 小地圖的區域外框、中央區邊界、分界線同樣是固定幾何，初始化時綁定一次即可，
   // 不再每幀重設 d（中央區邊界含數百個頂點，逐幀重設是移動卡頓的主因）。
   const refreshMiniMapLayout = () => {
-    initMiniStaticPaths(
-      miniMapInner,
-      miniRegionPaths,
-      miniGeometryCore,
-      geometryCoreBoundaries,
-      miniFractalCore,
-      fractalCoreBoundaries,
-      miniOrganicCore,
-      organicCoreBoundaries,
-      miniMechanicalCore,
-      mechanicalCoreBoundaries,
-      miniDividerPaths,
-    );
-    renderMiniMapDynamic(miniMapInner, miniMarkers, miniObjectNodes, miniPlayer);
+    renderMiniMapDynamic(miniMapInner, miniMarkers, miniObjectNodes, miniPlayer, playerPos);
   };
-
-  initMiniStaticPaths(
-    miniMapInner,
-    miniRegionPaths,
-    miniGeometryCore,
-    geometryCoreBoundaries,
-    miniFractalCore,
-    fractalCoreBoundaries,
-    miniOrganicCore,
-    organicCoreBoundaries,
-    miniMechanicalCore,
-    mechanicalCoreBoundaries,
-    miniDividerPaths,
+  const miniObjectNodes = new Map<string, HTMLElement>(
+    [...miniMapInner.querySelectorAll<HTMLElement>(".世界地圖層-小地圖點")]
+      .map((node) => [node.title, node] as const),
   );
-  initMiniPlaza(miniPlaza);
-  createMiniCornerCores(miniSvg);
-  const miniObjectNodes = new Map<string, HTMLElement>();
-  const miniMarkers: MiniMapMarker[] = [];
-  for (const object of MAP_OBJECTS) {
-    const marker = miniMarkerForObject(object);
-    const node = document.createElement("div");
-    node.className = `世界地圖層-小地圖點 世界地圖層-小地圖點-${object.kind}`;
-    node.title = marker.title;
-    const icon = document.createElement("span");
-    icon.className = "世界地圖層-小地圖點圖示";
-    icon.textContent = marker.icon;
-    const label = document.createElement("span");
-    label.className = "世界地圖層-小地圖點標籤";
-    label.textContent = marker.label;
-    node.append(icon, label);
-    miniMapInner.appendChild(node);
-    miniObjectNodes.set(object.id, node);
-    miniMarkers.push(marker);
-  }
-  for (const env of ENV_OBJECTS) {
-    const marker = miniMarkerForEnvObject(env);
-    const node = document.createElement("div");
-    node.className = `世界地圖層-小地圖點 世界地圖層-小地圖點-環境物件 世界地圖層-小地圖點-${env.category}`;
-    node.title = marker.title;
-    const icon = document.createElement("span");
-    icon.className = "世界地圖層-小地圖點圖示";
-    icon.textContent = marker.icon;
-    const label = document.createElement("span");
-    label.className = "世界地圖層-小地圖點標籤";
-    label.textContent = marker.label;
-    node.append(icon, label);
-    miniMapInner.appendChild(node);
-    miniObjectNodes.set(env.id, node);
-    miniMarkers.push(marker);
-  }
-
-  const miniPlayer = document.createElement("div");
-  miniPlayer.className = "世界地圖層-小地圖玩家";
-  miniMapInner.appendChild(miniPlayer);
+  const miniMarkers: MiniMapMarker[] = [
+    ...MAP_OBJECTS.map((object) => miniMarkerForObject(object)),
+    ...ENV_OBJECTS.map((env) => miniMarkerForEnvObject(env)),
+  ];
+  miniObjectNodes.clear();
+  [...miniMapInner.querySelectorAll<HTMLElement>(".世界地圖層-小地圖點")].forEach((node, index) => {
+    const marker = miniMarkers[index];
+    if (marker) miniObjectNodes.set(marker.id, node);
+  });
+  const miniPlayer = miniMapInner.querySelector<HTMLElement>(".世界地圖層-小地圖玩家")!;
 
   let miniMapTeleportArmed = false;
   const updateMiniMapTeleportUi = () => {
@@ -3278,6 +3316,7 @@ function renderMiniMapDynamic(
   markers: MiniMapMarker[],
   objectNodes: Map<string, HTMLElement>,
   playerNode: HTMLElement,
+  player = playerPos,
 ): void {
   const width = host.clientWidth || 176;
   const height = host.clientHeight || 176;
@@ -3302,8 +3341,8 @@ function renderMiniMapDynamic(
     node.dataset.placed = "1";
   }
 
-  const px = toMiniX(playerPos.x);
-  const py = toMiniY(playerPos.y);
+  const px = toMiniX(player.x);
+  const py = toMiniY(player.y);
   playerNode.style.left = `${px}px`;
   playerNode.style.top = `${py}px`;
 }

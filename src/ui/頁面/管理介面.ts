@@ -7,7 +7,7 @@
 import { 應用程式狀態, 背包分類清單, 地圖分類清單 } from "../應用程式狀態";
 import { 建立圖鑑瀏覽器 } from "../元件/圖鑑瀏覽器";
 import { 建立互動面板 } from "../元件/互動面板";
-import { 讀取玩家位置 } from "../元件/世界地圖層";
+import { 建立世界導覽圖, 讀取玩家位置 } from "../元件/世界地圖層";
 import { 建立正式小隊編輯器, 建立訓練召喚面板, 建立訓練小隊編輯器 } from "../元件/訓練道場面板";
 import type { 互動設施, 管理介面分頁 } from "../共用型別";
 import { MATERIALS, materialImagePath } from "../../data/素材資料庫";
@@ -480,107 +480,9 @@ function 地圖分頁內容(): HTMLElement {
   const 內容區 = document.createElement("div");
   內容區.className = "資料夾式版面-內容區";
   
-  // 建立 SVG 戰術雷達圖
   const mapSvgWrapper = document.createElement("div");
-  mapSvgWrapper.style.width = "100%";
-  mapSvgWrapper.style.aspectRatio = "1/1";
-  mapSvgWrapper.style.background = "#05060b";
-  mapSvgWrapper.style.border = "1px solid rgba(255,255,255,0.06)";
-  mapSvgWrapper.style.borderRadius = "12px";
-  mapSvgWrapper.style.position = "relative";
-  mapSvgWrapper.style.marginTop = "10px";
-  mapSvgWrapper.style.overflow = "hidden";
-
-  const SVG_NS = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(SVG_NS, "svg");
-  svg.setAttribute("viewBox", "0 0 320 320");
-  svg.setAttribute("width", "100%");
-  svg.setAttribute("height", "100%");
-
-  // 雷達網格線
-  for (let r = 40; r <= 160; r += 40) {
-    const circle = document.createElementNS(SVG_NS, "circle");
-    circle.setAttribute("cx", "160");
-    circle.setAttribute("cy", "160");
-    circle.setAttribute("r", String(r));
-    circle.setAttribute("fill", "none");
-    circle.setAttribute("stroke", "rgba(111, 140, 255, 0.08)");
-    circle.setAttribute("stroke-width", "1");
-    if (r === 160) circle.setAttribute("stroke-dasharray", "4,4");
-    svg.appendChild(circle);
-  }
-  // 雷達十字分界線
-  const lineH = document.createElementNS(SVG_NS, "line");
-  lineH.setAttribute("x1", "0"); lineH.setAttribute("y1", "160"); lineH.setAttribute("x2", "320"); lineH.setAttribute("y2", "160");
-  lineH.setAttribute("stroke", "rgba(111, 140, 255, 0.06)");
-  svg.appendChild(lineH);
-
-  const lineV = document.createElementNS(SVG_NS, "line");
-  lineV.setAttribute("x1", "160"); lineV.setAttribute("y1", "0"); lineV.setAttribute("x2", "160"); lineV.setAttribute("y2", "320");
-  lineV.setAttribute("stroke", "rgba(111, 140, 255, 0.06)");
-  svg.appendChild(lineV);
-
-  // 四大世界文字標籤標記
-  const zonesText = [
-    { text: "🧱 Geometry", x: 30, y: 40 },
-    { text: "🔮 Fractal", x: 230, y: 40 },
-    { text: "🌿 Organic", x: 30, y: 290 },
-    { text: "⚙️ Mechanical", x: 230, y: 290 },
-  ];
-  zonesText.forEach(zt => {
-    const text = document.createElementNS(SVG_NS, "text");
-    text.setAttribute("x", String(zt.x));
-    text.setAttribute("y", String(zt.y));
-    text.setAttribute("fill", "rgba(255, 255, 255, 0.25)");
-    text.setAttribute("font-size", "10");
-    text.setAttribute("font-family", "monospace");
-    text.textContent = zt.text;
-    svg.appendChild(text);
-  });
-
-  // 繪製地圖標記點
-  mapMarkers.forEach((marker) => {
-    const group = document.createElementNS(SVG_NS, "g");
-    group.style.cursor = "pointer";
-    
-    // 如果選中，繪製一個閃爍的外光圈
-    const isSelected =選中地圖標記Id === marker.id;
-    if (isSelected) {
-      const pulseRing = document.createElementNS(SVG_NS, "circle");
-      pulseRing.setAttribute("cx", String(marker.x));
-      pulseRing.setAttribute("cy", String(marker.y));
-      pulseRing.setAttribute("r", "16");
-      pulseRing.setAttribute("fill", "none");
-      pulseRing.setAttribute("stroke", "#ff8a3b");
-      pulseRing.setAttribute("stroke-width", "1.5");
-      group.appendChild(pulseRing);
-    }
-
-    const circle = document.createElementNS(SVG_NS, "circle");
-    circle.setAttribute("cx", String(marker.x));
-    circle.setAttribute("cy", String(marker.y));
-    circle.setAttribute("r", "10");
-    circle.setAttribute("fill", isSelected ? "#12172a" : "#0c0e17");
-    circle.setAttribute("stroke", isSelected ? "#ff8a3b" : "rgba(255,255,255,0.3)");
-    circle.setAttribute("stroke-width", "1.2");
-    group.appendChild(circle);
-
-    const txt = document.createElementNS(SVG_NS, "text");
-    txt.setAttribute("x", String(marker.x - 6));
-    txt.setAttribute("y", String(marker.y + 4));
-    txt.setAttribute("font-size", "10");
-    txt.textContent = marker.icon;
-    group.appendChild(txt);
-
-    group.addEventListener("click", () => {
-      選中地圖標記Id = marker.id;
-      應用程式狀態.進入管理介面("地圖");
-    });
-
-    svg.appendChild(group);
-  });
-
-  mapSvgWrapper.appendChild(svg);
+  mapSvgWrapper.className = "管理介面-世界導覽框";
+  mapSvgWrapper.appendChild(建立世界導覽圖(讀取玩家位置()));
 
   const 地圖分類顯示 =
     地圖分類標籤[應用程式狀態.額外.地圖選中分類 as (typeof 地圖分類清單)[number]] ??
