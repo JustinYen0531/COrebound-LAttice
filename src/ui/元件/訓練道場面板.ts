@@ -50,6 +50,7 @@ import {
 type 職責色 = "保護" | "火力" | "補給";
 type 左側視圖模式 = "編排" | "預覽";
 type 正式舞台模式 = "stage" | "orbit" | "totem";
+type 正式Showcase草稿 = { memberNo: string; star: 1 | 2 | 3 };
 
 const 槽位職責色票: Record<職責色, { label: string; color: string }> = {
   保護: { label: "保護位", color: "#4d8dff" },
@@ -72,7 +73,8 @@ const 軌道槽位配置: Array<{ slotId: number; layer: "外" | "中" | "內"; 
 const 軌道半徑: Record<"外" | "中" | "內", number> = { 外: 140, 中: 98, 內: 60 };
 let 正在編輯槽位: number | null = null;
 let 正在編輯正式槽位: number | null = null;
-const 正式編輯草稿 = new Map<number, { memberNo: string; star: 1 | 2 | 3 }>();
+const 正式編輯草稿 = new Map<number, 正式Showcase草稿>();
+const 正式Showcase待儲存草稿 = new Map<number, 正式Showcase草稿>();
 let 左側模式: 左側視圖模式 = "編排";
 let 正式舞台視圖: 正式舞台模式 = "stage";
 const 全部圖騰角色 = [...幾何世界圖騰清單, ...有機世界圖騰清單, ...分形世界圖騰清單, ...機械世界圖騰清單];
@@ -98,6 +100,39 @@ const Showcase正式槽位配置: typeof 一般正式槽位配置 = [
 
 function 取得正式槽位配置() {
   return 應用程式狀態.額外.Showcase模式 ? Showcase正式槽位配置 : 一般正式槽位配置;
+}
+
+function 取得Showcase草稿(slotId: number, member?: { memberNo: number; star: 1 | 2 | 3 } | null): 正式Showcase草稿 {
+  const draft = 正式Showcase待儲存草稿.get(slotId) ?? 正式編輯草稿.get(slotId);
+  if (draft) return draft;
+  return { memberNo: String(member?.memberNo ?? ""), star: (member?.star ?? 1) as 1 | 2 | 3 };
+}
+
+function 讀取Showcase草稿成員(slotId: number, member?: { memberNo: number; star: 1 | 2 | 3 } | null) {
+  if (!應用程式狀態.額外.Showcase模式) return { member, isDraft: false };
+  const draft = 正式Showcase待儲存草稿.get(slotId);
+  if (!draft) return { member, isDraft: false };
+  const memberNo = Number(draft.memberNo);
+  return {
+    member: MEMBERS.some((entry) => entry.no === memberNo) ? { memberNo, star: draft.star } : member,
+    isDraft: true,
+  };
+}
+
+function 儲存Showcase正式小隊草稿(): boolean {
+  if (!應用程式狀態.額外.Showcase模式 || 正式Showcase待儲存草稿.size === 0) return false;
+  確保Showcase九宮格();
+  正式Showcase待儲存草稿.forEach((draft, slotId) => {
+    const memberNo = Number(draft.memberNo);
+    if (!MEMBERS.some((entry) => entry.no === memberNo)) return;
+    設定Showcase槽位成員(slotId, memberNo);
+    設定Showcase槽位星級(slotId, draft.star);
+  });
+  正式Showcase待儲存草稿.clear();
+  正式編輯草稿.clear();
+  正在編輯正式槽位 = null;
+  刷新正式最大生命();
+  return true;
 }
 
 function 雙語(中文: string, 英文: string): string {
@@ -340,9 +375,10 @@ function 建立正式對局圖騰預覽(): HTMLElement {
 
 function 建立正式小隊立繪舞台(captain: (typeof 隊長清單)[number]): HTMLElement {
   const roster = 取得上陣養成();
+  const isNineMemberStage = roster.length >= 9;
   const root = document.createElement("div");
   root.className = "正式立會舞台";
-  const stageCopy = 應用程式狀態.額外.Showcase模式
+  const stageCopy = isNineMemberStage
     ? 雙語("九名 Showcase 成員以後排／中排／前排的大合照站位呈現。", "Shows the nine Showcase members as a layered group portrait.")
     : 雙語("預設展示三名正式上陣成員的合照站位，含隊長前景。", "Shows the deployed members and captain as a group portrait on the stage.");
   root.innerHTML = `
@@ -351,10 +387,10 @@ function 建立正式小隊立繪舞台(captain: (typeof 隊長清單)[number]):
   `;
 
   const stage = document.createElement("div");
-  stage.className = `正式立會舞台-框${應用程式狀態.額外.Showcase模式 ? " 正式立會舞台-框--九人" : ""}`;
+  stage.className = `正式立會舞台-框${isNineMemberStage ? " 正式立會舞台-框--九人" : ""}`;
   stage.appendChild(建立隊長舞台立繪(captain));
 
-  const stageMembers = 應用程式狀態.額外.Showcase模式
+  const stageMembers = isNineMemberStage
     ? roster.map((memberState) => ({ memberState, className: `正式立會舞台-角色 正式立會舞台-角色--九宮-${memberState.slotId}` }))
     : ([
         { memberState: roster.find((entry) => entry.layer === "middle"), className: "正式立會舞台-角色 正式立會舞台-角色--高" },
@@ -1141,14 +1177,15 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   root.style.flexDirection = "column";
   root.style.gap = "14px";
 
-  if (應用程式狀態.額外.Showcase模式) 確保Showcase九宮格();
   const captain = 隊長清單.find((entry) => entry.id === (應用程式狀態.額外.選中隊長 ?? 隊長清單[0].id)) ?? 隊長清單[0];
   const squad = 取得正式編隊資料();
   const selectedSlotId = squad.some((slot) => slot.slotId === 應用程式狀態.額外.選中的小隊成員展示位)
     ? (應用程式狀態.額外.選中的小隊成員展示位 as number)
     : squad[0].slotId;
   const selectedSlot = squad.find((slot) => slot.slotId === selectedSlotId) ?? squad[0];
-  const selectedMember = selectedSlot.member ? MEMBERS.find((member) => member.no === selectedSlot.member?.memberNo) ?? null : null;
+  const selectedDisplay = 讀取Showcase草稿成員(selectedSlot.slotId, selectedSlot.member);
+  const selectedMemberState = selectedDisplay.member;
+  const selectedMember = selectedMemberState ? MEMBERS.find((member) => member.no === selectedMemberState.memberNo) ?? null : null;
   const summary = 取得正式小隊摘要();
   const assignedMembers = new Map(squad.filter((slot) => slot.member).map((slot) => [slot.member!.memberNo, slot.layer]));
 
@@ -1195,7 +1232,8 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   squadSummaryRow.className = `正式小隊摘要列${應用程式狀態.額外.Showcase模式 ? " 正式小隊摘要列--Showcase" : ""}`;
   squad.forEach((slot, index) => {
     const role = 槽位職責色票[slot.role];
-    const member = slot.member ? MEMBERS.find((entry) => entry.no === slot.member?.memberNo) ?? null : null;
+    const display = 讀取Showcase草稿成員(slot.slotId, slot.member);
+    const member = display.member ? MEMBERS.find((entry) => entry.no === display.member?.memberNo) ?? null : null;
     const cardWrap = document.createElement("div");
     cardWrap.className = "正式小隊摘要卡框";
     const card = document.createElement("button");
@@ -1213,7 +1251,7 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
         <span>${取得正式層級短標(slot.layer)}</span>
       </div>
       <div class="正式小隊摘要卡-名稱">${member ? `${member.no.toString().padStart(2, "0")} ${成員顯示名(member)}` : 雙語("未配置", "Unassigned")}</div>
-      <div class="正式小隊摘要卡-副文">${member ? `${家族顯示名(member.family)} | ${slot.member?.star ?? 1}★ ${星節點顯示名(member, slot.member?.star ?? 1)}` : 雙語("請從下方成員庫指派", "Assign a member from the library below.")}</div>
+      <div class="正式小隊摘要卡-副文">${member ? `${display.isDraft ? 雙語("待儲存", "Pending Save") + " | " : ""}${家族顯示名(member.family)} | ${display.member?.star ?? 1}★ ${星節點顯示名(member, display.member?.star ?? 1)}` : 雙語("請從下方成員庫指派", "Assign a member from the library below.")}</div>
     `;
     cardWrap.appendChild(card);
 
@@ -1242,14 +1280,24 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   const squadHost = 應用程式狀態.額外.Showcase模式 ? leftPane : rightPane;
   squadHost.appendChild(squadSummaryRow);
 
+  if (應用程式狀態.額外.Showcase模式) {
+    const saveRow = document.createElement("div");
+    saveRow.className = "正式Showcase儲存列";
+    saveRow.innerHTML = `
+      <span>${雙語("目前舞台仍顯示已儲存的正式隊伍；按 Save 才會把草稿套用到真正上陣。", "The stage still shows the saved squad; press Save to apply drafts to the real deployment.")}</span>
+      <button type="button" class="一級按鈕" ${正式Showcase待儲存草稿.size === 0 ? "disabled" : ""} data-save-showcase>${雙語("Save 小隊", "Save Squad")}</button>
+    `;
+    saveRow.querySelector<HTMLButtonElement>("[data-save-showcase]")!.onclick = () => {
+      儲存Showcase正式小隊草稿();
+      刷新();
+    };
+    squadHost.appendChild(saveRow);
+  }
+
   if (應用程式狀態.額外.Showcase模式 && 正在編輯正式槽位 !== null) {
     const editingSlot = squad.find((slot) => slot.slotId === 正在編輯正式槽位);
     if (editingSlot) {
-      const member = editingSlot.member ? MEMBERS.find((entry) => entry.no === editingSlot.member?.memberNo) : null;
-      const draft = 正式編輯草稿.get(editingSlot.slotId) ?? {
-        memberNo: String(member?.no ?? 1),
-        star: (editingSlot.member?.star ?? 1) as 1 | 2 | 3,
-      };
+      const draft = 取得Showcase草稿(editingSlot.slotId, editingSlot.member);
       const editor = document.createElement("div");
       editor.className = "正式Showcase編輯列";
       editor.innerHTML = `
@@ -1278,9 +1326,10 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
           editor.querySelector<HTMLElement>("[data-error]")!.textContent = 雙語("找不到這個成員編號", "Member number not found");
           return;
         }
-        設定Showcase槽位成員(editingSlot.slotId, memberNo);
-        設定Showcase槽位星級(editingSlot.slotId, Number(starSelect.value) as 1 | 2 | 3);
-        刷新正式最大生命();
+        正式Showcase待儲存草稿.set(editingSlot.slotId, {
+          memberNo: String(memberNo),
+          star: Number(starSelect.value) as 1 | 2 | 3,
+        });
         正式編輯草稿.delete(editingSlot.slotId);
         正在編輯正式槽位 = null;
         刷新();
@@ -1314,12 +1363,12 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
   selectedInfo.style.borderRadius = "10px";
   selectedInfo.style.background = "rgba(255,255,255,0.03)";
   selectedInfo.style.border = "1px solid rgba(255,255,255,0.06)";
-  if (selectedMember && selectedSlot.member) {
+  if (selectedMember && selectedMemberState) {
     selectedInfo.innerHTML = `
       <div style="font-size:0.72rem;color:#8d93ad;">${雙語("目前編輯", "Currently Editing")}: ${取得層級標籤(selectedSlot.ring)}</div>
       <div style="font-size:0.9rem;color:#fff;font-weight:700;margin-top:4px;">${selectedMember.no.toString().padStart(2, "0")} ${成員顯示名(selectedMember)}</div>
       <div style="font-size:0.78rem;color:#8d93ad;line-height:1.5;margin-top:8px;">
-        ${世界顯示名(selectedMember.world)} | ${家族顯示名(selectedMember.family)} | ${星節點顯示名(selectedMember, selectedSlot.member.star)}
+        ${selectedDisplay.isDraft ? 雙語("待儲存草稿", "Pending Save Draft") + " | " : ""}${世界顯示名(selectedMember.world)} | ${家族顯示名(selectedMember.family)} | ${星節點顯示名(selectedMember, selectedMemberState.star)}
       </div>
       <div style="font-size:0.78rem;color:#fff;line-height:1.5;margin-top:6px;">
         ${成員角色摘要(selectedMember)}
@@ -1361,8 +1410,11 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
     `;
     btn.onclick = () => {
       if (應用程式狀態.額外.Showcase模式) {
-        設定Showcase槽位成員(selectedSlot.slotId, member.no);
-        刷新正式最大生命();
+        const currentDraft = 取得Showcase草稿(selectedSlot.slotId, selectedSlot.member);
+        正式Showcase待儲存草稿.set(selectedSlot.slotId, {
+          memberNo: String(member.no),
+          star: currentDraft.star,
+        });
       } else {
         套用正式槽位成員(selectedSlot.layer, member.no);
       }

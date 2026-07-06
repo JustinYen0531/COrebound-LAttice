@@ -335,18 +335,16 @@ button.禁用:hover {
   display: flex;
   flex-direction: column;
   gap: 28px;
-  padding-top: 30px;
+  padding-top: 0;
 }
 .主畫面-封面區 {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 360px);
-  gap: 24px;
-  align-items: start;
+  position: relative;
+  min-height: 100vh;
+  margin: -32px -32px 0;
 }
 .主畫面-世界展示 {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  position: relative;
+  min-height: 100vh;
 }
 .主畫面-進度摘要 {
   background: rgba(16, 19, 30, 0.92);
@@ -364,45 +362,145 @@ button.禁用:hover {
 .主畫面-進度摘要 li + li {
   margin-top: 6px;
 }
-.主畫面-標題 h1 {
-  margin: 0;
-  font-size: 2.1em;
-  letter-spacing: 0.03em;
-  background: linear-gradient(90deg, #d8b46a, #a9baff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.主畫面-標題 {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 8;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  transform: translate(-50%, -50%);
+  transition: top 0.45s ease, transform 0.45s ease;
 }
-.主畫面-標題 p {
-  color: var(--ink-dim);
-  margin: 6px 0 0;
+.主畫面-標題.選單展開,
+.主畫面-已進場 .主畫面-標題 {
+  top: 28px;
+  transform: translateX(-50%);
+}
+.主畫面-標題按鈕 {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.主畫面-Logo圖 {
+  width: min(78vw, 980px);
+  max-height: 56vh;
+  object-fit: contain;
+  display: block;
+  filter:
+    drop-shadow(0 26px 36px rgba(0, 0, 0, 0.34))
+    brightness(0.92);
+  opacity: 0.94;
+  transition: transform 0.25s ease, filter 0.25s ease, opacity 0.25s ease;
+  transform-origin: center center;
+  animation: 主畫面Logo呼吸 4.8s ease-in-out infinite;
+}
+.主畫面-標題.選單展開 .主畫面-Logo圖,
+.主畫面-已進場 .主畫面-Logo圖 {
+  animation: none;
+}
+.主畫面-標題按鈕:hover .主畫面-Logo圖,
+.主畫面-標題按鈕:focus-visible .主畫面-Logo圖 {
+  transform: translateY(-4px) scale(1.018);
+  opacity: 1;
+  filter:
+    drop-shadow(0 30px 46px rgba(0, 0, 0, 0.42))
+    drop-shadow(0 0 24px rgba(255, 239, 196, 0.22))
+    brightness(1.04);
+}
+.主畫面-標題副文 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 14px;
+  border-radius: 999px;
+  color: rgba(247, 243, 234, 0.92);
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  background: rgba(8, 10, 16, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+}
+@keyframes 主畫面Logo呼吸 {
+  0%,
+  100% {
+    transform: translateY(0) scale(0.998);
+    filter:
+      drop-shadow(0 26px 36px rgba(0, 0, 0, 0.34))
+      brightness(0.92);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.01);
+    filter:
+      drop-shadow(0 31px 44px rgba(0, 0, 0, 0.4))
+      brightness(0.98);
+  }
+}
+.主畫面-下拉選單 {
+  display: none;
+  width: min(360px, calc(100vw - 32px));
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(180deg, rgba(11, 12, 18, 0.92), rgba(11, 12, 18, 0.74)),
+    rgba(9, 10, 14, 0.82);
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(12px);
+}
+.主畫面-標題.選單展開 .主畫面-下拉選單 {
+  display: block;
+}
+.主畫面-下拉按鈕列 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.主畫面-下拉按鈕 {
+  text-align: left;
+  padding: 13px 15px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
+  color: #f6f1e6;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.主畫面-下拉按鈕:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.13);
+}
+.主畫面-下拉按鈕.作用中 {
+  background: rgba(182, 46, 38, 0.24);
+  border-color: rgba(214, 79, 66, 0.42);
+}
+.主畫面-下拉按鈕-次要 {
+  opacity: 0.82;
 }
 .主畫面-世界舞台場景 {
   position: relative;
+  min-height: 100vh;
   perspective: 1800px;
-  padding: 18px;
-  border-radius: 26px;
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.04)),
-    radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.18), transparent 48%),
-    linear-gradient(180deg, rgba(30, 27, 22, 0.10), rgba(30, 27, 22, 0.22)),
-    var(--bg-panel);
-  border: 1px solid rgba(38, 35, 30, 0.25);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 16px 30px rgba(24, 20, 15, 0.14);
+  background: #04070d;
 }
 .主畫面-世界舞台場景::before {
   content: "";
   position: absolute;
-  inset: 10px;
-  border-radius: 22px;
-  border: 1px dashed rgba(38, 35, 30, 0.18);
+  inset: 0;
   pointer-events: none;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(4, 7, 13, 0.08), rgba(4, 7, 13, 0.16) 24%, rgba(4, 7, 13, 0.62) 100%),
+    radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.08), transparent 28%);
 }
 .主畫面-世界轉台 {
   position: relative;
-  min-height: 470px;
+  min-height: 100vh;
   transform-style: preserve-3d;
   transition: transform 1.8s cubic-bezier(0.72, -0.04, 0.25, 1.02);
 }
@@ -414,14 +512,8 @@ button.禁用:hover {
   inset: 0;
   overflow: hidden;
   backface-visibility: hidden;
-  border-radius: 20px;
   transform-style: preserve-3d;
-  box-shadow:
-    0 22px 40px rgba(20, 18, 15, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.10);
-  background:
-    linear-gradient(180deg, rgba(24, 21, 16, 0.04), rgba(24, 21, 16, 0.18)),
-    #d6d0c1;
+  background: #04070d;
 }
 .主畫面-世界面::before {
   content: "";
@@ -429,8 +521,8 @@ button.禁用:hover {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 28%, rgba(0, 0, 0, 0.14) 100%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 12px);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 28%, rgba(0, 0, 0, 0.2) 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.022) 0 2px, transparent 2px 14px);
   mix-blend-mode: soft-light;
   z-index: 2;
 }
@@ -449,10 +541,9 @@ button.禁用:hover {
 }
 .主畫面-世界資訊 {
   position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 18px;
-  z-index: 3;
+  left: 24px;
+  bottom: 24px;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -483,115 +574,36 @@ button.禁用:hover {
   line-height: 1.45;
   box-shadow: 0 8px 20px rgba(20, 18, 15, 0.12);
 }
-.主畫面-世界註記 {
-  margin: 0;
-}
-.主畫面-木牌導航 {
-  position: relative;
-  padding: 22px 18px 24px;
-  border-radius: 22px 20px 28px 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 26%),
-    linear-gradient(90deg, rgba(92, 61, 31, 0.95), rgba(116, 78, 43, 0.94) 32%, rgba(84, 56, 28, 0.96) 70%, rgba(65, 43, 22, 0.95)),
-    #6a4723;
-  border: 1px solid rgba(45, 29, 14, 0.46);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -18px 24px rgba(39, 23, 9, 0.22),
-    0 18px 28px rgba(20, 18, 15, 0.18);
-}
-.主畫面-木牌導航::before,
-.主畫面-木牌導航::after {
-  content: "";
+.主畫面-任意處提示 {
   position: absolute;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  left: 50%;
+  bottom: 26px;
+  z-index: 7;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 6px;
+  min-width: min(460px, calc(100vw - 36px));
+  padding: 16px 20px;
+  text-align: center;
+  color: #f6f1e6;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   background:
-    radial-gradient(circle at 35% 35%, #d7c5a0, #6d4c28 62%, #2f2012 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
-  top: 14px;
+    linear-gradient(180deg, rgba(10, 11, 18, 0.84), rgba(10, 11, 18, 0.58)),
+    rgba(7, 8, 12, 0.42);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.28);
 }
-.主畫面-木牌導航::before { left: 16px; }
-.主畫面-木牌導航::after { right: 16px; }
-.主畫面-木牌抬頭 {
-  display: inline-flex;
-  align-items: center;
-  min-height: 48px;
-  margin: -8px 0 16px 10px;
-  padding: 10px 18px 10px 26px;
-  color: #fff6de;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background:
-    linear-gradient(90deg, rgba(69, 40, 17, 0.98), rgba(111, 69, 32, 0.96)),
-    #5d391c;
-  clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%, 10px 50%);
-  box-shadow: 0 8px 14px rgba(24, 18, 11, 0.18);
-}
-.主畫面-木牌按鈕列 {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.主畫面-木牌按鈕 {
-  position: relative;
-  text-align: left;
-  padding: 16px 18px 16px 52px;
-  color: #241a0f;
-  font-size: 1rem;
-  font-weight: 700;
+.主畫面-任意處提示 strong {
+  font-size: 1.04rem;
   letter-spacing: 0.04em;
-  border: 1px solid rgba(86, 63, 33, 0.24);
-  border-radius: 14px 18px 16px 20px;
-  background:
-    linear-gradient(180deg, rgba(255, 251, 238, 0.96), rgba(221, 206, 173, 0.94)),
-    #e2d0a6;
-  box-shadow:
-    0 10px 18px rgba(36, 24, 12, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.56);
-  transform: rotate(-0.7deg);
 }
-.主畫面-木牌按鈕:nth-child(2n) {
-  transform: rotate(0.85deg);
+.主畫面-任意處提示 span {
+  color: rgba(246, 241, 230, 0.78);
+  font-size: 0.9rem;
 }
-.主畫面-木牌按鈕::before {
-  content: "";
-  position: absolute;
-  left: 18px;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  transform: translateY(-50%);
-  background:
-    radial-gradient(circle at 35% 35%, #ede0c7, #9d7f56 64%, #4a321b 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 1px 4px rgba(20, 18, 15, 0.18);
-}
-.主畫面-木牌按鈕:hover {
-  transform: translateY(-2px) rotate(0deg);
-}
-.主畫面-木牌按鈕.作用中 {
-  background:
-    linear-gradient(180deg, rgba(244, 237, 210, 0.98), rgba(206, 185, 133, 0.96)),
-    #d5b56f;
-  box-shadow:
-    0 12px 22px rgba(36, 24, 12, 0.18),
-    inset 0 0 0 1px rgba(92, 70, 34, 0.28);
-}
-.主畫面-木牌按鈕:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-.主畫面-木牌按鈕-返回 {
-  font-size: 0.92rem;
-}
-.主畫面-木牌按鈕-次要 {
-  margin-top: 6px;
-  opacity: 0.84;
+.主畫面-已進場 .主畫面-任意處提示 {
+  display: none;
 }
 .主畫面-版面 {
   display: flex;
@@ -688,27 +700,27 @@ button.禁用:hover {
 
 @media (max-width: 980px) {
   .主畫面-封面區 {
-    grid-template-columns: 1fr;
+    margin: -24px -24px 0;
   }
 
   .主畫面-世界轉台 {
-    min-height: 360px;
+    min-height: 100vh;
   }
 }
 
 @media (max-width: 640px) {
-  .主畫面-世界舞台場景 {
-    padding: 12px;
+  .主畫面-封面區 {
+    margin: -16px -16px 0;
   }
 
-  .主畫面-世界轉台 {
-    min-height: 280px;
+  .主畫面-標題.選單展開,
+  .主畫面-已進場 .主畫面-標題 {
+    top: 18px;
   }
 
   .主畫面-世界資訊 {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
+    left: 14px;
+    bottom: 14px;
   }
 
   .主畫面-世界描述 {
@@ -716,8 +728,14 @@ button.禁用:hover {
     font-size: 0.9rem;
   }
 
-  .主畫面-木牌按鈕 {
-    padding-left: 46px;
+  .主畫面-Logo圖 {
+    width: min(90vw, 720px);
+    max-height: 42vh;
+  }
+
+  .主畫面-任意處提示 {
+    min-width: calc(100vw - 24px);
+    bottom: 14px;
   }
 }
 
@@ -1770,21 +1788,22 @@ button.禁用:hover {
 .正式立會舞台-隊長 {
   position: absolute;
   left: 50%;
-  bottom: 82px;
-  width: 38%;
+  bottom: -86px;
+  width: 78%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   pointer-events: none;
-  z-index: 2;
+  z-index: 1;
 }
 .正式立會舞台-隊長 img {
   width: 100%;
-  height: 320px;
+  height: 560px;
   object-fit: contain;
   object-position: center bottom;
-  filter: drop-shadow(0 14px 7px rgba(38, 31, 23, 0.24));
+  opacity: 0.34;
+  filter: drop-shadow(0 18px 12px rgba(38, 31, 23, 0.2));
 }
 .正式立會舞台-角色--高 {
   left: 31%;
@@ -1816,6 +1835,7 @@ button.禁用:hover {
   letter-spacing: 0.02em;
 }
 .正式立會舞台-名牌--隊長 {
+  display: none;
   margin-top: -8px;
   background: rgba(21, 28, 44, 0.82);
   color: #f6de97;
@@ -1843,14 +1863,14 @@ button.禁用:hover {
     right: 4%;
   }
   .正式立會舞台-隊長 {
-    width: 40%;
-    bottom: 72px;
+    width: 82%;
+    bottom: -78px;
   }
   .正式立會舞台-框 {
     min-height: 440px;
   }
   .正式立會舞台-隊長 img {
-    height: 270px;
+    height: 480px;
   }
   .正式立會舞台-角色 img {
     height: 250px;
@@ -3394,27 +3414,40 @@ button.禁用:hover {
   font-size: 0.56rem;
 }
 .正式立會舞台-框--九人 .正式立會舞台-隊長 {
-  width: 18%;
-  bottom: -18px;
-  z-index: 12;
+  width: 82%;
+  bottom: -132px;
+  z-index: 1;
 }
 .正式立會舞台-框--九人 .正式立會舞台-隊長 img {
-  height: 150px;
-  filter: drop-shadow(0 16px 8px rgba(38, 31, 23, 0.34));
+  height: 560px;
+  opacity: 0.28;
+  filter: drop-shadow(0 18px 12px rgba(38, 31, 23, 0.22));
 }
 .正式立會舞台-框--九人 .正式立會舞台-名牌--隊長 {
   margin-top: -14px;
   font-size: 0.56rem;
 }
-.正式立會舞台-角色--九宮-0 { --portrait-left: 18%; --portrait-bottom: 48px; --portrait-width: 28%; --portrait-height: 178px; --portrait-z: 8; }
-.正式立會舞台-角色--九宮-1 { --portrait-left: 50%; --portrait-bottom: 62px; --portrait-width: 30%; --portrait-height: 188px; --portrait-z: 9; }
-.正式立會舞台-角色--九宮-2 { --portrait-left: 82%; --portrait-bottom: 48px; --portrait-width: 28%; --portrait-height: 178px; --portrait-z: 8; }
-.正式立會舞台-角色--九宮-3 { --portrait-left: 27%; --portrait-bottom: 150px; --portrait-width: 24%; --portrait-height: 158px; --portrait-z: 5; }
-.正式立會舞台-角色--九宮-4 { --portrait-left: 50%; --portrait-bottom: 174px; --portrait-width: 25%; --portrait-height: 166px; --portrait-z: 6; }
-.正式立會舞台-角色--九宮-5 { --portrait-left: 73%; --portrait-bottom: 150px; --portrait-width: 24%; --portrait-height: 158px; --portrait-z: 5; }
-.正式立會舞台-角色--九宮-6 { --portrait-left: 21%; --portrait-bottom: 264px; --portrait-width: 21%; --portrait-height: 136px; --portrait-z: 2; }
-.正式立會舞台-角色--九宮-7 { --portrait-left: 50%; --portrait-bottom: 292px; --portrait-width: 22%; --portrait-height: 144px; --portrait-z: 3; }
-.正式立會舞台-角色--九宮-8 { --portrait-left: 79%; --portrait-bottom: 264px; --portrait-width: 21%; --portrait-height: 136px; --portrait-z: 2; }
+.正式立會舞台-角色--九宮-0 { --portrait-left: 18%; --portrait-bottom: 18px; --portrait-width: 42%; --portrait-height: 356px; --portrait-z: 8; }
+.正式立會舞台-角色--九宮-1 { --portrait-left: 50%; --portrait-bottom: 28px; --portrait-width: 44%; --portrait-height: 376px; --portrait-z: 9; }
+.正式立會舞台-角色--九宮-2 { --portrait-left: 82%; --portrait-bottom: 18px; --portrait-width: 42%; --portrait-height: 356px; --portrait-z: 8; }
+.正式立會舞台-角色--九宮-3 { --portrait-left: 27%; --portrait-bottom: 142px; --portrait-width: 36%; --portrait-height: 316px; --portrait-z: 5; }
+.正式立會舞台-角色--九宮-4 { --portrait-left: 50%; --portrait-bottom: 160px; --portrait-width: 38%; --portrait-height: 332px; --portrait-z: 6; }
+.正式立會舞台-角色--九宮-5 { --portrait-left: 73%; --portrait-bottom: 142px; --portrait-width: 36%; --portrait-height: 316px; --portrait-z: 5; }
+.正式立會舞台-角色--九宮-6 { --portrait-left: 21%; --portrait-bottom: 268px; --portrait-width: 32%; --portrait-height: 272px; --portrait-z: 2; }
+.正式立會舞台-角色--九宮-7 { --portrait-left: 50%; --portrait-bottom: 294px; --portrait-width: 34%; --portrait-height: 288px; --portrait-z: 3; }
+.正式立會舞台-角色--九宮-8 { --portrait-left: 79%; --portrait-bottom: 268px; --portrait-width: 32%; --portrait-height: 272px; --portrait-z: 2; }
+.正式Showcase儲存列 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid rgba(121, 90, 43, 0.22);
+  border-radius: 12px;
+  background: rgba(255, 246, 213, 0.36);
+  color: #6a5232;
+  font-size: 0.72rem;
+}
 .正式小隊摘要列--Showcase {
   padding: 10px;
   border: 1px solid rgba(121, 90, 43, 0.2);
