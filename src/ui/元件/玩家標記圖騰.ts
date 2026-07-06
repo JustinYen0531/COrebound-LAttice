@@ -394,6 +394,8 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
 
   // 2. 中央隊長圖騰(6 重對稱,獨立自旋)
   const 隊長筆畫 = 隊長.星級筆畫[隊長等級 - 1];
+  const 隊長脈衝框 = 建立元素("g", { id: "pm-ring-隊長-脈衝框" });
+  隊長脈衝框.classList.add("玩家標記圖騰-隊長脈衝框");
   const 隊長G = 建立元素("g", { id: "pm-ring-隊長" });
   隊長G.classList.add("玩家標記圖騰-隊長核心");
   let 隊長角 = 0;
@@ -406,7 +408,8 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
     楔形.appendChild(鏡射);
     隊長G.appendChild(楔形);
   }
-  svg.appendChild(隊長G);
+  隊長脈衝框.appendChild(隊長G);
+  svg.appendChild(隊長脈衝框);
 
   // 3. 最頂層:9 角色圓徽章(隨大環旋轉)
   for (const 環 of 大環列表) {
@@ -427,7 +430,6 @@ export function 建立玩家標記圖騰(opts: 玩家標記選項 = {}): SVGSVGE
     svg.appendChild(emblemsG);
     大環徽章節點[環] = emblemsG;
   }
-
   // 啟動差速旋轉動畫
   if (旋轉) {
     let rafId: number | null = null;

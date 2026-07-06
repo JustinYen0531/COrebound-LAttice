@@ -3433,9 +3433,9 @@ button.禁用:hover {
 .世界地圖層-玩家 .player-ring-hitbox {
   transition: opacity 160ms ease;
 }
-.世界地圖層-玩家 .玩家標記圖騰-隊長核心 {
-  transform-box: view-box;
-  transform-origin: 160px 160px;
+.世界地圖層-玩家 .玩家標記圖騰-隊長脈衝框 {
+  transform-box: fill-box;
+  transform-origin: center;
   transition: transform 180ms ease, filter 180ms ease;
 }
 .世界地圖層-玩家.世界地圖層-玩家-tick-hit {
@@ -3443,7 +3443,7 @@ button.禁用:hover {
     drop-shadow(0 0 20px rgba(255, 220, 120, 0.72))
     drop-shadow(0 0 10px rgba(96,165,250,0.42));
 }
-.世界地圖層-玩家.世界地圖層-玩家-tick-hit .玩家標記圖騰-隊長核心 {
+.世界地圖層-玩家.世界地圖層-玩家-tick-hit .玩家標記圖騰-隊長脈衝框 {
   transform: scale(1.05);
   filter: drop-shadow(0 0 10px rgba(255, 235, 160, 0.9));
 }

@@ -1761,7 +1761,9 @@ export function 建立世界地圖層(): HTMLElement {
     const monsterRadius = 訓練敵人碰撞半徑(monster.inst.tier);
     const dx = monster.pos.x - playerPos.x;
     const dy = monster.pos.y - playerPos.y;
-    const distance = Math.hypot(dx, dy);
+    // 畫面上的世界地板有縱向壓縮；接觸判定若不用同一投影，視覺上碰到外圈時
+    // 邏輯仍可能判定「尚未接觸」。這裡改用與畫面一致的投影距離。
+    const distance = Math.hypot(dx, dy * GROUND_DEPTH_SCALE);
     return PLAYER_RING_BANDS
       .filter(({ layer, inner, outer }) => {
         if (layer === "middle" && 玩家最大展開層級 < 2) return false;
