@@ -783,7 +783,8 @@ function 召喚面板(): HTMLElement {
   container.style.gap = "14px";
 
   const progress = 對局進度摘要("formal");
-  const online = 應用程式狀態.額外.靠近的互動設施 === "召喚";
+  const showcaseForceSummon = 應用程式狀態.額外.Showcase模式;
+  const online = 設施已連線("召喚");
   const labels: Record<World, string> = {
     geometry: 世界顯示名("geometry"),
     organic: 世界顯示名("organic"),
@@ -824,7 +825,7 @@ function 召喚面板(): HTMLElement {
                   <td style="padding: 8px 0; font-weight: bold;">${labels[guardian.world]}</td>
                   <td style="color: ${guardian.defeated ? "#4d8dff" : guardian.ready ? "#ffd24d" : "#8d93ad"};">${status}</td>
                   <td>
-                    <button class="三級按鈕 召喚-守護者" data-world="${guardian.world}" ${online && guardian.ready ? "" : "disabled"}>${雙語("召喚", "Summon")}</button>
+                    <button class="三級按鈕 召喚-守護者" data-world="${guardian.world}" ${online && (guardian.ready || showcaseForceSummon) ? "" : "disabled"}>${雙語("召喚", "Summon")}</button>
                   </td>
                 </tr>
               `;
@@ -842,7 +843,7 @@ function 召喚面板(): HTMLElement {
             <div>${雙語("全世界狂暴", "All-World Enrage")}: ${progress.全守護者已倒 ? 雙語("是", "Yes") : 雙語("否", "No")}</div>
             <div>${雙語("場上狀態", "Field Status")}: ${progress.COLA已召喚 ? 雙語("COLA 已在場", "COLA is already active") : 雙語("尚未召喚", "Not summoned yet")}</div>
           </div>
-          <button class="危險按鈕 最終召喚" style="width: 100%; padding: 8px 0; font-size: 0.8rem;" ${online && progress.可召喚COLA ? "" : "disabled"}>
+          <button class="危險按鈕 最終召喚" style="width: 100%; padding: 8px 0; font-size: 0.8rem;" ${online && (progress.可召喚COLA || showcaseForceSummon) ? "" : "disabled"}>
             ${雙語("召喚 COLA Boss", "Summon COLA Boss")}
           </button>
         </div>
@@ -858,18 +859,20 @@ function 召喚面板(): HTMLElement {
   container.querySelectorAll(".召喚-守護者").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const w = (e.currentTarget as HTMLElement).dataset.world as World;
-      if (!online || !可召喚守護者(w, "formal")) return;
+      if (!online) return;
+      if (!showcaseForceSummon && !可召喚守護者(w, "formal")) return;
       播放音效("祭壇召喚");
-      標記守護者已召喚(w, "formal");
+      if (!showcaseForceSummon) 標記守護者已召喚(w, "formal");
       排入Boss召喚({ kind: "guardian", world: w });
       應用程式狀態.返回戰場();
     });
   });
 
   container.querySelector(".最終召喚")!.addEventListener("click", () => {
-    if (!online || !可召喚COLA("formal")) return;
+    if (!online) return;
+    if (!showcaseForceSummon && !可召喚COLA("formal")) return;
     播放音效("祭壇召喚");
-    標記COLA已召喚("formal");
+    if (!showcaseForceSummon) 標記COLA已召喚("formal");
     排入Boss召喚({ kind: "cola" });
     應用程式狀態.返回戰場();
   });

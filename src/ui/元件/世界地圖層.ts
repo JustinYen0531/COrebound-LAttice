@@ -1274,10 +1274,9 @@ export function 建立世界地圖層(): HTMLElement {
    */
   function 生成Boss到場(def: MonsterDef, bossKind: "guardian" | "cola", bossWorld?: World): void {
     播放音效("Boss登場");
-    const angle = Math.random() * Math.PI * 2;
-    const dist = def.tier === 4 ? 1500 : 980;
-    const spawnX = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, playerPos.x + Math.cos(angle) * dist));
-    const spawnY = Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, playerPos.y + Math.sin(angle) * dist));
+    const spawnPoint = 取得Boss核心召喚座標(bossKind, bossWorld);
+    const spawnX = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, spawnPoint.x));
+    const spawnY = Math.max(activePlayableBounds.minY, Math.min(activePlayableBounds.maxY, spawnPoint.y));
     const spritePath = BOSS_BATTLE_SPRITE[def.world];
     const inst: MonsterInstance = {
       id: `boss_${def.id}_${Date.now()}`,
@@ -1306,6 +1305,22 @@ export function 建立世界地圖層(): HTMLElement {
       : { inst, x: spawnX, y: spawnY, dropped: false, bossKind, bossWorld } satisfies 正式戰場怪物;
     if (persistent) 加入正式戰場怪物(persistent);
     monsters.push({ inst, pos: { x: spawnX, y: spawnY }, node, bossKind, bossWorld, persistent });
+  }
+
+  function 取得Boss核心召喚座標(bossKind: "guardian" | "cola", bossWorld?: World): { x: number; y: number } {
+    if (bossKind === "cola") {
+      const plaza = MAP_ZONES.find((zone) => zone.region === "plaza");
+      return plaza ? { x: plaza.centerX, y: plaza.centerY } : { x: 0, y: 0 };
+    }
+
+    if (!bossWorld) return { ...playerPos };
+    const polygons = buildRegionPolygons();
+    const bounds = boundsOf(polygons[bossWorld]);
+    const coreRect = coreRectForWorld(bossWorld, bounds);
+    return {
+      x: (coreRect.minX + coreRect.maxX) * 0.5,
+      y: (coreRect.minY + coreRect.maxY) * 0.5,
+    };
   }
 
   /** 目前上陣小隊的家族清單（含個人星級），供 技能管理 判定各家族可用武器星級。 */
