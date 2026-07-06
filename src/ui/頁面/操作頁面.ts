@@ -614,14 +614,6 @@ export function 渲染操作頁面(容器: HTMLElement) {
   const root = document.createElement("div");
   root.className = "操作頁面-root";
 
-  const 頂部 = document.createElement("div");
-  頂部.className = "操作頁面-頂部";
-  頂部.innerHTML = `<span class="世界時鐘 ${額外.縮圈警戒 ? "警戒" : ""}">${雙語("世界時間", "World Time")}: ${額外.世界時鐘秒數}s${
-    額外.縮圈警戒 ? " ⚠" : ""
-  }</span>`;
-  頂部.appendChild(建立操作頁音樂控制());
-  root.appendChild(頂部);
-
   try {
     // 世界地圖層:玩家可走動、靠近設施觸發互動
     root.appendChild(建立世界地圖層());

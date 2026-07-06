@@ -192,11 +192,11 @@ const PLAYER_TOTEM_RENDER_SIZE = 660;
 const PLAYER_TOTEM_VIEWBOX_SIZE = 320;
 const PLAYER_RING_OUTER_RADIUS: Record<1 | 2 | 3, number> = { 1: 140, 2: 220, 3: 300 };
 const REFERENCE_CAMERA_ZOOM = 2.43;
-const DEFAULT_CAMERA_ZOOM = 2.0;
+const DEFAULT_CAMERA_ZOOM = 1.0;
 const WORLD_OBJECT_REFERENCE_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
 const DEFAULT_CAMERA_ZOOM_PERCENT = 100;
 const MIN_CAMERA_ZOOM_PERCENT = 50;
-const MAX_CAMERA_ZOOM_PERCENT = 200;
+const MAX_CAMERA_ZOOM_PERCENT = 150;
 const MIN_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM * (MIN_CAMERA_ZOOM_PERCENT / DEFAULT_CAMERA_ZOOM_PERCENT);
 const MAX_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM * (MAX_CAMERA_ZOOM_PERCENT / DEFAULT_CAMERA_ZOOM_PERCENT);
 const ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS = true;
@@ -783,6 +783,7 @@ export function 建立世界地圖層(): HTMLElement {
   managementButton.className = "世界地圖層-管理按鈕";
   managementButton.type = "button";
   managementButton.innerHTML = `
+    <span class="世界地圖層-管理按鈕-時間">${雙語("世界時間 0s", "World Time 0s")}</span>
     <span class="世界地圖層-管理按鈕-主標">${雙語("管理介面", "Management")}</span>
   `;
   managementButton.title = 雙語("打開管理介面", "Open Management");
@@ -1911,6 +1912,11 @@ export function 建立世界地圖層(): HTMLElement {
       } else {
         clockEl.classList.remove("警戒");
       }
+    }
+    const managementClockEl = managementButton.querySelector<HTMLElement>(".世界地圖層-管理按鈕-時間");
+    if (managementClockEl) {
+      const 額外 = 應用程式狀態.額外;
+      managementClockEl.textContent = `${雙語("世界時間", "World Time")} ${額外.世界時鐘秒數}s${額外.縮圈警戒 ? " ⚠" : ""}`;
     }
     rafId = window.requestAnimationFrame(tick);
   }
