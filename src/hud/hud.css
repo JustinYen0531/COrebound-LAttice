@@ -11,6 +11,7 @@
 :host,
 .hud-root {
   --hud-scale: 1.8;
+  --hud-core-scale: calc(var(--hud-scale) * 0.8);
   /* 色彩變數：中性色以黑白為主，僅職責色(藍/紅/黃)與生命階梯色帶有語意，其餘一律線稿化 */
   --c-hp-full: #e9ecf8;
   --c-hp-warn: #e8b64d;
@@ -67,7 +68,7 @@
   position: absolute;
   bottom: 72px;
   left: 50%;
-  transform: translateX(-50%) scale(var(--hud-scale));
+  transform: translateX(-50%) scale(var(--hud-core-scale));
   transform-origin: center bottom;
   display: flex;
   align-items: center;
