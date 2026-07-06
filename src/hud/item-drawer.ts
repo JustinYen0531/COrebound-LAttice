@@ -16,13 +16,30 @@
 
 import {
   ROLE_COLOR,
-  ROLE_LABEL,
   type HudSnapshot,
   type PotionItem,
   type RosterMember,
   type Role,
 } from "./types";
 import { potionGlyphSvg } from "./glyphs";
+import { 應用程式狀態 } from "../ui/應用程式狀態";
+import { 選文 } from "../ui/語系";
+
+function 雙語(中文: string, 英文: string): string {
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
+}
+
+function 職責顯示名(role: Role): string {
+  return {
+    protect: 雙語("保護", "Protect"),
+    firepower: 雙語("火力", "Firepower"),
+    supply: 雙語("補給", "Supply"),
+  }[role];
+}
+
+function 層級顯示名(layer: RosterMember["layer"]): string {
+  return layer === "inner" ? 雙語("內", "Inner") : layer === "middle" ? 雙語("中", "Middle") : 雙語("外", "Outer");
+}
 
 /** 大藥水確認時限(ms) — 規格 §6.5 */
 const BIG_CONFIRM_MS = 3000;
@@ -46,12 +63,12 @@ export class ItemDrawer {
     this.el = document.createElement("div");
     this.el.className = "drawer item-drawer";
     this.el.innerHTML = `
-      <div class="drawer-title">補給(右滑)</div>
+      <div class="drawer-title">${雙語("補給(右滑)", "Supplies (Swipe Right)")}</div>
       <div class="id-row">
         <div class="potion-list" data-zone="potions"></div>
         <div class="roster-list" data-zone="roster"></div>
       </div>
-      <div class="drawer-hint">拖曳藥水到隊員身上使用 · 雙擊=對最虛弱隊員 · 單擊=對隊長</div>
+      <div class="drawer-hint">${雙語("拖曳藥水到隊員身上使用 · 雙擊=對最虛弱隊員 · 單擊=對隊長", "Drag a potion onto a member to use it · Double-click = weakest member · Single-click = captain")}</div>
     `;
     this.potionList = this.el.querySelector(".potion-list") as HTMLElement;
     this.rosterList = this.el.querySelector(".roster-list") as HTMLElement;
@@ -91,7 +108,7 @@ export class ItemDrawer {
   private renderPotions(): void {
     this.potionList.innerHTML = "";
     if (this.potions.length === 0) {
-      this.potionList.innerHTML = `<div class="empty-hint">無可使用補給</div>`;
+      this.potionList.innerHTML = `<div class="empty-hint">${雙語("無可使用補給", "No usable supplies")}</div>`;
       return;
     }
     for (const p of this.potions) {
@@ -102,7 +119,7 @@ export class ItemDrawer {
   private renderRoster(): void {
     this.rosterList.innerHTML = "";
     if (this.roster.length === 0) {
-      this.rosterList.innerHTML = `<div class="empty-hint">無隊員</div>`;
+      this.rosterList.innerHTML = `<div class="empty-hint">${雙語("無隊員", "No members")}</div>`;
       return;
     }
     // 受傷/護盾優先置頂 — 規格 §5.2
@@ -115,7 +132,7 @@ export class ItemDrawer {
     if (sorted.length > 5) {
       const more = document.createElement("div");
       more.className = "roster-more";
-      more.textContent = `↓ 還有 ${sorted.length - 5} 名(捲動查看)`;
+      more.textContent = 雙語(`↓ 還有 ${sorted.length - 5} 名(捲動查看)`, `↓ ${sorted.length - 5} more (scroll to view)`);
       this.rosterList.appendChild(more);
     }
     for (const m of visible) {
@@ -130,7 +147,7 @@ export class ItemDrawer {
     node.draggable = false; // 我們用自製拖曳(更可控)
     node.innerHTML = `
       <div class="pi-glyph">${this.potionGlyph(p)}</div>
-      <div class="pi-name">${p.label}${p.size === "big" ? ' <span class="big-tag">大</span>' : ""}</div>
+      <div class="pi-name">${p.label}${p.size === "big" ? ` <span class="big-tag">${雙語("大", "L")}</span>` : ""}</div>
       <div class="pi-count">×${p.count}</div>
     `;
     // 點擊 = 對隊長使用 — 規格 §5.4
@@ -169,13 +186,13 @@ export class ItemDrawer {
     node.innerHTML = `
       <div class="ri-head">
         <span class="ri-face" style="border-color:${roleColor};">${m.label}</span>
-        <span class="ri-role" style="color:${roleColor};">${ROLE_LABEL[m.role as Role]}</span>
+        <span class="ri-role" style="color:${roleColor};">${職責顯示名(m.role as Role)}</span>
       </div>
       <div class="ri-bar">
         <div class="ri-fill" style="width:${hpPct}%; background:${this.hpColor(m.hpRatio)};"></div>
       </div>
       <div class="ri-foot">
-        <span class="ri-layer">${m.layer === "inner" ? "內" : m.layer === "middle" ? "中" : "外"}</span>
+        <span class="ri-layer">${層級顯示名(m.layer)}</span>
         <span class="ri-ail">${ailments}</span>
       </div>
     `;
@@ -318,14 +335,14 @@ export class ItemDrawer {
     if (!this.pendingBig) return;
     const { potion, memberId, deadline } = this.pendingBig;
     const member = memberId ? this.roster.find((r) => r.id === memberId) : null;
-    const targetName = member ? member.label : "隊長";
+    const targetName = member ? member.label : 雙語("隊長", "Captain");
     const remain = Math.max(0, deadline - Date.now());
     const banner = document.createElement("div");
     banner.className = "big-confirm-banner";
     banner.innerHTML = `
-      <span>確認對 <b>${targetName}</b> 使用 <b>${potion.label}</b>?</span>
-      <button class="confirm-btn">確認</button>
-      <button class="cancel-btn">取消</button>
+      <span>${雙語("確認對", "Use")} <b>${targetName}</b> ${雙語("使用", "with")} <b>${potion.label}</b>?</span>
+      <button class="confirm-btn">${雙語("確認", "Confirm")}</button>
+      <button class="cancel-btn">${雙語("取消", "Cancel")}</button>
       <span class="countdown">${(remain / 1000).toFixed(1)}s</span>
     `;
     this.el.appendChild(banner);

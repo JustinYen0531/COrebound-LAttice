@@ -27,26 +27,41 @@ import type {
   WeaponGroupState,
 } from "./types";
 import { openChest, type ChestOpenResult, type ChestState } from "../economy/寶箱系統";
+import { 應用程式狀態 } from "../ui/應用程式狀態";
+import { 選文 } from "../ui/語系";
+
+function 雙語(中文: string, 英文: string): string {
+  return 選文(應用程式狀態.額外.語言, 中文, 英文);
+}
+
+function 藥水標籤(id: PotionId): string {
+  return {
+    hp_small: 雙語("小生命藥水", "Minor Life Potion"),
+    hp_big: 雙語("大生命藥水", "Major Life Potion"),
+    energy_small: 雙語("小能量藥水", "Minor Energy Potion"),
+    energy_big: 雙語("大能量藥水", "Major Energy Potion"),
+    hybrid_small: 雙語("小混合藥水", "Minor Hybrid Potion"),
+    hybrid_big: 雙語("大混合藥水", "Major Hybrid Potion"),
+  }[id];
+}
+
+function 成員顯示名(nameZh: string, nameEn: string): string {
+  return 應用程式狀態.額外.語言 === "zh" ? nameZh : nameEn;
+}
 
 type SnapshotMode = "dojo" | "formal";
 
 const LAYER_ORDER: Layer[] = ["inner", "middle", "outer"];
 const ROLE_ORDER: Role[] = ["protect", "firepower", "supply"];
 const FAMILY_ORDER: WeaponFamily[] = ["shield", "multishot", "straight", "mine", "laser"];
-const STATIC_POTIONS: PotionItem[] = [
-  { id: "hp_small", label: "小生命藥水", size: "small", effect: "hp", count: 3 },
-  { id: "hp_big", label: "大生命藥水", size: "big", effect: "hp", count: 1 },
-  { id: "energy_small", label: "小能量藥水", size: "small", effect: "energy", count: 2 },
-  { id: "hybrid_big", label: "大混合藥水", size: "big", effect: "hybrid", count: 1 },
-];
-const POTION_LABELS: Record<PotionId, string> = {
-  hp_small: "小生命藥水",
-  hp_big: "大生命藥水",
-  energy_small: "小能量藥水",
-  energy_big: "大能量藥水",
-  hybrid_small: "小混合藥水",
-  hybrid_big: "大混合藥水",
-};
+function 建立靜態藥水(): PotionItem[] {
+  return [
+    { id: "hp_small", label: 藥水標籤("hp_small"), size: "small", effect: "hp", count: 3 },
+    { id: "hp_big", label: 藥水標籤("hp_big"), size: "big", effect: "hp", count: 1 },
+    { id: "energy_small", label: 藥水標籤("energy_small"), size: "small", effect: "energy", count: 2 },
+    { id: "hybrid_big", label: 藥水標籤("hybrid_big"), size: "big", effect: "hybrid", count: 1 },
+  ];
+}
 
 interface RosterRuntime {
   playerHp: number;
@@ -90,12 +105,12 @@ export class GameSnapshotSource {
     disabledByRoster: family === "laser",
   }));
   private readonly periodics: PeriodicSkillState[] = [
-    { id: "p_move", label: "步調循環", chargeRatio: 0.2, kind: "periodic" },
-    { id: "p_guard", label: "陣形維持", chargeRatio: 0.55, kind: "periodic" },
-    { id: "a_auto", label: "自動施法", chargeRatio: 0.35, kind: "auto" },
-    { id: "a_focus", label: "武裝連動", chargeRatio: 0.8, kind: "auto" },
+    { id: "p_move", label: 雙語("步調循環", "Motion Loop"), chargeRatio: 0.2, kind: "periodic" },
+    { id: "p_guard", label: 雙語("陣形維持", "Formation Hold"), chargeRatio: 0.55, kind: "periodic" },
+    { id: "a_auto", label: 雙語("自動施法", "Auto Cast"), chargeRatio: 0.35, kind: "auto" },
+    { id: "a_focus", label: 雙語("武裝連動", "Weapon Link"), chargeRatio: 0.8, kind: "auto" },
   ];
-  private readonly potions: PotionItem[] = STATIC_POTIONS.map((potion) => ({ ...potion }));
+  private readonly potions: PotionItem[] = 建立靜態藥水().map((potion) => ({ ...potion }));
   private tickProgress = 0;
   private tickPulseAt = 0;
   private readonly layerCycleIndex: Record<Layer, number> = { inner: 0, middle: 0, outer: 0 };
@@ -122,7 +137,7 @@ export class GameSnapshotSource {
     this.periodics.forEach((periodic, index) => {
       periodic.chargeRatio = periodicRatios[index] ?? 0;
     });
-    this.potions.splice(0, this.potions.length, ...STATIC_POTIONS.map((potion) => ({ ...potion })));
+    this.potions.splice(0, this.potions.length, ...建立靜態藥水().map((potion) => ({ ...potion })));
     this.tickProgress = 0;
     this.tickPulseAt = 0;
   }
@@ -301,7 +316,7 @@ export class GameSnapshotSource {
         const hpMax = Math.max(1, Math.round(stats.hpMax ?? summary.playerMaxHp));
         return {
           id: member.id,
-          label: member.nameZh,
+          label: 成員顯示名(member.nameZh, member.nameEn),
           star: slot.star,
           layer,
           role,
@@ -310,7 +325,7 @@ export class GameSnapshotSource {
           hpRatio: hpMax > 0 ? hpCurrent / hpMax : 0,
           shielded: member.family === "shield",
           dead: hpCurrent <= 0,
-          ailments: summary.lastCollision ? ["碰撞中"] : [],
+          ailments: summary.lastCollision ? [雙語("碰撞中", "In Contact")] : [],
         } satisfies RosterMember;
       });
       return {
@@ -337,7 +352,7 @@ export class GameSnapshotSource {
         const hpCurrent = Math.round(stats.hp * hpRatio(summary.playerHp, summary.playerMaxHp));
         return {
           id: member.id,
-          label: member.nameZh,
+          label: 成員顯示名(member.nameZh, member.nameEn),
           star: entry.star,
           layer: entry.layer,
           role: entry.role,
@@ -383,7 +398,7 @@ export class GameSnapshotSource {
           def.hpRatio > 0 && def.energyRatio > 0 ? "hybrid" : def.hpRatio > 0 ? "hp" : "energy";
         return {
           id,
-          label: POTION_LABELS[id],
+          label: 藥水標籤(id),
           size: def.big ? "big" : "small",
           effect,
           count,
@@ -442,7 +457,7 @@ export class GameSnapshotSource {
     );
     const captain: PartyVital = {
       id: runtime.captainId,
-      label: "隊長",
+      label: 雙語("隊長", "Captain"),
       current: captainCurrent,
       max: captainStats.hp,
       ratio: captainStats.hp > 0 ? captainCurrent / captainStats.hp : 0,
