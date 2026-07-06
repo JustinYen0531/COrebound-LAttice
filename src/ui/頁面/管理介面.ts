@@ -313,27 +313,29 @@ function 背包分頁內容(): HTMLElement {
           no: index + 1,
         }));
     補充區.classList.add("Showcase背包編輯器");
+    const selected = catalog.find((item) => item.key === draft.itemKey) ?? catalog[0] ?? null;
+    if (selected && selected.key !== draft.itemKey) draft.itemKey = selected.key;
     補充區.innerHTML = `
       <h4 style="color:#a26a17;margin-top:0;">＋ ${雙語("Showcase 加入物品", "Showcase Add Item")}</h4>
       <div class="Showcase背包編輯器-清單">
         ${catalog.map((item) => `<button type="button" data-item-key="${item.key}"><b>${item.kind === "material" ? String(item.no).padStart(2, "0") : item.kind === "shard" ? "SH" : "PT"}</b><span>${item.label}</span><small>×${item.count}</small></button>`).join("")}
       </div>
       <div class="Showcase背包編輯器-輸入">
-        <label>${雙語("物品", "Item")}<select data-add-item>${catalog.map((item) => `<option value="${item.key}" ${item.key === draft.itemKey ? "selected" : ""}>${item.label}</option>`).join("")}</select></label>
+        <label>${雙語("目前選取", "Current Item")}<div data-add-item-label style="padding:8px 10px;border:1px solid rgba(255,255,255,0.14);border-radius:8px;background:rgba(255,255,255,0.06);color:#f7e7ba;min-height:38px;display:flex;align-items:center;">${selected?.label ?? 雙語("請先從上方選物品", "Choose an item above first.")}</div></label>
         <label>${雙語("數量", "Quantity")}<input type="number" min="1" max="9999" value="${draft.count}" data-add-count /></label>
         <button type="button" class="一級按鈕" data-add-confirm>${雙語("加入背包", "Add to Bag")}</button>
         <div class="Showcase背包編輯器-訊息" data-add-message></div>
       </div>
     `;
-    const itemInput = 補充區.querySelector<HTMLSelectElement>("[data-add-item]")!;
+    const itemLabel = 補充區.querySelector<HTMLElement>("[data-add-item-label]")!;
     const countInput = 補充區.querySelector<HTMLInputElement>("[data-add-count]")!;
-    itemInput.oninput = () => { draft.itemKey = itemInput.value; };
     countInput.oninput = () => { draft.count = countInput.value; };
     補充區.querySelectorAll<HTMLButtonElement>("[data-item-key]").forEach((button) => {
       button.onclick = () => {
         draft.itemKey = button.dataset.itemKey ?? catalog[0]?.key ?? "";
-        itemInput.value = draft.itemKey;
-        itemInput.focus();
+        const picked = catalog.find((item) => item.key === draft.itemKey);
+        itemLabel.textContent = picked?.label ?? 雙語("請先從上方選物品", "Choose an item above first.");
+        countInput.focus();
       };
     });
     補充區.querySelector<HTMLButtonElement>("[data-add-confirm]")!.onclick = () => {
