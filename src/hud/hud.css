@@ -205,10 +205,12 @@
 }
 .hud-member-status-row {
   position: relative;
+  padding: 0 38px;
+}
+.hud-member-cards {
   display: flex;
   gap: 12px;
   align-items: stretch;
-  padding: 0 38px;
 }
 .hud-member-status-card {
   --member-accent: #d8b46a;

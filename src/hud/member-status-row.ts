@@ -25,12 +25,28 @@ const DIR_LABEL = (): Record<-1 | 1, string> => ({
 export class MemberStatusRow {
   readonly el: HTMLElement;
 
+  private readonly cardsEl: HTMLElement;
+  private readonly roleNameEl: HTMLElement;
+  private readonly roleCounterEl: HTMLElement;
   private cycleHandler: ((direction: -1 | 1) => void) | null = null;
 
   constructor() {
     this.el = document.createElement("div");
     this.el.className = "hud-member-status-row";
-    this.el.addEventListener("click", (event) => this.handleClick(event));
+
+    const leftButton = this.createCycleButton(-1);
+    const pageLabel = document.createElement("div");
+    pageLabel.className = "hud-member-page-label";
+    pageLabel.setAttribute("aria-live", "polite");
+    this.roleNameEl = document.createElement("strong");
+    this.roleCounterEl = document.createElement("span");
+    pageLabel.append(this.roleNameEl, this.roleCounterEl);
+
+    this.cardsEl = document.createElement("div");
+    this.cardsEl.className = "hud-member-cards";
+
+    const rightButton = this.createCycleButton(1);
+    this.el.append(leftButton, pageLabel, this.cardsEl, rightButton);
   }
 
   onCycle(handler: (direction: -1 | 1) => void): void {
@@ -38,27 +54,31 @@ export class MemberStatusRow {
   }
 
   render(snapshot: HudSnapshot): void {
-    this.el.innerHTML = "";
-    const directionLabel = DIR_LABEL();
     const activeRole = snapshot.layerRoster.inner?.role
       ?? snapshot.layerRoster.middle?.role
       ?? snapshot.layerRoster.outer?.role
       ?? "protect";
     const roleIndex = (["protect", "firepower", "supply"] as Role[]).indexOf(activeRole);
 
-    this.el.insertAdjacentHTML("beforeend", `
-      <button class="hud-member-page-cycle hud-member-page-cycle--left" type="button" data-dir="-1" aria-label="${directionLabel[-1]}">◀</button>
-      <div class="hud-member-page-label" aria-live="polite">
-        <strong>${ROLE_LABEL()[activeRole]}</strong><span>${roleIndex + 1}/3</span>
-      </div>
-    `);
-    LAYER_ORDER.forEach((layer) => {
-      this.el.appendChild(this.createMemberCard(layer, snapshot.layerRoster[layer]));
+    this.roleNameEl.textContent = ROLE_LABEL()[activeRole];
+    this.roleCounterEl.textContent = `${roleIndex + 1}/3`;
+    this.cardsEl.replaceChildren(
+      ...LAYER_ORDER.map((layer) => this.createMemberCard(layer, snapshot.layerRoster[layer])),
+    );
+  }
+
+  private createCycleButton(direction: -1 | 1): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.className = `hud-member-page-cycle hud-member-page-cycle--${direction < 0 ? "left" : "right"}`;
+    button.type = "button";
+    button.textContent = direction < 0 ? "◀" : "▶";
+    button.setAttribute("aria-label", DIR_LABEL()[direction]);
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.cycleHandler?.(direction);
     });
-    this.el.insertAdjacentHTML("beforeend", `
-      <button class="hud-member-page-cycle hud-member-page-cycle--right" type="button" data-dir="1" aria-label="${directionLabel[1]}">▶</button>
-    `);
-    this.el.style.display = "flex";
+    return button;
   }
 
   private createMemberCard(layer: Layer, member: RosterMember | null): HTMLElement {
@@ -108,16 +128,4 @@ export class MemberStatusRow {
     `;
   }
 
-  private handleClick(event: Event): void {
-    const target = event.target;
-    if (!(target instanceof Node)) return;
-    const origin = target instanceof Element ? target : target.parentElement;
-    if (!origin) return;
-    const button = origin.closest(".hud-member-page-cycle");
-    if (!(button instanceof HTMLButtonElement)) return;
-    const dir = Number(button.dataset.dir) as -1 | 1;
-    if (dir !== -1 && dir !== 1) return;
-    event.stopPropagation();
-    this.cycleHandler?.(dir);
-  }
 }
