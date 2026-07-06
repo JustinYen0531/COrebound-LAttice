@@ -1418,10 +1418,8 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
 
   const library = document.createElement("div");
   library.style.display = "grid";
-  library.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+  library.style.gridTemplateColumns = "repeat(3, minmax(0, 1fr))";
   library.style.gap = "8px";
-  library.style.maxHeight = "420px";
-  library.style.overflowY = "auto";
   MEMBERS.forEach((member) => {
     const assignedLayer = assignedMembers.get(member.no) ?? null;
     const btn = document.createElement("button");

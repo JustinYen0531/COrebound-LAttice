@@ -473,7 +473,7 @@ function 雕像面板(): HTMLElement {
 
     <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
       <h4 style="margin: 0 0 10px; color: #ff8a3b; font-size: 0.85rem;">📜 ${雙語("全體 20 名成員儀式解鎖狀態", "Ritual Unlock Status for All 20 Members")}</h4>
-      <div class="雕像成員列表-滾動" style="max-height: 230px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
+      <div class="雕像成員列表-滾動" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
         <!-- 成員雕像項目 -->
       </div>
     </div>
@@ -488,23 +488,24 @@ function 雕像面板(): HTMLElement {
     const fineUnlock = unlockMaterials.find((material) => material.rarity === "fine");
     const row = document.createElement("div");
     row.style.display = "flex";
-    row.style.alignItems = "center";
+    row.style.flexDirection = "column";
+    row.style.alignItems = "stretch";
     row.style.justifyContent = "space-between";
     row.style.background = isUnlocked ? "rgba(77, 141, 255, 0.04)" : "rgba(255, 255, 255, 0.02)";
     row.style.border = isUnlocked ? "1px solid rgba(77, 141, 255, 0.2)" : "1px solid rgba(255, 255, 255, 0.05)";
-    row.style.padding = "6px 12px";
+    row.style.padding = "8px 10px";
     row.style.borderRadius = "6px";
     row.style.fontSize = "0.8rem";
 
     row.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
         <span style="color: #ffd24d; font-family: monospace; font-weight: bold;">#${m.no.toString().padStart(2, "0")}</span>
-        <span style="font-weight: bold; color: #fff;">${成員顯示名(m.no)}</span>
-        <span style="font-size: 0.72rem; background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 3px; color: #8d93ad;">
+        <span style="font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${成員顯示名(m.no)}</span>
+        <span style="font-size: 0.72rem; background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 3px; color: #8d93ad; margin-left: auto;">
           ${家族顯示名(m.family)}
         </span>
       </div>
-      <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px;">
         <span style="font-size: 0.75rem; color: ${isUnlocked ? "#4d8dff" : "#ff4d5e"}; font-weight: bold;">
           ${isUnlocked ? `✅ ${雙語("已初始化", "Initialized")} (1★)` : `🔒 ${雙語("沉睡中", "Dormant")} (0★)`}
         </span>
@@ -660,7 +661,7 @@ function 商店面板(): HTMLElement {
       <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;">
         <div>
           <h4 style="margin: 0 0 8px; color: #ff8a3b; font-size: 0.85rem;">💰 ${雙語("出售材料換原石", "Sell Materials for Gems")}</h4>
-          <div class="商店材料滾動" style="max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+          <div class="商店材料滾動" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px;">
             <!-- 材料出售項 -->
           </div>
         </div>
@@ -722,16 +723,17 @@ function 商店面板(): HTMLElement {
 
       const row = document.createElement("div");
       row.style.display = "flex";
-      row.style.alignItems = "center";
+      row.style.flexDirection = "column";
+      row.style.alignItems = "stretch";
       row.style.justifyContent = "space-between";
       row.style.background = "rgba(0,0,0,0.15)";
-      row.style.padding = "4px 8px";
+      row.style.padding = "6px 8px";
       row.style.borderRadius = "4px";
       row.style.fontSize = "0.75rem";
 
       row.innerHTML = `
-        <span>${材料顯示名(m.no)} (×${count})</span>
-        <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${材料顯示名(m.no)} (×${count})</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px;">
           <span style="color: #ffd24d;">+${price} ${雙語("原石", "gems")}</span>
           <button class="三級按鈕 出售鈕" style="padding: 1px 6px; font-size: 0.65rem;" ${online ? "" : "disabled"}>${雙語("出售", "Sell")}</button>
         </div>
