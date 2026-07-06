@@ -17,6 +17,7 @@
  */
 
 import { 小隊屬性摘要 } from "../progression/養成狀態";
+import { 應用程式狀態 } from "./應用程式狀態";
 
 interface 正式對局內部狀態 {
   playerHp: number;
@@ -58,7 +59,9 @@ export function 初始化正式玩家生命(): void {
 
 export function 手動設定正式玩家生命(hp: number): void {
   if (!狀態.initialized) 初始化正式玩家生命();
-  狀態.playerHp = Math.max(0, Math.min(狀態.playerMaxHp, Math.round(hp)));
+  const nextHp = Math.max(0, Math.min(狀態.playerMaxHp, Math.round(hp)));
+  if (應用程式狀態.額外.Showcase模式 && 應用程式狀態.額外.ShowcaseGodMode && nextHp < 狀態.playerHp) return;
+  狀態.playerHp = nextHp;
 }
 
 export function 回滿正式玩家生命(): void {

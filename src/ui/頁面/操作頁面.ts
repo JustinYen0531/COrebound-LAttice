@@ -97,6 +97,7 @@ function 建立Showcase快捷面板(): HTMLElement {
     const catalog = 取得全部可召喚怪物圖鑑().filter((monster) => monster.world !== "core");
     const selectedId = 已選Showcase怪物Id || 取得訓練道場摘要().selectedEnemyMonsterId || catalog[0]?.id || "";
     const teleportArmed = 讀取Showcase傳送狀態();
+    const godModeOn = 應用程式狀態.額外.ShowcaseGodMode;
     panel.innerHTML = `
       <header>
         <div><small>SHOWCASE MODE</small><strong>${雙語("正式對局沙盒工具", "Formal Run Sandbox")}</strong></div>
@@ -106,8 +107,8 @@ function 建立Showcase快捷面板(): HTMLElement {
         </div>
       </header>
       <div class="Showcase控制台-內容" ${收合 ? "hidden" : ""}>
-        <div class="Showcase控制台-狀態">${雙語("正式生命", "Formal HP")} ${hp.playerHp}/${hp.playerMaxHp} · ${雙語("工具只影響本局", "Tools affect this run only")}</div>
-        <div class="Showcase控制台-列"><button class="一級按鈕" data-management>${雙語("管理介面", "Management")}</button><button class="二級按鈕" data-heal>${雙語("回滿生命", "Restore HP")}</button><button class="二級按鈕" data-clear>${雙語("清空敵群", "Clear Enemies")}</button></div>
+        <div class="Showcase控制台-狀態">${雙語("正式生命", "Formal HP")} ${hp.playerHp}/${hp.playerMaxHp} · ${雙語("工具只影響本局", "Tools affect this run only")} · ${godModeOn ? 雙語("God Mode：開啟", "God Mode: ON") : 雙語("God Mode：關閉", "God Mode: OFF")}</div>
+        <div class="Showcase控制台-列"><button class="一級按鈕" data-management>${雙語("管理介面", "Management")}</button><button class="${godModeOn ? "一級按鈕" : "二級按鈕"}" data-god>${godModeOn ? 雙語("God Mode 開", "God Mode ON") : 雙語("God Mode 關", "God Mode OFF")}</button><button class="二級按鈕" data-heal>${雙語("回滿生命", "Restore HP")}</button><button class="二級按鈕" data-clear>${雙語("清空敵群", "Clear Enemies")}</button></div>
         <label>${雙語("就地召敵", "Spawn Enemies Here")}<select data-enemy></select></label>
         <div class="Showcase控制台-列"><button class="一級按鈕" data-spawn="1">${雙語("召喚 1", "Spawn 1")}</button><button class="二級按鈕" data-spawn="3">${雙語("召喚 3", "Spawn 3")}</button><button class="二級按鈕" data-spawn="6">${雙語("召喚 6", "Spawn 6")}</button></div>
         <label>${雙語("移動速度", "Move Speed")}<div class="Showcase控制台-列" data-speed></div></label>
@@ -121,6 +122,10 @@ function 建立Showcase快捷面板(): HTMLElement {
       render();
     };
     panel.querySelector<HTMLButtonElement>("[data-management]")!.onclick = () => 應用程式狀態.進入管理介面("小隊");
+    panel.querySelector<HTMLButtonElement>("[data-god]")!.onclick = () => {
+      應用程式狀態.設定ShowcaseGodMode(!應用程式狀態.額外.ShowcaseGodMode);
+      render();
+    };
     panel.querySelector<HTMLButtonElement>("[data-heal]")!.onclick = () => { 回滿正式玩家生命(); render(); };
     panel.querySelector<HTMLButtonElement>("[data-clear]")!.onclick = () => 發送Showcase事件("clear_enemies");
 

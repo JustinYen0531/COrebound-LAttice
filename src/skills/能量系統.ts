@@ -3,6 +3,8 @@
  * @description 計算小隊發射武器、釋放主動技能時的能量 (Mana/Energy) 扣除、冷卻限制、以及時間上的自然能量回復。
  */
 
+import { 應用程式狀態 } from "../ui/應用程式狀態";
+
 export interface EnergyConfig {
   max: number;
   initial: number;
@@ -34,10 +36,12 @@ export class EnergySystem {
   }
 
   canSpend(amount: number): boolean {
+    if (應用程式狀態.額外.Showcase模式 && 應用程式狀態.額外.ShowcaseGodMode) return true;
     return this.current >= amount;
   }
 
   spend(amount: number): boolean {
+    if (應用程式狀態.額外.Showcase模式 && 應用程式狀態.額外.ShowcaseGodMode) return true;
     if (!this.canSpend(amount)) return false;
     this.current = Math.max(0, this.current - amount);
     return true;

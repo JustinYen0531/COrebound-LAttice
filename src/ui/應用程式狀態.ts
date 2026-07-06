@@ -13,9 +13,12 @@ import { 重置死亡遺落物 } from "./死亡遺落狀態";
 import { 重置資源掉落物 } from "./資源掉落狀態";
 import { 重置Boss召喚佇列 } from "./Boss召喚佇列";
 import { 確保初始補給 } from "../economy/背包狀態";
-import { 套用起始成員配置 } from "../progression/養成狀態";
+import { 套用起始成員配置, 套用Showcase預設隊伍 } from "../progression/養成狀態";
+import { SHOWCASE_PRESETS, 尋找Showcase預設 } from "../progression/Showcase預設隊伍";
 import type { 語言代碼 } from "./語系";
 import { EROSION_START_SECOND } from "../data/戰鬥原語";
+
+export type 開場模式 = "showcase" | "none";
 
 type 滑動面板 = "無" | "左" | "右";
 export type 世界地板細節模式 = "smooth" | "medium" | "high";
@@ -26,7 +29,12 @@ interface 額外狀態 {
   語言: 語言代碼;
   世界地板細節模式: 世界地板細節模式;
   Showcase模式: boolean;
+  ShowcaseGodMode: boolean;
   Showcase移動倍率: number;
+  /** 賽前準備頁的開場模式：showcase＝挑一套預設隊伍快速上手，none＝從零開始無加成。 */
+  開場模式: 開場模式;
+  /** 目前選中的 Showcase 預設隊伍 id（null＝尚未選）。 */
+  選中Showcase預設ID: string | null;
   滑動面板: 滑動面板; // R1：左右滑互斥
   圓盤展開階段: 0 | 1 | 2 | 3; // 0=收起, 1=內圈, 2=中圈, 3=外圈
   選中隊長: string | null;
@@ -88,7 +96,10 @@ class 應用程式狀態機 {
     語言: 讀取初始語言(),
     世界地板細節模式: 讀取世界地板細節模式偏好(),
     Showcase模式: false,
+    ShowcaseGodMode: false,
     Showcase移動倍率: 1,
+    開場模式: "showcase",
+    選中Showcase預設ID: SHOWCASE_PRESETS[0]?.id ?? null,
     滑動面板: "無",
     圓盤展開階段: 0,
     選中隊長: null,
@@ -175,13 +186,40 @@ class 應用程式狀態機 {
 
   // ---- 遊戲準備流程 / 進場 ----
   進入遊戲準備流程(來源: "New Game" | "Continue Game" | "再來一場") {
-    if (來源 === "New Game" || 來源 === "再來一場") this.額外.Showcase模式 = false;
+    if (來源 === "New Game" || 來源 === "再來一場") {
+      // 預設打開 Showcase 快速上手：多數 Game Jam 試玩者不會花時間研究養成，
+      // 直接給一套已驗證過的隊伍最省心。想從零開始的人可在頁面上切到「不要開場加成」。
+      this.額外.開場模式 = "showcase";
+      this.額外.Showcase模式 = true;
+      if (!this.額外.選中Showcase預設ID) this.額外.選中Showcase預設ID = SHOWCASE_PRESETS[0]?.id ?? null;
+    }
     this.更新畫面({ 層: "遊戲準備流程", 來源 });
+  }
+
+  設定開場模式(模式: 開場模式) {
+    this.額外.開場模式 = 模式;
+    this.額外.Showcase模式 = 模式 === "showcase";
+    if (模式 !== "showcase") this.額外.ShowcaseGodMode = false;
+    if (模式 === "showcase" && !this.額外.選中Showcase預設ID) {
+      this.額外.選中Showcase預設ID = SHOWCASE_PRESETS[0]?.id ?? null;
+    }
+    this.通知();
+  }
+
+  設定選中Showcase預設(id: string) {
+    this.額外.選中Showcase預設ID = id;
+    this.通知();
   }
 
   設定Showcase模式(啟用: boolean) {
     this.額外.Showcase模式 = 啟用;
+    if (!啟用) this.額外.ShowcaseGodMode = false;
     this.額外.Showcase移動倍率 = 1;
+    this.通知();
+  }
+
+  設定ShowcaseGodMode(啟用: boolean) {
+    this.額外.ShowcaseGodMode = this.額外.Showcase模式 && 啟用;
     this.通知();
   }
 
@@ -196,10 +234,17 @@ class 應用程式狀態機 {
     this.額外.縮圈警戒 = false;
     this.額外.滑動面板 = "無";
     this.額外.圓盤展開階段 = 0;
-    if (訓練道場) this.額外.Showcase模式 = false;
+    if (訓練道場) {
+      this.額外.Showcase模式 = false;
+      this.額外.ShowcaseGodMode = false;
+    }
     // 正式遊玩進場時把玩家生命補滿（訓練道場另由其狀態自行管理）。
     if (!訓練道場) {
-      if (進場來源 !== "Continue Game") 套用起始成員配置();
+      if (進場來源 !== "Continue Game") {
+        const 預設 = this.額外.開場模式 === "showcase" ? 尋找Showcase預設(this.額外.選中Showcase預設ID) : undefined;
+        if (預設) 套用Showcase預設隊伍(預設);
+        else 套用起始成員配置();
+      }
       確保初始補給();
       初始化正式玩家生命();
       開始新對局();
