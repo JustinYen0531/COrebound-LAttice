@@ -42,6 +42,8 @@ try {
     $renames += [PSCustomObject]@{
       OldRelative = $oldRelative
       NewRelative = $newRelative
+      OldName = $file.Name
+      NewName = $newName
     }
   }
 
@@ -56,8 +58,13 @@ try {
     foreach ($rename in $renames) {
       $oldEncoded = (($rename.OldRelative -split "/") | ForEach-Object { [Uri]::EscapeDataString($_) }) -join "/"
       $newEncoded = (($rename.NewRelative -split "/") | ForEach-Object { [Uri]::EscapeDataString($_) }) -join "/"
+      $oldNameEncoded = [Uri]::EscapeDataString($rename.OldName)
+      $newNameEncoded = [Uri]::EscapeDataString($rename.NewName)
       $updated = $updated.Replace($rename.OldRelative, $rename.NewRelative)
       $updated = $updated.Replace($oldEncoded, $newEncoded)
+      # Bundled modules refer to sibling chunks by filename, without the assets/ prefix.
+      $updated = $updated.Replace($rename.OldName, $rename.NewName)
+      $updated = $updated.Replace($oldNameEncoded, $newNameEncoded)
     }
     $updated = [regex]::Replace(
       $updated,
@@ -85,7 +92,13 @@ try {
     foreach ($textFile in $textFiles) {
       $content = [IO.File]::ReadAllText($textFile.FullName)
       $oldEncoded = (($rename.OldRelative -split "/") | ForEach-Object { [Uri]::EscapeDataString($_) }) -join "/"
-      if ($content.Contains($rename.OldRelative) -or $content.Contains($oldEncoded)) {
+      $oldNameEncoded = [Uri]::EscapeDataString($rename.OldName)
+      if (
+        $content.Contains($rename.OldRelative) -or
+        $content.Contains($oldEncoded) -or
+        $content.Contains($rename.OldName) -or
+        $content.Contains($oldNameEncoded)
+      ) {
         throw "A renamed asset still has a stale reference: $($rename.OldRelative)"
       }
     }
