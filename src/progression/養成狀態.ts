@@ -324,6 +324,15 @@ export function 設定已裝備武器槽位(slot: 裝備武器槽位, family: Fa
   已裝備武器槽位[slot] = family;
 }
 
+export function 切換家族武器裝備(family: Family): void {
+  if (!應用程式狀態.額外.Showcase模式) return;
+  if (家族武器星級[family] > 0) {
+    家族武器星級[family] = 0;
+    return;
+  }
+  家族武器星級[family] = 1;
+}
+
 export function 直接設定家族武器星級(family: Family, star: 武器星級): void {
   if (!應用程式狀態.額外.Showcase模式) return;
   家族武器星級[family] = Math.max(0, Math.min(3, star)) as 武器星級;

@@ -21,7 +21,7 @@ import {
   當前隊長星級,
   取得家族武器升級狀態,
   取得已裝備武器,
-  設定已裝備武器槽位,
+  切換家族武器裝備,
   直接設定家族武器星級,
   type 初始成員層級,
 } from "../../progression/養成狀態";
@@ -1476,17 +1476,21 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
       <span style="font-size:.68rem;color:#806b4c;">${雙語("依目前正式小隊解鎖", "Based on current squad")}</span>
     </div>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
-      ${equippedWeapons.map((entry) => {
-          const meta = weaponMeta[entry.family];
-          const status = weaponStatus.find((item) => item.family === entry.family);
-          const equippedStar = entry.currentStar;
+      ${(["shield", "multishot", "straight", "mine"] as const).map((family) => {
+          const meta = weaponMeta[family];
+          const entry = equippedWeapons.find((item) => item.family === family);
+          const status = weaponStatus.find((item) => item.family === family);
+          const equippedStar = entry?.currentStar ?? 0;
           const equipped = equippedStar > 0;
-          const familyOptions = (Object.keys(weaponMeta) as Array<keyof typeof weaponMeta>)
-            .map((family) => `<option value="${family}" ${family === entry.family ? "selected" : ""}>${weaponMeta[family].name}</option>`)
-            .join("");
-          const starOptions = [0, 1, 2, 3]
-            .map((star) => `<option value="${star}" ${star === equippedStar ? "selected" : ""}>${star === 0 ? "0★" : `${star}★`}</option>`)
-            .join("");
+          const starButtons = [0, 1, 2, 3].map((star) => `
+            <button
+              type="button"
+              data-weapon-star="${family}"
+              data-star="${star}"
+              style="padding:4px 0;border-radius:8px;border:1px solid ${star === equippedStar ? meta.color : "rgba(90,76,55,.18)"};background:${star === equippedStar ? "rgba(255,255,255,.92)" : "rgba(255,255,255,.4)"};color:#5b462b;font-weight:700;cursor:pointer;">
+              ${star === 0 ? "0★" : `${star}★`}
+            </button>
+          `).join("");
           return `
             <article style="display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px;border:1px solid ${equipped ? meta.color : "rgba(90,76,55,.16)"};border-radius:10px;background:${equipped ? "rgba(255,255,255,.56)" : "rgba(210,204,188,.28)"};opacity:${equipped ? "1" : ".58"};">
               <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:${meta.color};color:white;font-weight:900;">${meta.mark}</span>
@@ -1494,9 +1498,16 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
                 <strong style="display:block;font-size:.82rem;">${meta.name}</strong>
                 <small style="color:#806b4c;">${equipped ? `${equippedStar}★ Weapon` : "Not unlocked"} · ${雙語("已解鎖至", "Unlocked to")} ${status?.unlockedStar ?? 0}★</small>
                 ${應用程式狀態.額外.Showcase模式
-                  ? `<span style="display:grid;grid-template-columns:1fr 92px;gap:6px;margin-top:6px;">
-                      <select data-weapon-slot-family="${entry.slot}" style="padding:4px 6px;border-radius:8px;">${familyOptions}</select>
-                      <select data-weapon-slot-star="${entry.slot}" style="padding:4px 6px;border-radius:8px;">${starOptions}</select>
+                  ? `<span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+                      <button
+                        type="button"
+                        data-weapon-toggle="${family}"
+                        style="padding:4px 10px;border-radius:999px;border:1px solid ${equipped ? meta.color : "rgba(90,76,55,.18)"};background:${equipped ? "rgba(255,255,255,.92)" : "rgba(255,255,255,.45)"};color:#5b462b;font-weight:800;cursor:pointer;">
+                        ${equipped ? "EQUIPPED" : "LOCKED"}
+                      </button>
+                    </span>
+                    <span style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px;">
+                      ${starButtons}
                     </span>`
                   : ""}
               </span>
@@ -1506,18 +1517,17 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
     </div>
   `;
   if (應用程式狀態.額外.Showcase模式) {
-    weaponPanel.querySelectorAll<HTMLSelectElement>("[data-weapon-slot-family]").forEach((select) => {
-      select.onchange = () => {
-        設定已裝備武器槽位(Number(select.dataset.weaponSlotFamily) as 0 | 1 | 2 | 3, select.value as any);
+    weaponPanel.querySelectorAll<HTMLButtonElement>("[data-weapon-toggle]").forEach((button) => {
+      button.onclick = () => {
+        切換家族武器裝備(button.dataset.weaponToggle as any);
         刷新();
       };
     });
-    weaponPanel.querySelectorAll<HTMLSelectElement>("[data-weapon-slot-star]").forEach((select) => {
-      select.onchange = () => {
-        const slot = Number(select.dataset.weaponSlotStar) as 0 | 1 | 2 | 3;
-        const family = 取得已裝備武器().find((entry) => entry.slot === slot)?.family;
-        if (!family) return;
-        直接設定家族武器星級(family, Number(select.value) as 0 | 1 | 2 | 3);
+    weaponPanel.querySelectorAll<HTMLButtonElement>("[data-weapon-star]").forEach((button) => {
+      button.onclick = () => {
+        const family = button.dataset.weaponStar as any;
+        const star = Number(button.dataset.star) as 0 | 1 | 2 | 3;
+        直接設定家族武器星級(family, star);
         刷新();
       };
     });
