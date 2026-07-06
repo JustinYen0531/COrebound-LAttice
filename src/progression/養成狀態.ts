@@ -21,6 +21,7 @@ import type { CaptainId, ControlStar } from "../data/戰鬥原語";
 import { createOwnershipTable, setMemberStar, unlockMember, type OwnershipTable } from "./成員解鎖";
 import { computeFamilyWeaponStatus } from "../skills/技能管理";
 import { upgradeWeapon } from "./工作台製作";
+import type { Showcase預設隊伍 } from "./Showcase預設隊伍";
 
 export type 初始成員層級 = "inner" | "middle" | "outer";
 export type 初始成員職責 = "protect" | "firepower" | "supply";
@@ -34,6 +35,7 @@ interface 隊員養成 {
 }
 
 type 武器星級 = 0 | StarLevel;
+type 裝備武器槽位 = 0 | 1 | 2 | 3;
 
 const 預設起始成員配置: Array<{ memberNo: number; layer: 初始成員層級; role: 初始成員職責 }> = [
   { memberNo: 1, layer: "inner", role: "protect" },
@@ -50,6 +52,7 @@ const 家族武器星級: Record<Family, 武器星級> = {
   mine: 0,
   laser: 0,
 };
+const 已裝備武器槽位: Family[] = ["shield", "multishot", "straight", "mine"];
 
 // 正式上陣 = 開局選中的 3 名初始成員，各從 1★ 起步。
 const 上陣: 隊員養成[] = 起始成員配置.map((entry, index) => ({
@@ -76,6 +79,10 @@ function 重置家族武器星級(): void {
   (Object.keys(家族武器星級) as Family[]).forEach((family) => {
     家族武器星級[family] = 0;
   });
+}
+
+function 重置已裝備武器槽位(): void {
+  已裝備武器槽位.splice(0, 已裝備武器槽位.length, "shield", "multishot", "straight", "mine");
 }
 
 重建正式持有狀態();
@@ -219,6 +226,32 @@ export function 套用起始成員配置(): void {
   }
   重建正式持有狀態();
   重置家族武器星級();
+  重置已裝備武器槽位();
+}
+
+/**
+ * 一鍵套用 Showcase 預設隊伍（見 progression/Showcase預設隊伍.ts）：
+ * 直接覆寫 9 個真實戰鬥槽位的成員與星級，並把家族武器星級直接設到
+ * 該陣容當下可達到的門檻上限，讓玩家選了就能立刻用這套隊伍探索，
+ * 不必再手動供奉雕像、升星或升級武器。
+ */
+export function 套用Showcase預設隊伍(preset: Showcase預設隊伍): void {
+  上陣.length = 0;
+  for (const m of preset.members) {
+    上陣.push({ slotId: m.slotId, memberNo: m.memberNo, star: m.star as StarLevel, layer: m.layer, role: m.role });
+  }
+  重建正式持有狀態();
+  重置家族武器星級();
+  重置已裝備武器槽位();
+  const deployed = 上陣.map((e) => {
+    const def = MEMBERS.find((item) => item.no === e.memberNo)!;
+    return { family: def.family, star: e.star };
+  });
+  for (const status of computeFamilyWeaponStatus(deployed)) {
+    if (status.unlockedStar > 0) {
+      家族武器星級[status.family] = status.unlockedStar;
+    }
+  }
 }
 
 export function 成員是否已初始化(memberNo: number): boolean {
@@ -260,6 +293,50 @@ export function 取得家族武器升級狀態(): Array<{
     memberCount: entry.memberCount,
     totalStar: entry.totalStar,
   }));
+}
+
+export function 取得已裝備武器(): Array<{
+  slot: 裝備武器槽位;
+  family: Family;
+  currentStar: 武器星級;
+  unlockedStar: 0 | StarLevel;
+}> {
+  const statusMap = new Map(取得家族武器升級狀態().map((entry) => [entry.family, entry]));
+  return 已裝備武器槽位.map((family, index) => {
+    const status = statusMap.get(family);
+    return {
+      slot: index as 裝備武器槽位,
+      family,
+      currentStar: status?.currentStar ?? 0,
+      unlockedStar: status?.unlockedStar ?? 0,
+    };
+  });
+}
+
+export function 設定已裝備武器槽位(slot: 裝備武器槽位, family: Family): void {
+  const existing = 已裝備武器槽位.findIndex((entry) => entry === family);
+  if (existing >= 0 && existing !== slot) {
+    const previous = 已裝備武器槽位[slot];
+    已裝備武器槽位[slot] = family;
+    已裝備武器槽位[existing] = previous;
+    return;
+  }
+  已裝備武器槽位[slot] = family;
+}
+
+export function 直接設定家族武器星級(family: Family, star: 武器星級): void {
+  if (!應用程式狀態.額外.Showcase模式) return;
+  家族武器星級[family] = Math.max(0, Math.min(3, star)) as 武器星級;
+}
+
+export function 取得家族武器設定快照(): {
+  equipped: Family[];
+  stars: Record<Family, 武器星級>;
+} {
+  return {
+    equipped: [...已裝備武器槽位],
+    stars: { ...家族武器星級 },
+  };
 }
 
 export function 升級家族武器(family: Family): { ok: boolean; reason?: string; newStar?: StarLevel } {

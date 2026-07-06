@@ -208,6 +208,7 @@ function 合成面板(): HTMLElement {
           ${weaponStatus.map((status) => {
             const currentLvl = status.currentStar;
             const isMax = currentLvl >= 3;
+            const blockedByUnlock = currentLvl >= status.unlockedStar;
             const nextCost = currentLvl === 0 ? 10 : currentLvl === 1 ? 30 : 90;
             const gemsCost = currentLvl === 0 ? 100 : currentLvl === 1 ? 400 : 1200;
             return `
@@ -215,7 +216,9 @@ function 合成面板(): HTMLElement {
                 <span>${家族顯示名(status.family)} ${雙語("技能", "Skill")} (Lv.${currentLvl}) / ${雙語("已解鎖至", "Unlocked to")} ${status.unlockedStar}★</span>
                 ${isMax 
                   ? `<span style="color: #ffd24d; font-size: 0.75rem;">MAX</span>` 
-                  : `<button class="三級按鈕" data-upgrade-skill="${status.family}" style="font-size: 0.7rem; padding: 2px 6px;" ${online ? "" : "disabled"}>${雙語("升級", "Upgrade")} (${雙語("需", "need")}:${nextCost}${雙語("碎片", " shards")}/${gemsCost}${雙語("原石", " gems")})</button>`
+                  : blockedByUnlock
+                    ? `<span style="color: #8d93ad; font-size: 0.72rem;">${雙語("先提升家族解鎖", "Raise family unlock first")}</span>`
+                    : `<button class="三級按鈕" data-upgrade-skill="${status.family}" style="font-size: 0.7rem; padding: 2px 6px;" ${online ? "" : "disabled"}>${雙語("升級", "Upgrade")} (${雙語("需", "need")}:${nextCost}${雙語("碎片", " shards")}/${gemsCost}${雙語("原石", " gems")})</button>`
                 }
               </div>
             `;

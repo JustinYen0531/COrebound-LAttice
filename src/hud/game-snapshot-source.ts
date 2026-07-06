@@ -15,7 +15,7 @@ import { captainStatsAtStar } from "../data/控制引擎";
 import type { CaptainId, ControlStar, WeaponFamily } from "../data/戰鬥原語";
 import { POTIONS, type PotionId } from "../economy/流浪商店";
 import * as 背包 from "../economy/背包狀態";
-import { 取得上陣養成, 當前隊長星級 } from "../progression/養成狀態";
+import { 取得上陣養成, 當前隊長星級, 取得家族武器設定快照 } from "../progression/養成狀態";
 import type {
   HudSnapshot,
   Layer,
@@ -372,15 +372,21 @@ export class GameSnapshotSource {
   }
 
   private syncWeapons(familyStars: Record<WeaponFamily, number[]>): void {
+    const weaponConfig = 取得家族武器設定快照();
+    const equipped = new Set<WeaponFamily>(weaponConfig.equipped as WeaponFamily[]);
     for (const weapon of this.weapons) {
       const stars = familyStars[weapon.family] ?? [];
-      weapon.disabledByRoster = stars.length === 0;
-      if (stars.length > 0) {
+      const currentStar = weaponConfig.stars[weapon.family] ?? 0;
+      weapon.disabledByRoster = stars.length === 0 || currentStar <= 0 || !equipped.has(weapon.family);
+      if (currentStar > 0) {
+        weapon.star = currentStar as 1 | 2 | 3;
+      } else if (stars.length > 0) {
         weapon.star = Math.max(...stars) as 1 | 2 | 3;
       } else {
         weapon.star = 1;
         weapon.active = false;
       }
+      if (!equipped.has(weapon.family) || currentStar <= 0) weapon.active = false;
     }
   }
 
