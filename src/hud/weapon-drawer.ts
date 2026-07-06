@@ -20,6 +20,7 @@ import { familyGlyphSvg, lockGlyphSvg } from "./glyphs";
 export class WeaponDrawer {
   readonly el: HTMLElement;
   private list: HTMLElement;
+  private dockSide: "left" | "right" = "left";
 
   /** 目前抽屜展開比例 0~1(由 controller 推入) */
   private openRatio = 0;
@@ -30,7 +31,7 @@ export class WeaponDrawer {
     this.el = document.createElement("div");
     this.el.className = "drawer weapon-drawer";
     this.el.innerHTML = `
-      <div class="drawer-title">技能列(左滑)</div>
+      <div class="drawer-title">技能列</div>
       <div class="weapon-list"></div>
       <div class="drawer-hint">點擊圖示可單獨關閉武器群組</div>
     `;
@@ -39,10 +40,18 @@ export class WeaponDrawer {
 
   setOpenRatio(r: number): void {
     this.openRatio = Math.max(0, Math.min(1, r));
-    // 抽屜從核心左側向外推開,用 transform 控制可見度
-    this.el.style.transform = `translateX(${-100 + this.openRatio * 100}%)`;
+    const offset = this.dockSide === "right"
+      ? 100 - this.openRatio * 100
+      : -100 + this.openRatio * 100;
+    this.el.style.transform = `translateX(${offset}%)`;
     this.el.style.opacity = `${this.openRatio}`;
     this.el.style.pointerEvents = this.openRatio > 0.5 ? "auto" : "none";
+  }
+
+  setDockSide(side: "left" | "right"): void {
+    this.dockSide = side;
+    this.el.classList.toggle("drawer-dock-right", side === "right");
+    this.setOpenRatio(this.openRatio);
   }
 
   render(weapons: WeaponGroupState[]): void {

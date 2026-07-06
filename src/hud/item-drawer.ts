@@ -49,6 +49,7 @@ export class ItemDrawer {
   readonly el: HTMLElement;
   private readonly potionList: HTMLElement;
   private readonly rosterList: HTMLElement;
+  private dockSide: "left" | "right" = "right";
 
   private openRatio = 0;
   private potions: PotionItem[] = [];
@@ -64,7 +65,7 @@ export class ItemDrawer {
     this.el = document.createElement("div");
     this.el.className = "drawer item-drawer";
     this.el.innerHTML = `
-      <div class="drawer-title">${雙語("補給(右滑)", "Supplies (Swipe Right)")}</div>
+      <div class="drawer-title">${雙語("補給列", "Supplies")}</div>
       <div class="id-row">
         <div class="potion-list" data-zone="potions"></div>
         <div class="roster-list" data-zone="roster"></div>
@@ -77,9 +78,18 @@ export class ItemDrawer {
 
   setOpenRatio(r: number): void {
     this.openRatio = Math.max(0, Math.min(1, r));
-    this.el.style.transform = `translateX(${100 - this.openRatio * 100}%)`;
+    const offset = this.dockSide === "right"
+      ? 100 - this.openRatio * 100
+      : -100 + this.openRatio * 100;
+    this.el.style.transform = `translateX(${offset}%)`;
     this.el.style.opacity = `${this.openRatio}`;
     this.el.style.pointerEvents = this.openRatio > 0.5 ? "auto" : "none";
+  }
+
+  setDockSide(side: "left" | "right"): void {
+    this.dockSide = side;
+    this.el.classList.toggle("drawer-dock-right", side === "right");
+    this.setOpenRatio(this.openRatio);
   }
 
   render(snap: HudSnapshot): void {

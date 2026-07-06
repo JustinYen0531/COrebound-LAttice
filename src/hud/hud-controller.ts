@@ -53,12 +53,15 @@ export class HudController {
   private readonly itemDrawer: ItemDrawer;
   private readonly memberStatus: MemberStatusRow;
   private readonly skillStrips: SkillStrips;
+  private readonly quickPanelHost: HTMLElement;
+  private readonly quickPanelSwitch: HTMLElement;
   private readonly hintL: HTMLElement;
   private readonly hintR: HTMLElement;
   private readonly suppressToast: HTMLElement;
 
   private state: HudState = "idle";
   private snapshot: HudSnapshot | null = null;
+  private activeQuickPanel: "weapon" | "item" = "weapon";
 
   // 滑動/停留追蹤
   private mouseDownAt: { x: number; y: number; t: number } | null = null;
@@ -81,6 +84,8 @@ export class HudController {
     this.rings = new FormationRings();
     this.weaponDrawer = new WeaponDrawer();
     this.itemDrawer = new ItemDrawer();
+    this.weaponDrawer.setDockSide("right");
+    this.itemDrawer.setDockSide("right");
     this.memberStatus = new MemberStatusRow();
     this.skillStrips = new SkillStrips();
 
@@ -108,18 +113,29 @@ export class HudController {
     const memberStatusHost = document.createElement("div");
     memberStatusHost.className = "hud-member-status-host";
     memberStatusHost.appendChild(this.memberStatus.el);
-    const drawerLeft = document.createElement("div");
-    drawerLeft.className = "hud-drawer-slot hud-drawer-slot-left";
-    drawerLeft.appendChild(this.weaponDrawer.el);
-    const drawerRight = document.createElement("div");
-    drawerRight.className = "hud-drawer-slot hud-drawer-slot-right";
-    drawerRight.appendChild(this.itemDrawer.el);
+    this.quickPanelHost = document.createElement("div");
+    this.quickPanelHost.className = "hud-quick-panel-host";
+    this.quickPanelHost.append(this.weaponDrawer.el, this.itemDrawer.el);
+    this.quickPanelSwitch = document.createElement("div");
+    this.quickPanelSwitch.className = "hud-quick-panel-switch";
+    this.quickPanelSwitch.innerHTML = `
+      <button type="button" data-panel="weapon">技</button>
+      <button type="button" data-panel="item">補</button>
+    `;
+    this.quickPanelSwitch.querySelectorAll<HTMLButtonElement>("[data-panel]").forEach((button) => {
+      button.onclick = () => {
+        const target = button.dataset.panel === "item" ? "item" : "weapon";
+        this.activeQuickPanel = target;
+        this.setState(target === "weapon" ? "left_open" : "right_open");
+        this.refreshQuickPanel();
+      };
+    });
 
     this.el.append(
       ringsHost,
       stripsHost,
-      drawerLeft,
-      drawerRight,
+      this.quickPanelHost,
+      this.quickPanelSwitch,
       coreHost,
       memberStatusHost,
       this.hintL,
@@ -129,6 +145,7 @@ export class HudController {
 
     this.bindInteractions();
     this.bindComponentEvents();
+    this.refreshQuickPanel();
   }
 
   /** 遊戲層註冊事件 */
@@ -146,6 +163,7 @@ export class HudController {
     this.skillStrips.renderPeriodics(snap.periodics);
     if (this.state === "right_open") this.itemDrawer.render(snap);
     if (this.state === "left_open") this.weaponDrawer.render(snap.weapons);
+    this.refreshQuickPanel();
     // 處理自動收回(移動 / 離開)
     this.handleAutoDismissTriggers(snap);
     // 清理過期大藥水確認
@@ -201,6 +219,7 @@ export class HudController {
     }
     // 進入抽屜狀態 → 收回圓圈(互斥 §3.4)
     if (next === "left_open" || next === "right_open") {
+      this.activeQuickPanel = next === "left_open" ? "weapon" : "item";
       this.cancelExpandTimers();
       this.rings.setExpandedCount(0);
       this.core.showBarText(next === "right_open"); // 右滑時頭像顯示雙條數值 — §3.4
@@ -221,6 +240,17 @@ export class HudController {
     // hover_hint → 顯示提示
     this.hintL.style.opacity = next === "hover_hint" ? "1" : "0";
     this.hintR.style.opacity = next === "hover_hint" ? "1" : "0";
+    this.refreshQuickPanel();
+  }
+
+  private refreshQuickPanel(): void {
+    const weaponButton = this.quickPanelSwitch.querySelector<HTMLButtonElement>("[data-panel='weapon']");
+    const itemButton = this.quickPanelSwitch.querySelector<HTMLButtonElement>("[data-panel='item']");
+    weaponButton?.classList.toggle("is-active", this.activeQuickPanel === "weapon");
+    itemButton?.classList.toggle("is-active", this.activeQuickPanel === "item");
+    this.quickPanelHost.classList.toggle("is-open", this.state === "left_open" || this.state === "right_open");
+    this.weaponDrawer.el.classList.toggle("is-hidden-panel", this.activeQuickPanel !== "weapon");
+    this.itemDrawer.el.classList.toggle("is-hidden-panel", this.activeQuickPanel !== "item");
   }
 
   // ============================================================

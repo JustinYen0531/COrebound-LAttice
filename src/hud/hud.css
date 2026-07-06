@@ -774,6 +774,40 @@
   left: 50%;
   margin-left: 320px;
 }
+.hud-quick-panel-host {
+  position: absolute;
+  right: 22px;
+  bottom: 92px;
+  z-index: 16;
+  pointer-events: auto;
+}
+.hud-quick-panel-switch {
+  position: absolute;
+  right: 22px;
+  bottom: 42px;
+  z-index: 17;
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(7, 9, 16, 0.9);
+  border: 1px solid rgba(233, 236, 248, 0.24);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+.hud-quick-panel-switch button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(233, 236, 248, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--c-ink-dim);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hud-quick-panel-switch button.is-active {
+  border-color: rgba(216, 180, 106, 0.7);
+  color: var(--c-gold);
+  background: rgba(216, 180, 106, 0.12);
+}
 
 .drawer {
   background: var(--c-bg-panel);
@@ -796,6 +830,15 @@
 .item-drawer {
   transform: translateX(100%);
   margin-left: 12px;
+}
+.drawer-dock-right.weapon-drawer,
+.drawer-dock-right.item-drawer {
+  margin-right: 0;
+  margin-left: 0;
+}
+.is-hidden-panel {
+  visibility: hidden;
+  pointer-events: none !important;
 }
 .drawer-title {
   font-size: 11px;
