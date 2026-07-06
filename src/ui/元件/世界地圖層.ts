@@ -227,7 +227,7 @@ const PLAYER_RING_CONTACT_PADDING: Record<玩家戰鬥圈層, number> = {
   captain: 0,
   inner: 6,
   middle: 12,
-  outer: 24,
+  outer: 40,
 };
 const REFERENCE_CAMERA_ZOOM = 2.43;
 const DEFAULT_CAMERA_ZOOM = 1.0;
