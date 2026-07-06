@@ -10,13 +10,16 @@ import {
   取得正式小隊摘要,
 } from "../ui/正式對局小隊狀態";
 import { MEMBERS } from "../data/成員資料庫";
-import type { CaptainId, WeaponFamily } from "../data/戰鬥原語";
+import { statsAtStar } from "../data/成員型別";
+import { captainStatsAtStar } from "../data/控制引擎";
+import type { CaptainId, ControlStar, WeaponFamily } from "../data/戰鬥原語";
 import { POTIONS, type PotionId } from "../economy/流浪商店";
 import * as 背包 from "../economy/背包狀態";
-import { 取得上陣養成 } from "../progression/養成狀態";
+import { 取得上陣養成, 當前隊長星級 } from "../progression/養成狀態";
 import type {
   HudSnapshot,
   Layer,
+  PartyVital,
   PeriodicSkillState,
   PotionItem,
   Role,
@@ -95,6 +98,7 @@ export class GameSnapshotSource {
   private readonly potions: PotionItem[] = STATIC_POTIONS.map((potion) => ({ ...potion }));
   private tickProgress = 0;
   private tickPulseAt = 0;
+  private readonly layerCycleIndex: Record<Layer, number> = { inner: 0, middle: 0, outer: 0 };
 
   setMoving(moving: boolean): void {
     this.moving = moving;
@@ -191,6 +195,17 @@ export class GameSnapshotSource {
     }
   }
 
+  cycleLayerMember(mode: SnapshotMode, layer: Layer, direction: -1 | 1): void {
+    const roster = this.readRuntime(mode).roster.filter((member) => member.layer === layer);
+    const slots = roster.length <= 1 ? roster.length + 1 : roster.length;
+    if (slots <= 0) {
+      this.layerCycleIndex[layer] = 0;
+      return;
+    }
+    const next = this.layerCycleIndex[layer] + direction;
+    this.layerCycleIndex[layer] = ((next % slots) + slots) % slots;
+  }
+
   /**
    * 嘗試施放隊長主動技能。冷卻/能量的閘門在此（activeSkill.tryCast），
    * 成功後發出 `captain-active-cast` 事件，讓世界地圖層去套用實際效果（位移/拉近/減速/加速）。
@@ -236,10 +251,14 @@ export class GameSnapshotSource {
     const runtime = this.readRuntime(mode);
     const hpRatio = runtime.playerMaxHp > 0 ? runtime.playerHp / runtime.playerMaxHp : 0;
     const energy = this.energySystem.snapshot();
+    const captainStar = 當前隊長星級();
+    const layerRoster = this.buildLayerRoster(runtime.roster);
+    const partyVitals = this.buildPartyVitals(runtime, captainStar);
     return {
       captainId: runtime.captainId,
       captainColor: captainColor(runtime.captainId),
       captainPortraitUrl: captainPortraitUrl(runtime.captainId),
+      captainStar,
       hpCurrent: runtime.playerHp,
       hpMax: runtime.playerMaxHp,
       hpRatio,
@@ -259,6 +278,8 @@ export class GameSnapshotSource {
         ? this.buildFormalPotions()
         : this.potions.filter((potion) => potion.count > 0).map((potion) => ({ ...potion })),
       roster: runtime.roster.map((member) => ({ ...member, ailments: [...member.ailments] })),
+      layerRoster,
+      partyVitals,
     };
   }
 
@@ -272,15 +293,19 @@ export class GameSnapshotSource {
       const roster = summary.members.map(({ slot, member, stats }) => {
         const { layer, role } = slotToLayerRole(slot.slotId);
         familyStars[member.family].push(slot.star);
+        const hpCurrent = Math.round(stats.hpCurrent ?? summary.playerHp);
+        const hpMax = Math.max(1, Math.round(stats.hpMax ?? summary.playerMaxHp));
         return {
           id: member.id,
           label: member.nameZh,
           star: slot.star,
           layer,
           role,
-          hpRatio: summary.playerMaxHp > 0 ? summary.playerHp / summary.playerMaxHp : 0,
+          hpCurrent,
+          hpMax,
+          hpRatio: hpMax > 0 ? hpCurrent / hpMax : 0,
           shielded: member.family === "shield",
-          dead: summary.playerHp <= 0,
+          dead: hpCurrent <= 0,
           ailments: summary.lastCollision ? ["碰撞中"] : [],
         } satisfies RosterMember;
       });
@@ -304,15 +329,19 @@ export class GameSnapshotSource {
         const member = MEMBERS.find((candidate) => candidate.no === entry.memberNo);
         if (!member) return null;
         familyStars[member.family].push(entry.star);
+        const stats = statsAtStar(member.base, entry.star);
+        const hpCurrent = Math.round(stats.hp * hpRatio(summary.playerHp, summary.playerMaxHp));
         return {
           id: member.id,
           label: member.nameZh,
           star: entry.star,
           layer: entry.layer,
           role: entry.role,
-          hpRatio: summary.playerMaxHp > 0 ? summary.playerHp / summary.playerMaxHp : 0,
+          hpCurrent,
+          hpMax: stats.hp,
+          hpRatio: stats.hp > 0 ? hpCurrent / stats.hp : 0,
           shielded: member.family === "shield",
-          dead: summary.playerHp <= 0,
+          dead: hpCurrent <= 0,
           ailments: [] as string[],
         } satisfies RosterMember;
       })
@@ -384,4 +413,54 @@ export class GameSnapshotSource {
     }
     return formation;
   }
+
+  private buildLayerRoster(roster: RosterMember[]): Record<Layer, RosterMember | null> {
+    return {
+      inner: this.resolveLayerRoster(roster, "inner"),
+      middle: this.resolveLayerRoster(roster, "middle"),
+      outer: this.resolveLayerRoster(roster, "outer"),
+    };
+  }
+
+  private resolveLayerRoster(roster: RosterMember[], layer: Layer): RosterMember | null {
+    const members = roster.filter((member) => member.layer === layer);
+    if (!members.length) return null;
+    const slots = members.length <= 1 ? [...members, null] : members;
+    const index = this.layerCycleIndex[layer] % slots.length;
+    return slots[index] ?? null;
+  }
+
+  private buildPartyVitals(runtime: RosterRuntime, captainStar: ControlStar): PartyVital[] {
+    const captainStats = captainStatsAtStar(runtime.captainId, captainStar);
+    const captainCurrent = Math.max(
+      0,
+      Math.min(captainStats.hp, Math.round(runtime.playerHp / Math.max(runtime.playerMaxHp, 1) * captainStats.hp)),
+    );
+    const captain: PartyVital = {
+      id: runtime.captainId,
+      label: "隊長",
+      current: captainCurrent,
+      max: captainStats.hp,
+      ratio: captainStats.hp > 0 ? captainCurrent / captainStats.hp : 0,
+      star: captainStar,
+      isCaptain: true,
+    };
+
+    const members = runtime.roster.map((member) => ({
+      id: member.id,
+      label: member.label,
+      current: member.hpCurrent,
+      max: member.hpMax,
+      ratio: member.hpRatio,
+      star: member.star ?? 1,
+      isCaptain: false,
+      layer: member.layer,
+      role: member.role,
+    }));
+    return [captain, ...members];
+  }
+}
+
+function hpRatio(current: number, max: number): number {
+  return max > 0 ? current / max : 0;
 }

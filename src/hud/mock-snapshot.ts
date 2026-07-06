@@ -61,13 +61,13 @@ export class MockSnapshotSource {
   ];
 
   private roster: RosterMember[] = [
-    { id: "m1", label: "稜鏡", layer: "inner", role: "protect", hpRatio: 0.9, shielded: true, dead: false, ailments: [] },
-    { id: "m2", label: "向量", layer: "middle", role: "firepower", hpRatio: 0.45, shielded: false, dead: false, ailments: ["燃燒"] },
-    { id: "m3", label: "節點", layer: "outer", role: "firepower", hpRatio: 0.2, shielded: false, dead: false, ailments: [] },
-    { id: "m4", label: "荊棘", layer: "outer", role: "protect", hpRatio: 0.7, shielded: false, dead: false, ailments: [] },
-    { id: "m5", label: "孢粉", layer: "middle", role: "supply", hpRatio: 0.0, shielded: false, dead: true, ailments: [] },
-    { id: "m6", label: "光錐", layer: "inner", role: "supply", hpRatio: 0.8, shielded: false, dead: false, ailments: [] },
-    { id: "m7", label: "閘門", layer: "outer", role: "protect", hpRatio: 0.55, shielded: false, dead: false, ailments: ["減速"] },
+    { id: "m1", label: "稜鏡", layer: "inner", role: "protect", hpCurrent: 1710, hpMax: 1900, hpRatio: 0.9, shielded: true, dead: false, ailments: [] },
+    { id: "m2", label: "向量", layer: "middle", role: "firepower", hpCurrent: 810, hpMax: 1800, hpRatio: 0.45, shielded: false, dead: false, ailments: ["燃燒"] },
+    { id: "m3", label: "節點", layer: "outer", role: "firepower", hpCurrent: 380, hpMax: 1900, hpRatio: 0.2, shielded: false, dead: false, ailments: [] },
+    { id: "m4", label: "荊棘", layer: "outer", role: "protect", hpCurrent: 1330, hpMax: 1900, hpRatio: 0.7, shielded: false, dead: false, ailments: [] },
+    { id: "m5", label: "孢粉", layer: "middle", role: "supply", hpCurrent: 0, hpMax: 1700, hpRatio: 0.0, shielded: false, dead: true, ailments: [] },
+    { id: "m6", label: "光錐", layer: "inner", role: "supply", hpCurrent: 1520, hpMax: 1900, hpRatio: 0.8, shielded: false, dead: false, ailments: [] },
+    { id: "m7", label: "閘門", layer: "outer", role: "protect", hpCurrent: 1045, hpMax: 1900, hpRatio: 0.55, shielded: false, dead: false, ailments: ["減速"] },
   ];
 
   /** 切換武器群組啟用狀態(由 toggle_weapon 事件觸發) */
@@ -115,6 +115,7 @@ export class MockSnapshotSource {
       captainId: "conductor",
       captainColor: "#3b82f6",
       captainPortraitUrl: "/assets/images/ui/hud/conductor-codex-head.png",
+      captainStar: 1,
       hpCurrent: Math.round(this.hp * 1000),
       hpMax: 1000,
       hpRatio: this.hp,
@@ -132,6 +133,25 @@ export class MockSnapshotSource {
       tickPulseAt: this.tickPulseAt,
       potions: this.potions.filter((p) => p.count > 0).map((p) => ({ ...p })),
       roster: this.roster.map((m) => ({ ...m })),
+      layerRoster: {
+        inner: this.roster.find((member) => member.layer === "inner") ?? null,
+        middle: this.roster.find((member) => member.layer === "middle") ?? null,
+        outer: this.roster.find((member) => member.layer === "outer") ?? null,
+      },
+      partyVitals: [
+        { id: "conductor", label: "隊長", current: Math.round(this.hp * 1000), max: 1000, ratio: this.hp, star: 1, isCaptain: true },
+        ...this.roster.map((member) => ({
+          id: member.id,
+          label: member.label,
+          current: member.hpCurrent,
+          max: member.hpMax,
+          ratio: member.hpRatio,
+          star: member.star ?? 1,
+          isCaptain: false,
+          layer: member.layer,
+          role: member.role,
+        })),
+      ],
     };
   }
 
@@ -191,6 +211,7 @@ export class MockSnapshotSource {
       if (m.dead) continue;
       // 不主動扣血(由 takeHit 控制),但有微小回復
       m.hpRatio = Math.min(1, m.hpRatio + dt * 0.005);
+      m.hpCurrent = Math.round(m.hpMax * m.hpRatio);
     }
   }
 }

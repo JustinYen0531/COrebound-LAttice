@@ -1,35 +1,28 @@
 /**
  * @file core-trio.ts
  * @description 底部核心三件組:生命條 / 隊長頭像(含主動技能冷卻環) / 能量條。
- *              對應「玩家介面_戰鬷HUD與操作骨架.md」§1.2 ~ §1.5、§4.2。
- *
- *              - 用 SVG 構建,精準控制冷卻環掃描與條狀填充。
- *              - 純檢視層:只接收 HudSnapshot,不自行改變狀態。
- *              - 對外發出 cast_active(點擊頭像)事件。
  */
 
 import {
   FAMILY_LABEL,
-  SIZE,
   HEALTH_STAGE,
+  SIZE,
   type ActiveSkillState,
   type HudSnapshot,
+  type PartyVital,
 } from "./types";
 
-/** 根據生命比例回傳對應 CSS 顏色變數名 — 規格 §1.3 */
 function healthColorVar(ratio: number): string {
   if (ratio > HEALTH_STAGE.WARN) return "var(--c-hp-full)";
   if (ratio > HEALTH_STAGE.DANGER) return "var(--c-hp-warn)";
   return "var(--c-hp-danger)";
 }
 
-/** 將 SVG 圓周依比例轉成 stroke-dasharray 段(用於冷卻環掃描) */
 function arcDash(ratio: number, circumference: number): string {
   const filled = circumference * Math.max(0, Math.min(1, ratio));
   return `${filled} ${circumference - filled}`;
 }
 
-/** 切角矩形 path：取代圓角矩形，呼應世界地板／按鈕的切角線稿語言 */
 function chamferPath(x: number, y: number, w: number, h: number, cut: number): string {
   const c = Math.max(0, Math.min(cut, w / 2, h / 2));
   if (w <= 0 || h <= 0) return "";
@@ -46,19 +39,6 @@ function chamferPath(x: number, y: number, w: number, h: number, cut: number): s
   ].join(" ");
 }
 
-/**
- * 核心三件組檢視。
- *
- * 內部 DOM 結構:
- *   <div class="core-trio">
- *     <svg class="health-bar">...</svg>
- *     <div class="avatar">
- *       <svg class="cooldown-ring">...</svg>
- *       <div class="avatar-face">C</div>
- *     </div>
- *     <svg class="energy-bar">...</svg>
- *   </div>
- */
 export class CoreTrio {
   readonly el: HTMLElement;
 
@@ -68,12 +48,15 @@ export class CoreTrio {
   private readonly healthText: SVGTextElement;
   private readonly healthValue: HTMLDivElement;
   private readonly healthMeta: HTMLDivElement;
+  private readonly healthDetails: HTMLDivElement;
   private readonly cooldownRing: SVGCircleElement;
   private readonly cooldownTrack: SVGCircleElement;
   private readonly avatarFace: HTMLDivElement;
   private readonly avatarImg: HTMLImageElement;
   private readonly avatarFallback: HTMLSpanElement;
   private readonly avatarBtn: HTMLDivElement;
+  private readonly captainStarBadge: HTMLDivElement;
+  private readonly tickMiniFill: HTMLDivElement;
   private readonly energyFill: SVGPathElement;
   private readonly energyRoot: SVGSVGElement;
   private readonly energyText: SVGTextElement;
@@ -88,24 +71,25 @@ export class CoreTrio {
   private snapshot: HudSnapshot | null = null;
 
   constructor() {
-    // 冷卻環圓周 = 2πr,r 約為頭像半徑
     const ringR = SIZE.AVATAR_DIAMETER / 2 + 3;
     this.cooldownCircumference = 2 * Math.PI * ringR;
 
     this.el = this.build();
-    // 綁定後再取出關鍵節點
     this.healthRoot = this.el.querySelector(".health-bar") as SVGSVGElement;
     this.healthFill = this.healthRoot.querySelector(".bar-fill") as SVGPathElement;
     this.healthShield = this.healthRoot.querySelector(".bar-shield") as SVGRectElement;
     this.healthText = this.healthRoot.querySelector(".bar-text") as SVGTextElement;
     this.healthValue = this.el.querySelector(".health-value") as HTMLDivElement;
     this.healthMeta = this.el.querySelector(".health-meta") as HTMLDivElement;
+    this.healthDetails = this.el.querySelector(".hud-health-detail-panel") as HTMLDivElement;
     this.cooldownTrack = this.el.querySelector(".cooldown-track") as SVGCircleElement;
     this.cooldownRing = this.el.querySelector(".cooldown-ring") as SVGCircleElement;
     this.avatarFace = this.el.querySelector(".avatar-face") as HTMLDivElement;
     this.avatarImg = this.el.querySelector(".avatar-face-img") as HTMLImageElement;
     this.avatarFallback = this.el.querySelector(".avatar-face-fallback") as HTMLSpanElement;
     this.avatarBtn = this.el.querySelector(".avatar") as HTMLDivElement;
+    this.captainStarBadge = this.el.querySelector(".captain-star-badge") as HTMLDivElement;
+    this.tickMiniFill = this.el.querySelector(".captain-tick-fill") as HTMLDivElement;
     this.energyRoot = this.el.querySelector(".energy-bar") as SVGSVGElement;
     this.energyFill = this.energyRoot.querySelector(".bar-fill") as SVGPathElement;
     this.energyText = this.energyRoot.querySelector(".bar-text") as SVGTextElement;
@@ -116,12 +100,10 @@ export class CoreTrio {
     this.weaponSummary = this.el.querySelector(".summary-weapons") as HTMLDivElement;
     this.energyReadyDot = this.el.querySelector(".energy-ready-dot") as HTMLDivElement;
 
-    // 初始化冷卻環幾何
     this.cooldownTrack.setAttribute("stroke-dasharray", `${this.cooldownCircumference}`);
     this.cooldownRing.setAttribute("stroke-dasharray", `${this.cooldownCircumference}`);
   }
 
-  /** 點擊頭像時觸發(由 controller 綁定) */
   onAvatarClick(handler: () => void): void {
     this.avatarBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -129,25 +111,23 @@ export class CoreTrio {
     });
   }
 
-  /** 滑鼠進入核心區(由 controller 用於停留/滑動判定) */
   onCoreEnter(handler: () => void): void {
     this.el.addEventListener("mouseenter", handler);
   }
+
   onCoreLeave(handler: () => void): void {
     this.el.addEventListener("mouseleave", handler);
   }
 
-  /** 提供拖曳起始錨點(滑鼠按下時記錄,供 controller 判定滑動) */
   onCoreMouseDown(handler: (x: number, y: number) => void): void {
     this.el.addEventListener("mousedown", (e) => handler(e.clientX, e.clientY));
   }
 
-  /** 更新檢視 */
   render(snap: HudSnapshot): void {
     this.snapshot = snap;
     this.renderHealth(snap);
     this.renderEnergy(snap);
-    this.renderAvatar(snap.active, snap.captainColor, snap.captainPortraitUrl, snap.captainId);
+    this.renderAvatar(snap);
     this.renderCooldownSummary(snap);
   }
 
@@ -155,21 +135,14 @@ export class CoreTrio {
     const ratio = Math.max(0, Math.min(1, snap.hpRatio));
     const w = SIZE.HEALTH_BAR_W;
     const h = SIZE.HEALTH_BAR_H;
-    // 填充寬度(切角矩形，端頭跟外框一致)
     this.healthFill.setAttribute("d", chamferPath(2, 8, Math.max(0, w * ratio - 4), h - 10, 3));
     this.healthFill.setAttribute("fill", healthColorVar(ratio));
-    // 護盾覆蓋(外側上方獨立條) — 規格 §1.3
-    const shieldW = w * Math.max(0, Math.min(1, snap.shieldRatio));
-    this.healthShield.setAttribute("width", `${shieldW}`);
+    this.healthShield.setAttribute("width", `${w * Math.max(0, Math.min(1, snap.shieldRatio))}`);
     this.healthText.textContent = `${Math.round(ratio * 100)}%`;
     this.healthValue.textContent = `${Math.round(snap.hpCurrent)} / ${Math.round(snap.hpMax)}`;
     this.healthMeta.textContent = `目前 ${Math.round(ratio * 100)}%${snap.shieldRatio > 0 ? ` · 護盾 ${Math.round(snap.shieldRatio * 100)}%` : ""}`;
-    // 危險脈動
-    if (ratio <= HEALTH_STAGE.DANGER) {
-      this.healthRoot.classList.add("pulse-danger");
-    } else {
-      this.healthRoot.classList.remove("pulse-danger");
-    }
+    this.healthDetails.innerHTML = snap.partyVitals.map((vital) => this.renderVitalRow(vital)).join("");
+    this.healthRoot.classList.toggle("pulse-danger", ratio <= HEALTH_STAGE.DANGER);
   }
 
   private renderEnergy(snap: HudSnapshot): void {
@@ -180,44 +153,35 @@ export class CoreTrio {
     this.energyText.textContent = `${Math.round(ratio * 100)}%`;
     this.energyValue.textContent = `${Math.round(snap.energyCurrent)} / ${Math.round(snap.energyMax)}`;
     this.energyMeta.textContent = `目前 ${Math.round(ratio * 100)}% · 主動耗能 ${snap.active.energyCost}`;
-    // 能量足夠施放主動技能 → 右端亮點 — 規格 §1.4
-    if (snap.active.energyEnough && snap.active.cooldownRatio >= 1) {
-      this.energyReadyDot.classList.add("on");
-    } else {
-      this.energyReadyDot.classList.remove("on");
-    }
-    // 不足時整條變暗 — 規格 §1.4
-    if (!snap.active.energyEnough) {
-      this.energyRoot.classList.add("dim");
-    } else {
-      this.energyRoot.classList.remove("dim");
-    }
+    this.energyReadyDot.classList.toggle("on", snap.active.energyEnough && snap.active.cooldownRatio >= 1);
+    this.energyRoot.classList.toggle("dim", !snap.active.energyEnough);
   }
 
-  private renderAvatar(active: ActiveSkillState, captainColor: string, portraitUrl: string | undefined, captainId: string): void {
-    const { cooldownRatio, energyEnough, castLatency } = active;
-    // 冷卻環掃描 — 規格 §1.5(順時針掃過已冷卻部分)
-    this.cooldownRing.setAttribute(
-      "stroke-dasharray",
-      arcDash(cooldownRatio, this.cooldownCircumference),
-    );
-    // 旋轉讓掃描從頂端 12 點鐘開始
+  private renderAvatar(snap: HudSnapshot): void {
+    const { cooldownRatio, energyEnough, castLatency } = snap.active;
+    this.cooldownRing.setAttribute("stroke-dasharray", arcDash(cooldownRatio, this.cooldownCircumference));
     this.cooldownRing.style.transform = "rotate(-90deg)";
     this.cooldownRing.style.transformOrigin = "center";
 
     const ready = cooldownRatio >= 1 && energyEnough && !castLatency;
+    const hpLow = snap.hpRatio < HEALTH_STAGE.DANGER;
+    const tickPulse = Date.now() - snap.tickPulseAt < 240;
     this.avatarBtn.classList.toggle("ready", ready);
     this.avatarBtn.classList.toggle("dim", !energyEnough);
     this.avatarBtn.classList.toggle("latency", castLatency);
-    // 致命傷警示環 — 規格 §1.5(生命<30%)
-    const hpLow = this.snapshot ? this.snapshot.hpRatio < HEALTH_STAGE.DANGER : false;
     this.avatarBtn.classList.toggle("lethal", hpLow);
-    this.avatarFace.style.backgroundColor = portraitUrl ? "transparent" : captainColor;
-    this.avatarImg.src = portraitUrl ?? "";
-    this.avatarImg.alt = `${captainId} portrait`;
-    this.avatarImg.style.display = portraitUrl ? "block" : "none";
-    this.avatarFallback.textContent = captainId.slice(0, 1).toUpperCase();
-    this.avatarFallback.style.display = portraitUrl ? "none" : "block";
+    this.avatarBtn.classList.toggle("tick-hit", tickPulse);
+
+    this.avatarFace.style.backgroundColor = snap.captainPortraitUrl ? "transparent" : snap.captainColor;
+    this.avatarImg.src = snap.captainPortraitUrl ?? "";
+    this.avatarImg.alt = `${snap.captainId} portrait`;
+    this.avatarImg.style.display = snap.captainPortraitUrl ? "block" : "none";
+    this.avatarFallback.textContent = snap.captainId.slice(0, 1).toUpperCase();
+    this.avatarFallback.style.display = snap.captainPortraitUrl ? "none" : "block";
+
+    this.captainStarBadge.textContent = `★${snap.captainStar}`;
+    this.tickMiniFill.style.width = `${Math.round(Math.max(0, Math.min(1, snap.tickProgress)) * 100)}%`;
+    this.tickMiniFill.parentElement?.classList.toggle("is-pulsing", tickPulse);
   }
 
   private renderCooldownSummary(snap: HudSnapshot): void {
@@ -226,16 +190,12 @@ export class CoreTrio {
     this.weaponSummary.textContent = `武器冷卻：${this.formatWeapons(snap)}`;
   }
 
-  /** 切換生命/能量條文字顯示(滑鼠停留 0.5s 用)— 規格 §1.3、§1.4 */
   showBarText(show: boolean): void {
     this.healthText.style.opacity = "1";
     this.energyText.style.opacity = "1";
     this.el.classList.toggle("drawer-open", show);
   }
 
-  // ----------------------------------------------------------
-  // DOM 建構
-  // ----------------------------------------------------------
   private build(): HTMLElement {
     const wrap = document.createElement("div");
     wrap.className = "core-trio";
@@ -244,15 +204,16 @@ export class CoreTrio {
         <div class="stat-heading"><span>生命值</span><strong class="health-value">0 / 0</strong></div>
         ${this.buildBarSvg("health-bar", SIZE.HEALTH_BAR_W, SIZE.HEALTH_BAR_H, true)}
         <div class="stat-meta health-meta">目前 0%</div>
+        <div class="hud-health-detail-panel"></div>
       </section>
       <div class="avatar" role="button" aria-label="隊長頭像(點擊施放主動技能)">
         <svg class="cooldown-ring-svg" viewBox="0 0 110 110" width="110" height="110">
-          <circle class="cooldown-track" cx="55" cy="55" r="51"
-            fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="4" />
-          <circle class="cooldown-ring" cx="55" cy="55" r="51"
-            fill="none" stroke="var(--c-active)" stroke-width="4" stroke-linecap="round" />
+          <circle class="cooldown-track" cx="55" cy="55" r="51" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="4" />
+          <circle class="cooldown-ring" cx="55" cy="55" r="51" fill="none" stroke="var(--c-active)" stroke-width="4" stroke-linecap="round" />
         </svg>
+        <div class="captain-star-badge">★1</div>
         <div class="avatar-face"><img class="avatar-face-img" alt="" draggable="false"><span class="avatar-face-fallback">C</span></div>
+        <div class="captain-tick-track"><div class="captain-tick-fill"></div></div>
         <div class="energy-ready-dot"></div>
       </div>
       <section class="hud-energy-stack">
@@ -271,31 +232,43 @@ export class CoreTrio {
     return wrap;
   }
 
-  /**
-   * 建構條狀 SVG。
-   * 生命條護盾覆蓋在外側上方(獨立條),能量條無護盾。
-   */
-  private buildBarSvg(
-    cls: "health-bar" | "energy-bar",
-    w: number,
-    h: number,
-    withShield: boolean,
-  ): string {
+  private buildBarSvg(cls: "health-bar" | "energy-bar", w: number, h: number, withShield: boolean): string {
     const fillVar = cls === "health-bar" ? "var(--c-hp-full)" : "var(--c-energy)";
     const shield = withShield
-      ? `<rect class="bar-shield" x="0" y="0" width="0" height="6"
-            fill="var(--c-shield)" opacity="0.9" />`
+      ? `<rect class="bar-shield" x="0" y="0" width="0" height="6" fill="var(--c-shield)" opacity="0.9" />`
       : "";
     return `
       <svg class="${cls}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
         <path class="bar-frame" d="${chamferPath(0, 0, w, h, 6)}" />
         ${shield}
         <path class="bar-fill" d="" fill="${fillVar}" />
-        <text class="bar-text" x="${w - 12}" y="${h / 2 + 5}"
-          text-anchor="end" font-size="14" fill="#fff"
-          style="opacity:0; transition: opacity .15s;">0%</text>
+        <text class="bar-text" x="${w - 12}" y="${h / 2 + 5}" text-anchor="end" font-size="14" fill="#fff" style="opacity:0; transition: opacity .15s;">0%</text>
       </svg>
     `;
+  }
+
+  private renderVitalRow(vital: PartyVital): string {
+    const ratio = Math.max(0, Math.min(1, vital.ratio));
+    const star = vital.isCaptain ? `隊長 ★${vital.star}` : `${this.layerLabel(vital.layer)} ★${vital.star}`;
+    return `
+      <div class="hud-health-detail-row${vital.isCaptain ? " is-captain" : ""}">
+        <div class="hud-health-detail-head">
+          <strong>${vital.label}</strong>
+          <span>${star}</span>
+          <em>${Math.round(vital.current)} / ${Math.round(vital.max)}</em>
+        </div>
+        <div class="hud-health-detail-bar">
+          <div class="hud-health-detail-fill" style="width:${Math.round(ratio * 100)}%"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  private layerLabel(layer: PartyVital["layer"]): string {
+    if (layer === "inner") return "最內層";
+    if (layer === "middle") return "中層";
+    if (layer === "outer") return "最外層";
+    return "隊員";
   }
 
   private formatCooldown(remaining: number, energyEnough: boolean): string {
@@ -305,20 +278,12 @@ export class CoreTrio {
 
   private formatPeriodics(snap: HudSnapshot): string {
     if (!snap.periodics.length) return "無";
-    return snap.periodics
-      .slice(0, 2)
-      .map((periodic) => `${periodic.label} ${Math.round(periodic.chargeRatio * 100)}%`)
-      .join(" · ");
+    return snap.periodics.slice(0, 2).map((periodic) => `${periodic.label} ${Math.round(periodic.chargeRatio * 100)}%`).join(" · ");
   }
 
   private formatWeapons(snap: HudSnapshot): string {
     const visible = snap.weapons.filter((weapon) => !weapon.disabledByRoster).slice(0, 3);
     if (!visible.length) return "無";
-    return visible
-      .map((weapon) => {
-        const remaining = Math.max(0, (1 - weapon.cooldownRatio) * 100);
-        return `${FAMILY_LABEL[weapon.family]} ${Math.round(remaining)}%`;
-      })
-      .join(" · ");
+    return visible.map((weapon) => `${FAMILY_LABEL[weapon.family]} ${Math.round(Math.max(0, (1 - weapon.cooldownRatio) * 100))}%`).join(" · ");
   }
 }

@@ -95,6 +95,7 @@
 .core-trio .hud-stat-panel {
   display: grid;
   gap: 8px;
+  position: relative;
 }
 
 .core-trio .hud-energy-stack {
@@ -188,7 +189,7 @@
   transform: translateX(-50%) scale(var(--hud-scale));
   transform-origin: center bottom;
   z-index: 11;
-  pointer-events: none;
+  pointer-events: auto;
 }
 .hud-member-status-row {
   display: flex;
@@ -197,21 +198,44 @@
 }
 .hud-member-status-card {
   --member-accent: #d8b46a;
+  position: relative;
   display: grid;
   grid-template-columns: 34px 100px;
   gap: 6px;
   align-items: center;
   min-width: 142px;
-  padding: 4px 7px 4px 4px;
+  padding: 4px 18px 12px 4px;
   border: 1px solid color-mix(in srgb, var(--member-accent) 58%, var(--c-border));
   border-bottom: 3px solid var(--member-accent);
   background: rgba(6, 7, 12, 0.92);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.42);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
+.hud-member-status-card.is-empty {
+  border-style: dashed;
+  background: rgba(6, 7, 12, 0.78);
+}
 .hud-member-status-card--protect { --member-accent: #4d8dff; }
 .hud-member-status-card--firepower { --member-accent: #ff4d5e; }
 .hud-member-status-card--supply { --member-accent: #ffd24d; }
+.hud-member-cycle {
+  position: absolute;
+  bottom: 2px;
+  width: 18px;
+  height: 16px;
+  border: 1px solid color-mix(in srgb, var(--member-accent) 70%, white);
+  background: rgba(8, 9, 16, 0.88);
+  color: var(--member-accent);
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.hud-member-cycle:hover {
+  background: color-mix(in srgb, var(--member-accent) 18%, rgba(8, 9, 16, 0.88));
+}
+.hud-member-cycle--left { left: 4px; }
+.hud-member-cycle--right { right: 4px; }
 .hud-member-avatar {
   width: 34px;
   height: 34px;
@@ -220,10 +244,20 @@
   border-radius: 50%;
   background: #e8e4da;
 }
+.hud-member-avatar--empty {
+  display: grid;
+  place-items: center;
+  background: rgba(233, 236, 248, 0.08);
+  color: var(--c-ink-dim);
+}
 .hud-member-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.hud-member-empty-note {
+  color: var(--c-ink-dim);
+  font-size: 8px;
 }
 .hud-member-data {
   display: grid;
@@ -289,6 +323,10 @@
   cursor: pointer;
   transition: filter 0.15s ease;
 }
+.core-trio .avatar.tick-hit .avatar-face {
+  box-shadow: 0 0 0 2px rgba(216, 180, 106, 0.8), 0 0 16px rgba(216, 180, 106, 0.38);
+  transform: scale(1.03);
+}
 .core-trio .avatar::before {
   content: "";
   position: absolute;
@@ -296,6 +334,21 @@
   border-radius: 50%;
   border: 1px solid var(--c-line-soft);
   pointer-events: none;
+}
+.core-trio .captain-star-badge {
+  position: absolute;
+  top: 4px;
+  left: 10px;
+  min-width: 30px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(110, 162, 255, 0.85);
+  background: rgba(37, 76, 156, 0.92);
+  color: #eef4ff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  z-index: 2;
 }
 .core-trio .avatar.ready {
   filter: drop-shadow(0 0 8px var(--c-gold-soft));
@@ -330,6 +383,7 @@
   background: var(--c-ink) !important;
   border: 2px solid rgba(5, 6, 10, 0.5);
   overflow: hidden;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 .core-trio .avatar-face-img {
   width: 100%;
@@ -370,6 +424,27 @@
   border-color: var(--c-energy);
   box-shadow: 0 0 8px var(--c-energy);
 }
+.core-trio .captain-tick-track {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 56px;
+  height: 8px;
+  transform: translateX(-50%);
+  overflow: hidden;
+  border: 1px solid rgba(110, 162, 255, 0.35);
+  background: rgba(5, 6, 10, 0.9);
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px);
+}
+.core-trio .captain-tick-track.is-pulsing {
+  box-shadow: 0 0 12px rgba(110, 162, 255, 0.45);
+}
+.core-trio .captain-tick-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #5b8fff, #89b5ff 72%, #eef4ff);
+  transition: width 0.1s linear;
+}
 /* 生命/能量條：切角端頭取代圓角，呼應世界地板/按鈕的切角語言 */
 .core-trio .health-bar,
 .core-trio .energy-bar {
@@ -395,6 +470,70 @@
 }
 .core-trio .energy-bar.dim {
   filter: brightness(0.5) grayscale(0.3);
+}
+.core-trio .hud-health-detail-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  display: grid;
+  gap: 6px;
+  min-width: 240px;
+  padding: 10px 12px;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  background: rgba(6, 7, 12, 0.94);
+  border: 1px solid var(--c-border);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  z-index: 4;
+}
+.core-trio .hud-stat-panel-health:hover .hud-health-detail-panel,
+.core-trio .hud-stat-panel-health:focus-within .hud-health-detail-panel {
+  opacity: 1;
+  transform: translateY(0);
+}
+.core-trio .hud-health-detail-row {
+  display: grid;
+  gap: 4px;
+}
+.core-trio .hud-health-detail-row.is-captain strong {
+  color: var(--c-gold);
+}
+.core-trio .hud-health-detail-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+.core-trio .hud-health-detail-head strong,
+.core-trio .hud-health-detail-head span,
+.core-trio .hud-health-detail-head em {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.core-trio .hud-health-detail-head span {
+  color: var(--c-ink-dim);
+  font-style: normal;
+}
+.core-trio .hud-health-detail-head em {
+  color: #fff;
+  font-style: normal;
+}
+.core-trio .hud-health-detail-bar {
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(12, 13, 20, 0.9);
+}
+.core-trio .hud-health-detail-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d91f3d, #ff5265 65%, #ffb238);
 }
 
 @keyframes readyPulse {

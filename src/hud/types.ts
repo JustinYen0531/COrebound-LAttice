@@ -213,12 +213,25 @@ export interface ActiveSkillState {
   cooldownRemaining: number;
 }
 
+export interface PartyVital {
+  id: string;
+  label: string;
+  current: number;
+  max: number;
+  ratio: number;
+  star: 1 | 2 | 3 | 4;
+  isCaptain: boolean;
+  layer?: Layer;
+  role?: Role;
+}
+
 /** 完整的 HUD 資料快照,每幀由上層推入 */
 export interface HudSnapshot {
   captainId: string;
   /** 隊長代表色(影響生命條與頭像主色) */
   captainColor: string;
   captainPortraitUrl?: string;
+  captainStar: 1 | 2 | 3 | 4;
   hpCurrent: number;
   hpMax: number;
   /** 當前生命比例 0~1 */
@@ -247,6 +260,10 @@ export interface HudSnapshot {
   potions: PotionItem[];
   /** 隊員狀態條資料(右滑抽屜用) */
   roster: RosterMember[];
+  /** 三層狀態卡目前顯示中的隊員 */
+  layerRoster: Record<Layer, RosterMember | null>;
+  /** 生命值面板懸浮時顯示的全隊明細 */
+  partyVitals: PartyVital[];
 }
 
 export interface PotionItem {
@@ -267,6 +284,8 @@ export interface RosterMember {
   star?: 1 | 2 | 3;
   layer: Layer;
   role: Role;
+  hpCurrent: number;
+  hpMax: number;
   hpRatio: number;
   shielded: boolean;
   dead: boolean;
@@ -282,5 +301,6 @@ export type HudEvent =
   | { type: "cast_active" } // 玩家施放隊長主動技能
   | { type: "toggle_weapon"; family: WeaponFamily } // 左滑抽屜內切換武器群組
   | { type: "use_potion"; potionId: string; onMemberId: string | null } // 使用藥水(null=隊長)
+  | { type: "cycle_layer_member"; layer: Layer; direction: -1 | 1 } // 切換該層顯示中的成員
   | { type: "open_management"; focusMemberId?: string } // 點圓圈進管理介面
   | { type: "interact_prompt" }; // 驚嘆號被點(本骨架僅記錄)
