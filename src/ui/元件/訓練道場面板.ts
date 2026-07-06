@@ -19,6 +19,7 @@ import {
   設定Showcase槽位成員,
   設定Showcase槽位星級,
   當前隊長星級,
+  取得家族武器升級狀態,
   type 初始成員層級,
 } from "../../progression/養成狀態";
 import {
@@ -1450,6 +1451,46 @@ export function 建立正式小隊編輯器(刷新: () => void): HTMLElement {
     library.appendChild(btn);
   });
   rightPane.appendChild(library);
+
+  const weaponPanel = document.createElement("section");
+  const weaponStatus = 取得家族武器升級狀態();
+  const weaponMeta = {
+    shield: { name: "Shield", mark: "S", color: "#6f91bd" },
+    multishot: { name: "Multishot", mark: "M", color: "#799b63" },
+    straight: { name: "Straight", mark: "R", color: "#b76556" },
+    mine: { name: "Mine", mark: "F", color: "#b58a46" },
+    laser: { name: "Laser", mark: "L", color: "#8a829c" },
+  } as const;
+  Object.assign(weaponPanel.style, {
+    padding: "14px",
+    border: "1px solid rgba(121, 90, 43, 0.24)",
+    borderRadius: "14px",
+    background: "rgba(255, 250, 231, 0.42)",
+    color: "#433623",
+  });
+  weaponPanel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:10px;">
+      <div><small style="display:block;color:#9a7440;letter-spacing:.12em;font-weight:800;">LOADOUT</small><strong style="font-size:1rem;">${雙語("已裝備武器", "Equipped Weapons")}</strong></div>
+      <span style="font-size:.68rem;color:#806b4c;">${雙語("依目前正式小隊解鎖", "Based on current squad")}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
+      ${weaponStatus
+        .filter((status) => status.family !== "laser")
+        .map((status) => {
+          const meta = weaponMeta[status.family];
+          const equippedStar = status.unlockedStar;
+          const equipped = equippedStar > 0;
+          return `
+            <article style="display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px;border:1px solid ${equipped ? meta.color : "rgba(90,76,55,.16)"};border-radius:10px;background:${equipped ? "rgba(255,255,255,.56)" : "rgba(210,204,188,.28)"};opacity:${equipped ? "1" : ".58"};">
+              <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:${meta.color};color:white;font-weight:900;">${meta.mark}</span>
+              <span><strong style="display:block;font-size:.82rem;">${meta.name}</strong><small style="color:#806b4c;">${equipped ? `${equippedStar}★ Weapon` : "Not unlocked"}</small></span>
+              <b style="font-size:.62rem;letter-spacing:.08em;color:${equipped ? "#9a6518" : "#807869"};">${equipped ? "EQUIPPED" : "LOCKED"}</b>
+            </article>`;
+        })
+        .join("")}
+    </div>
+  `;
+  rightPane.appendChild(weaponPanel);
 
   layout.append(leftPane, rightPane);
   root.appendChild(layout);
