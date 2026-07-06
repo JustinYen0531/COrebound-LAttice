@@ -27,6 +27,8 @@ class 戰鬥HUD接線器 {
     window.addEventListener("request-cast-active", this.onRequestCast);
     window.addEventListener("request-open-world-chest", this.onRequestOpenChest as EventListener);
     window.addEventListener("combat-run-reset", this.onRunReset as EventListener);
+    window.addEventListener("combat-tick-progress", this.onCombatTickProgress as EventListener);
+    window.addEventListener("combat-tick-pulse", this.onCombatTickPulse as EventListener);
   }
 
   private onRequestCast = (): void => {
@@ -51,6 +53,17 @@ class 戰鬥HUD接線器 {
 
   private onRunReset = (): void => {
     this.source.resetForRun();
+  };
+
+  private onCombatTickProgress = (raw: Event): void => {
+    const detail = (raw as CustomEvent<{ progress?: number }>).detail;
+    this.source.setCombatTickProgress(detail?.progress ?? 0);
+    this.hud.update(this.source.snapshot(this.currentMode()));
+  };
+
+  private onCombatTickPulse = (): void => {
+    this.source.pulseCombatTick();
+    this.hud.update(this.source.snapshot(this.currentMode()));
   };
 
   /** 供驗收控制台讀取目前隊長主動技能的能量/冷卻狀態。 */

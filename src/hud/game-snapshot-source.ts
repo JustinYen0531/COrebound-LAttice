@@ -142,12 +142,15 @@ export class GameSnapshotSource {
       periodic.chargeRatio += dt * speed;
       if (periodic.chargeRatio >= 1) periodic.chargeRatio -= 1;
     }
-    this.tickProgress += dt;
-    while (this.tickProgress >= 1) {
-      this.tickProgress -= 1;
-      this.tickPulseAt = Date.now();
-      window.dispatchEvent(new CustomEvent("hud-tick-pulse"));
-    }
+  }
+
+  setCombatTickProgress(progress: number): void {
+    this.tickProgress = Math.max(0, Math.min(1, progress));
+  }
+
+  pulseCombatTick(): void {
+    this.tickProgress = 0;
+    this.tickPulseAt = Date.now();
   }
 
   syncFromGame(mode: SnapshotMode): void {

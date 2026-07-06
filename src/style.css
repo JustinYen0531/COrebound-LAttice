@@ -3207,18 +3207,25 @@ button.禁用:hover {
   position: relative;
   z-index: 2;
 }
-/* 影子：壓扁、下沉、模糊，強化俯視地面感 */
-.世界地圖層-怪物-image-shadow {
+/* 影子：腳下灰色圓形接地陰影，壓扁、模糊，強化俯視地面感 */
+.世界地圖層-怪物-影子圓 {
   position: absolute;
-  left: 0;
-  top: 12%;
-  width: var(--monster-size, 360px);
-  height: var(--monster-size, 360px);
-  object-fit: contain;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--monster-size, 360px) * 0.46);
+  height: calc(var(--monster-size, 360px) * 0.16);
+  transform: translate(-50%, calc(var(--monster-size, 360px) * 0.28));
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(96, 100, 110, 0.5) 0%,
+    rgba(96, 100, 110, 0.3) 46%,
+    rgba(96, 100, 110, 0.12) 66%,
+    rgba(96, 100, 110, 0) 82%
+  );
+  filter: blur(4px);
+  pointer-events: none;
   z-index: 1;
-  transform: scaleY(0.34) translateY(60%);
-  filter: brightness(0) blur(5px);
-  opacity: 0.4;
 }
 /* T2 精英略帶金色光暈，凸顯威脅度 */
 .世界地圖層-怪物-T2 .世界地圖層-怪物-image {
@@ -3357,6 +3364,7 @@ button.禁用:hover {
   z-index: 10;
   pointer-events: none;
   will-change: transform;
+  transition: filter 180ms ease;
 }
 .世界地圖層-玩家 svg {
   width: 100%;
@@ -3368,6 +3376,19 @@ button.禁用:hover {
 }
 .世界地圖層-玩家 .player-ring-hitbox {
   transition: opacity 160ms ease;
+}
+.世界地圖層-玩家 .玩家標記圖騰-隊長核心 {
+  transform-origin: center;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+.世界地圖層-玩家.世界地圖層-玩家-tick-hit {
+  filter:
+    drop-shadow(0 0 20px rgba(255, 220, 120, 0.72))
+    drop-shadow(0 0 10px rgba(96,165,250,0.42));
+}
+.世界地圖層-玩家.世界地圖層-玩家-tick-hit .玩家標記圖騰-隊長核心 {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 10px rgba(255, 235, 160, 0.9));
 }
 /* 驚嘆號 */
 .世界地圖層-驚嘆號 {

@@ -149,7 +149,26 @@ function 怪物顯示名(inst: 可見怪物實例): string {
   return 應用程式狀態.額外.語言 === "zh" ? inst.nameZh : inst.nameEn;
 }
 
+function 是戰鬥Tick有效小怪(monster: MonsterRuntime): boolean {
+  return monster.inst.hp > 0 && !monster.bossKind && monster.inst.tier <= 2;
+}
+
+function 發送戰鬥Tick進度(progress: number): void {
+  window.dispatchEvent(
+    new CustomEvent("combat-tick-progress", {
+      detail: { progress: Math.max(0, Math.min(1, progress)) },
+    }),
+  );
+}
+
+function 發送戰鬥Tick脈衝(): void {
+  window.dispatchEvent(new CustomEvent("combat-tick-pulse"));
+}
+
 const WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM = 800;
+// 建築（熔爐/雕像/商店/工作台/祭壇等設施）視覺尺寸縮為 0.8 倍；
+// 環境物件（障礙/礦/機關）不套用，維持原尺寸。
+const FACILITY_SIZE_SCALE = 0.8;
 const WORLD_OBJECT_FOOTPRINT_RADIUS = 150;
 const PORTAL_INTERACT_RADIUS = 230;
 const PORTAL_LANDING_DISTANCE = WORLD_OBJECT_FOOTPRINT_RADIUS + 52;
@@ -199,9 +218,12 @@ const MIN_CAMERA_ZOOM_PERCENT = 50;
 const MAX_CAMERA_ZOOM_PERCENT = 150;
 const MIN_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM * (MIN_CAMERA_ZOOM_PERCENT / DEFAULT_CAMERA_ZOOM_PERCENT);
 const MAX_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM * (MAX_CAMERA_ZOOM_PERCENT / DEFAULT_CAMERA_ZOOM_PERCENT);
+// 進場預設鏡頭 75%（玩家偏好的觀看角度）。
+const INITIAL_CAMERA_ZOOM_PERCENT = 75;
+const INITIAL_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM * (INITIAL_CAMERA_ZOOM_PERCENT / DEFAULT_CAMERA_ZOOM_PERCENT);
 const ENABLE_LIGHTWEIGHT_WRINKLE_FLOORS = true;
 const ENABLE_DETAILED_FLOOR_TEXTURES = false;
-let cameraZoom = DEFAULT_CAMERA_ZOOM;
+let cameraZoom = INITIAL_CAMERA_ZOOM;
 
 function cameraZoomToPercent(zoom: number): number {
   return (zoom / DEFAULT_CAMERA_ZOOM) * DEFAULT_CAMERA_ZOOM_PERCENT;
@@ -342,7 +364,7 @@ const BLOCKING_WORLD_OBJECTS = [
 export function resetPlayerPos(): void {
   playerPos = { x: 0, y: 0 };
   playerMoving = false;
-  cameraZoom = DEFAULT_CAMERA_ZOOM;
+  cameraZoom = INITIAL_CAMERA_ZOOM;
 }
 
 export function 讀取玩家位置(): { x: number; y: number } {
@@ -591,6 +613,7 @@ export function 建立世界地圖層(): HTMLElement {
   }
   playerNode.title = "小隊(玩家)· 中央隊長核心與外圍三環圖騰";
   canvas.appendChild(playerNode);
+  let 玩家戰鬥Tick特效計時 = 0;
 
   const miniMap = document.createElement("div");
   miniMap.className = "世界地圖層-小地圖";
@@ -1188,9 +1211,12 @@ export function 建立世界地圖層(): HTMLElement {
     const worldObjectSize = WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM * (cameraZoom / WORLD_OBJECT_REFERENCE_CAMERA_ZOOM);
     // 物件不是放在幾何中心，而是靠近磁磚前緣落地，底部仍保留少量白邊。
     const opticalOffset = worldObjectSize * 0.085;
+    // 建築（設施）縮 0.8 倍；環境物件維持原尺寸。
+    const facilitySize = worldObjectSize * FACILITY_SIZE_SCALE;
+    const facilityOpticalOffset = facilitySize * 0.085;
     for (const node of objectNodes.values()) {
-      node.style.setProperty("--world-object-size", `${worldObjectSize.toFixed(2)}px`);
-      node.style.setProperty("--object-optical-y", `${opticalOffset.toFixed(2)}px`);
+      node.style.setProperty("--world-object-size", `${facilitySize.toFixed(2)}px`);
+      node.style.setProperty("--object-optical-y", `${facilityOpticalOffset.toFixed(2)}px`);
     }
     for (const node of envNodes.values()) {
       node.style.setProperty("--world-object-size", `${worldObjectSize.toFixed(2)}px`);
@@ -1466,6 +1492,17 @@ export function 建立世界地圖層(): HTMLElement {
    * 家族可用星級由 技能管理 依上陣成員人數與累計星級判定。
    */
   function updateSquadFire(dt: number): void {
+    // 攻擊 TICK 只有在「圖騰碰撞體積碰到任意可攻擊的怪物」時才加載：
+    // 沒有敵人進入圖騰接觸範圍時，發射計時凍結（不累加、不歸零），
+    // 一有敵人接觸就從當前進度繼續充能並開火。
+    const totemRadius = 玩家圖騰碰撞半徑();
+    const 圖騰接觸敵人 = monsters.some(
+      (m) =>
+        是戰鬥Tick有效小怪(m) &&
+        circlesOverlap(playerPos, totemRadius, m.pos, 訓練敵人碰撞半徑(m.inst.tier)),
+    );
+    if (!圖騰接觸敵人) return;
+
     const status = computeFamilyWeaponStatus(目前上陣成員());
     const unlocked = new Map(status.map((s) => [s.family, s.unlockedStar]));
     for (const family of PLAYABLE_FAMILIES) {
@@ -1690,6 +1727,7 @@ export function 建立世界地圖層(): HTMLElement {
       if (contacts.length === 0) {
         設定訓練碰撞接觸中([], []);
         collisionTickCarry = 0;
+        發送戰鬥Tick進度(0);
         return;
       }
 
@@ -1699,6 +1737,7 @@ export function 建立世界地圖層(): HTMLElement {
       );
 
       collisionTickCarry += dt;
+      發送戰鬥Tick進度(collisionTickCarry / TICK_SECONDS);
       while (collisionTickCarry >= TICK_SECONDS) {
         const resolutions = settleContactTick(
           summary.totalAtk,
@@ -1750,6 +1789,8 @@ export function 建立世界地圖層(): HTMLElement {
             })),
         );
         collisionTickCarry -= TICK_SECONDS;
+        發送戰鬥Tick脈衝();
+        發送戰鬥Tick進度(collisionTickCarry / TICK_SECONDS);
       }
       return;
     }
@@ -1771,10 +1812,12 @@ export function 建立世界地圖層(): HTMLElement {
 
     if (contacts.length === 0) {
       collisionTickCarry = 0;
+      發送戰鬥Tick進度(0);
       return;
     }
 
     collisionTickCarry += dt;
+    發送戰鬥Tick進度(collisionTickCarry / TICK_SECONDS);
     while (collisionTickCarry >= TICK_SECONDS) {
       const resolutions = settleContactTick(
         summary.totalAtk,
@@ -1808,6 +1851,8 @@ export function 建立世界地圖層(): HTMLElement {
       手動設定正式玩家生命(summary.playerHp - appliedSquadDamage);
       記錄對局傷害(0, appliedSquadDamage);
       collisionTickCarry -= TICK_SECONDS;
+      發送戰鬥Tick脈衝();
+      發送戰鬥Tick進度(collisionTickCarry / TICK_SECONDS);
     }
   }
 
@@ -2013,6 +2058,9 @@ export function 建立世界地圖層(): HTMLElement {
     root.removeEventListener("wheel", onWheel);
     window.removeEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
     window.removeEventListener("captain-active-cast", onCaptainCast as EventListener);
+    window.removeEventListener("combat-tick-pulse", onCombatTickPulse as EventListener);
+    if (玩家戰鬥Tick特效計時) window.clearTimeout(玩家戰鬥Tick特效計時);
+    playerNode.classList.remove("世界地圖層-玩家-tick-hit");
     window.clearTimeout(skillToastTimer);
     window.cancelAnimationFrame(rafId);
     pressed.clear();
@@ -2156,6 +2204,17 @@ export function 建立世界地圖層(): HTMLElement {
     if (detail?.captainId) 施放隊長主動技能(detail.captainId);
   }
 
+  function onCombatTickPulse(): void {
+    if (玩家戰鬥Tick特效計時) window.clearTimeout(玩家戰鬥Tick特效計時);
+    playerNode.classList.remove("世界地圖層-玩家-tick-hit");
+    void playerNode.offsetWidth;
+    playerNode.classList.add("世界地圖層-玩家-tick-hit");
+    玩家戰鬥Tick特效計時 = window.setTimeout(() => {
+      playerNode.classList.remove("世界地圖層-玩家-tick-hit");
+      玩家戰鬥Tick特效計時 = 0;
+    }, 200);
+  }
+
   function onDojoAcceptanceAction(raw: Event): void {
     if (!訓練道場中) return;
     const event = raw as CustomEvent<{ type?: string }>;
@@ -2179,6 +2238,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   window.addEventListener("dojo-acceptance-action", onDojoAcceptanceAction as EventListener);
   window.addEventListener("captain-active-cast", onCaptainCast as EventListener);
+  window.addEventListener("combat-tick-pulse", onCombatTickPulse as EventListener);
 
   處理待召喚Boss();
   syncNearbyToState();
@@ -2350,7 +2410,7 @@ function createObjectNode(object: MapObject): HTMLElement {
   node.className = `世界地圖層-物件 世界地圖層-物件-${object.kind}`;
   node.dataset.kind = object.kind;
   node.dataset.id = object.id;
-  node.style.setProperty("--world-object-size", `${WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM}px`);
+  node.style.setProperty("--world-object-size", `${WORLD_OBJECT_SIZE_AT_REFERENCE_ZOOM * FACILITY_SIZE_SCALE}px`);
   const imagePath = facilityImagePath(object);
 
   const beacon = document.createElement("div");
@@ -2365,18 +2425,11 @@ function createObjectNode(object: MapObject): HTMLElement {
   visualLayer.className = "世界地圖層-物件-視覺層";
   if (imagePath) visualLayer.classList.add("世界地圖層-視覺層-禁走地板");
 
-  const shadowLayer = document.createElement("div");
-  shadowLayer.className = "世界地圖層-物件-影子";
-
   const bodyLayer = document.createElement("div");
   bodyLayer.className = "世界地圖層-物件-主體";
 
+  // 建築不再投射「往右上」的方向性剪影陰影，只保留視覺層底部的柔和接地陰影(::after)。
   if (imagePath) {
-    const shadowMask = document.createElement("div");
-    shadowMask.className = "世界地圖層-物件-image-shadow";
-    shadowMask.style.setProperty("--shadow-mask", `url("${imagePath}")`);
-    shadowLayer.appendChild(shadowMask);
-
     const mainImg = document.createElement("img");
     mainImg.className = "世界地圖層-物件-image";
     mainImg.src = imagePath;
@@ -2384,18 +2437,13 @@ function createObjectNode(object: MapObject): HTMLElement {
     mainImg.draggable = false;
     bodyLayer.appendChild(mainImg);
   } else {
-    const shadowGlyph = document.createElement("span");
-    shadowGlyph.className = "世界地圖層-物件-glyph 世界地圖層-物件-glyph-shadow";
-    shadowGlyph.textContent = FACILITY_GLYPH[object.kind];
-    shadowLayer.appendChild(shadowGlyph);
-
     const mainGlyph = document.createElement("span");
     mainGlyph.className = "世界地圖層-物件-glyph";
     mainGlyph.textContent = FACILITY_GLYPH[object.kind];
     bodyLayer.appendChild(mainGlyph);
   }
 
-  visualLayer.append(shadowLayer, bodyLayer);
+  visualLayer.append(bodyLayer);
 
   const label = document.createElement("span");
   label.className = "世界地圖層-物件-label";
@@ -2424,13 +2472,6 @@ function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
   visualLayer.className = "世界地圖層-環境物件-視覺層";
   visualLayer.classList.add("世界地圖層-視覺層-禁走地板");
 
-  const shadowLayer = document.createElement("div");
-  shadowLayer.className = "世界地圖層-環境物件-影子";
-
-  const shadowMask = document.createElement("div");
-  shadowMask.className = "世界地圖層-環境物件-image-shadow";
-  shadowMask.style.setProperty("--shadow-mask", `url("${env.iconPath}")`);
-
   const img = document.createElement("img");
   img.className = "世界地圖層-環境物件-image";
   img.src = env.iconPath;
@@ -2447,9 +2488,9 @@ function createEnvObjectNode(env: EnvObjectInstance): HTMLElement {
   interactHint.className = "世界地圖層-環境物件-互動提示";
   interactHint.textContent = 雙語("按 E 傳送", "Press E to Warp");
 
+  // 環境物件同樣移除方向性剪影陰影，保留底部柔和接地陰影(::after)。
   node.title = `${env.nameEn}\n${env.portalLabelEn}\n${env.mechanicTextEn}`;
-  shadowLayer.appendChild(shadowMask);
-  visualLayer.append(shadowLayer, img, centerLabel, interactHint);
+  visualLayer.append(img, centerLabel, interactHint);
   node.appendChild(visualLayer);
   return node;
 }
@@ -2530,11 +2571,9 @@ function createMonsterNode(inst: 可見怪物實例): HTMLElement {
   const baseSize = MONSTER_SIZE_AT_REFERENCE_ZOOM[inst.tier];
   node.style.setProperty("--monster-size", `${baseSize}px`);
 
-  const shadow = document.createElement("img");
-  shadow.className = "世界地圖層-怪物-image 世界地圖層-怪物-image-shadow";
-  shadow.src = inst.spritePath;
-  shadow.alt = "";
-  shadow.draggable = false;
+  // 小怪腳下的灰色圓形接地陰影（取代原本的剪影投影）。
+  const shadow = document.createElement("div");
+  shadow.className = "世界地圖層-怪物-影子圓";
 
   const img = document.createElement("img");
   img.className = "世界地圖層-怪物-image";
