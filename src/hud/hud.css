@@ -554,16 +554,7 @@
  * 同心圓(置中於頭像正上方)— 規格 §2
  * ============================================================ */
 .hud-rings-host {
-  position: absolute;
-  bottom: 72px;
-  left: 50%;
-  transform: translate(-50%, 65px) scale(var(--hud-scale));
-  transform-origin: center bottom;
-  width: 392px;
-  height: 392px;
-  margin-bottom: 0;
-  pointer-events: auto;
-  z-index: 9;
+  display: none;
 }
 .formation-rings {
   width: 100%;
@@ -602,12 +593,12 @@
  * ============================================================ */
 .hud-strips-host {
   position: absolute;
-  bottom: 72px;
+  bottom: 132px;
   left: 50%;
   transform: translateX(-50%) scale(var(--hud-scale));
   transform-origin: center bottom;
   pointer-events: auto;
-  z-index: 8;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -616,20 +607,38 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
   position: relative;
+  padding: 8px 10px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(8, 10, 17, 0.94), rgba(8, 10, 17, 0.78));
+  border: 1px solid rgba(233, 236, 248, 0.14);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
 }
 .weapon-strip,
 .periodic-strip {
   display: flex;
   gap: 4px;
   align-items: center;
+  justify-content: center;
+  min-height: 32px;
+}
+.periodic-strip:empty {
+  display: none;
 }
 .weapon-icon,
 .periodic-icon {
   position: relative;
   color: var(--c-ink);
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+.weapon-icon {
+  width: 34px !important;
+  height: 34px !important;
+}
+.periodic-icon {
+  width: 28px !important;
+  height: 28px !important;
 }
 .weapon-icon svg .glyph,
 .periodic-icon svg .glyph {

@@ -27,6 +27,7 @@ import { FormationRings } from "./formation-rings";
 import { WeaponDrawer } from "./weapon-drawer";
 import { ItemDrawer } from "./item-drawer";
 import { MemberStatusRow } from "./member-status-row";
+import { SkillStrips } from "./skill-strips";
 import { 播放音效 } from "../audio/音效管理";
 
 /**
@@ -51,6 +52,7 @@ export class HudController {
   private readonly weaponDrawer: WeaponDrawer;
   private readonly itemDrawer: ItemDrawer;
   private readonly memberStatus: MemberStatusRow;
+  private readonly skillStrips: SkillStrips;
   private readonly hintL: HTMLElement;
   private readonly hintR: HTMLElement;
   private readonly suppressToast: HTMLElement;
@@ -80,6 +82,7 @@ export class HudController {
     this.weaponDrawer = new WeaponDrawer();
     this.itemDrawer = new ItemDrawer();
     this.memberStatus = new MemberStatusRow();
+    this.skillStrips = new SkillStrips();
 
     // 提示元素
     this.hintL = document.createElement("div");
@@ -99,6 +102,9 @@ export class HudController {
     const coreHost = document.createElement("div");
     coreHost.className = "hud-core-host";
     coreHost.appendChild(this.core.el);
+    const stripsHost = document.createElement("div");
+    stripsHost.className = "hud-strips-host";
+    stripsHost.appendChild(this.skillStrips.el);
     const memberStatusHost = document.createElement("div");
     memberStatusHost.className = "hud-member-status-host";
     memberStatusHost.appendChild(this.memberStatus.el);
@@ -111,6 +117,7 @@ export class HudController {
 
     this.el.append(
       ringsHost,
+      stripsHost,
       drawerLeft,
       drawerRight,
       coreHost,
@@ -135,6 +142,8 @@ export class HudController {
     this.core.render(snap);
     this.memberStatus.render(snap);
     this.rings.render(snap);
+    this.skillStrips.renderWeapons(snap.weapons);
+    this.skillStrips.renderPeriodics(snap.periodics);
     if (this.state === "right_open") this.itemDrawer.render(snap);
     if (this.state === "left_open") this.weaponDrawer.render(snap.weapons);
     // 處理自動收回(移動 / 離開)
