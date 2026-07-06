@@ -24,6 +24,7 @@ import {
 import { potionGlyphSvg } from "./glyphs";
 import { 應用程式狀態 } from "../ui/應用程式狀態";
 import { 選文 } from "../ui/語系";
+import { 播放音效 } from "../audio/音效管理";
 
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
@@ -204,6 +205,7 @@ export class ItemDrawer {
   // ----------------------------------------------------------
   private beginDrag(potion: PotionItem, x: number, y: number): void {
     if (this.dragging) return;
+    播放音效("藥水拖起");
     const ghost = document.createElement("div");
     ghost.className = "drag-ghost";
     ghost.innerHTML = this.potionGlyph(potion);
@@ -253,7 +255,8 @@ export class ItemDrawer {
       return;
     }
     if (!this.canAccept(target)) {
-      // 不可生效(死亡/已滿血) → 無反應 — 規格 §6.5
+      // 不可生效(死亡/已滿血) → 拒絕聲 — 規格 §6.5
+      播放音效("藥水失敗");
       return;
     }
     const memberId = target.dataset.memberId as string;
@@ -310,12 +313,14 @@ export class ItemDrawer {
     const deadline = Date.now() + BIG_CONFIRM_MS;
     const timer = window.setTimeout(() => {
       this.cancelPendingBig(); // 3s 過期 → 取消,藥水退回 — 規格 §6.5
+      播放音效("藥水失敗");
     }, BIG_CONFIRM_MS);
     this.pendingBig = { potion, memberId, deadline, timer };
     this.renderBigConfirmBanner();
   }
 
   private commitUse(potion: PotionItem, memberId: string | null): void {
+    播放音效("藥水成功");
     this._useHandler?.(potion.id, memberId);
   }
 

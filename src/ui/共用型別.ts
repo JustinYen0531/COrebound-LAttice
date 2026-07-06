@@ -40,10 +40,16 @@ export type 畫面狀態 =
 export interface 隊長資料 {
   id: string;
   名稱: string;
+  名稱英: string;
   代號: string;
+  代號英: string;
   控制效果: string;
+  控制效果英: string;
   主動位移技能: string;
+  主動位移技能英: string;
   週期技能: string;
+  週期技能英: string;
   代表色: string;
   一句話設計: string;
+  一句話設計英: string;
 }

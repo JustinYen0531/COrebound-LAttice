@@ -40,6 +40,7 @@ import {
 } from "../../progression/養成狀態";
 import { 刷新正式最大生命 } from "../正式對局小隊狀態";
 import { 選文 } from "../語系";
+import { 播放音效 } from "../../audio/音效管理";
 
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
@@ -259,9 +260,11 @@ function 合成面板(): HTMLElement {
       }
       const result = 升級家族武器(f);
       if (!result.ok) {
+        播放音效("交易失敗");
         alert(`${雙語("升級失敗", "Upgrade failed")}: ${result.reason ?? 雙語("資源或家族條件不足", "Not enough resources or family requirements are missing")}`);
         return;
       }
+      播放音效("升級完成");
       alert(`🎉 ${雙語("升級成功", "Upgrade successful")}! ${家族顯示名(f)} ${雙語("技能已提升至", "skill is now")} Lv.${result.newStar}.`);
       應用程式狀態.進入管理介面("互動");
     });
@@ -276,11 +279,13 @@ function 合成面板(): HTMLElement {
       const index = Number((e.currentTarget as HTMLElement).dataset.squadIndex);
       const result = 升星上陣隊員(index);
       if (!result.ok) {
+        播放音效("交易失敗");
         alert(`${雙語("升星失敗", "Upgrade failed")}: ${result.reason ?? 雙語("資源不足", "Not enough resources")}`);
         return;
       }
       const member = 取得上陣養成()[index];
       刷新正式最大生命();
+      播放音效("升級完成");
       alert(`${雙語("升星成功", "Upgrade successful")}: ${應用程式狀態.額外.語言 === "zh" ? member.nameZh : member.nameEn} ${雙語("已提升到", "is now")} ${result.newStar}★.`);
       應用程式狀態.進入管理介面("互動");
     });
@@ -400,6 +405,7 @@ function 熔爐面板(): HTMLElement {
           inputs: [{ materialNo: m.no, count: 1 }],
         });
         背包.加入碎片(result.family, result.shards);
+        播放音效("熔煉完成");
         alert(`${雙語("熔煉成功", "Smelt successful")}: ${應用程式狀態.額外.語言 === "zh" ? m.nameZh : m.nameEn} → ${result.shards} ${家族顯示名(result.family)} ${雙語("碎片", "shards")}.`);
         應用程式狀態.進入管理介面("互動");
       });
@@ -491,10 +497,12 @@ function 雕像面板(): HTMLElement {
           return;
         }
         if (!commonUnlock || !fineUnlock) {
+          播放音效("交易失敗");
           alert(雙語("解鎖失敗：找不到對應世界的初始化素材定義。", "Unlock failed: the matching world unlock materials could not be found."));
           return;
         }
         if (背包.取碎片(m.family) < 10) {
+          播放音效("交易失敗");
           alert(
             雙語(
               `解鎖失敗！需要 10 個 ${家族顯示名(m.family)}碎片。當前僅有：${背包.取碎片(m.family)} 個。`,
@@ -504,6 +512,7 @@ function 雕像面板(): HTMLElement {
           return;
         }
         if (背包.取材料(commonUnlock.no) < 3) {
+          播放音效("交易失敗");
           alert(
             雙語(
               `解鎖失敗！需要 3 個 ${材料顯示名(commonUnlock.no)}。當前僅有：${背包.取材料(commonUnlock.no)} 個。`,
@@ -513,6 +522,7 @@ function 雕像面板(): HTMLElement {
           return;
         }
         if (背包.取材料(fineUnlock.no) < 1) {
+          播放音效("交易失敗");
           alert(
             雙語(
               `解鎖失敗！需要 1 個 ${材料顯示名(fineUnlock.no)}。當前僅有：${背包.取材料(fineUnlock.no)} 個。`,
@@ -524,6 +534,7 @@ function 雕像面板(): HTMLElement {
 
         const unlockResult = 初始化解鎖成員(m.no);
         if (!unlockResult.ok) {
+          播放音效("交易失敗");
           alert(
             雙語(
               `解鎖失敗：${unlockResult.reason ?? "成員已初始化"}`,
@@ -535,6 +546,7 @@ function 雕像面板(): HTMLElement {
         背包.花費材料(commonUnlock.no, 3);
         背包.花費材料(fineUnlock.no, 1);
         背包.花費碎片(m.family, 10);
+        播放音效("雕像解鎖");
         alert(
           雙語(
             `🗿 儀式完成！[${成員顯示名(m.no)}] 雕像破繭而化為純白光芒！\n小隊已成功解鎖該角色 (0 ➔ 1★)！`,
@@ -648,6 +660,7 @@ function 商店面板(): HTMLElement {
       const result = buyPotion(potionId, 背包.取原石());
 
       if (!result.ok) {
+        播放音效("交易失敗");
         alert(
           雙語(
             `購買失敗！${result.reason ?? "原石不足"}。\n當前僅有 ${背包.取原石()} 原石。`,
@@ -659,6 +672,7 @@ function 商店面板(): HTMLElement {
 
       背包.花費原石(result.gemsSpent);
       背包.加入藥水(potionId, 1);
+      播放音效("交易成功");
       alert(
         雙語(
           `🛒 購買成功！\n花費 ${result.gemsSpent} 原石，獲得 1 個 [${name}]。`,
@@ -705,6 +719,7 @@ function 商店面板(): HTMLElement {
         }
         if (!背包.花費材料(m.no, 1)) return;
         背包.加入原石(price);
+        播放音效("交易成功");
         alert(
           雙語(
             `💰 出售成功！\n將 1 個 [${材料顯示名(m.no)}] 出售，換得 ${price} 原石。`,
@@ -817,6 +832,7 @@ function 召喚面板(): HTMLElement {
     btn.addEventListener("click", (e) => {
       const w = (e.currentTarget as HTMLElement).dataset.world as World;
       if (!online || !可召喚守護者(w, "formal")) return;
+      播放音效("祭壇召喚");
       標記守護者已召喚(w, "formal");
       排入Boss召喚({ kind: "guardian", world: w });
       應用程式狀態.返回戰場();
@@ -825,6 +841,7 @@ function 召喚面板(): HTMLElement {
 
   container.querySelector(".最終召喚")!.addEventListener("click", () => {
     if (!online || !可召喚COLA("formal")) return;
+    播放音效("祭壇召喚");
     標記COLA已召喚("formal");
     排入Boss召喚({ kind: "cola" });
     應用程式狀態.返回戰場();

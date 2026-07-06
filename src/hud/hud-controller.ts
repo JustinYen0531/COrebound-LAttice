@@ -27,6 +27,7 @@ import { FormationRings } from "./formation-rings";
 import { WeaponDrawer } from "./weapon-drawer";
 import { ItemDrawer } from "./item-drawer";
 import { MemberStatusRow } from "./member-status-row";
+import { 播放音效 } from "../audio/音效管理";
 
 /**
  * 整個戰鬥 HUD 的根容器。
@@ -174,6 +175,10 @@ export class HudController {
 
   /** 狀態轉移副作用 */
   private onTransition(prev: HudState, next: HudState): void {
+    // HUD 音效：停留提示 / 左右抽屜展開（收回不出聲，避免自動收回時洗版）。
+    if (next === "hover_hint") 播放音效("HUD提示");
+    if (next === "left_open" && prev !== "left_open") 播放音效("左抽屜");
+    if (next === "right_open" && prev !== "right_open") 播放音效("右抽屜");
     // 進入/離開展開狀態 → 更新圓圈展開數
     if (next === "idle" || next === "hover_hint") {
       // 離開展開 → 收回圓圈

@@ -103,7 +103,9 @@ export const MAP_BOUNDS = {
 };
 
 export const PLAZA_RADIUS = 520;
-export const NEAR_RADIUS = 70;
+// 互動判定半徑：設為建築碰撞footprint(150)的 1.5 倍。建築會把玩家擋在
+// footprint 邊界(距中心 150)外，互動半徑需大於它，玩家「碰到」建築即可互動。
+export const NEAR_RADIUS = 225;
 
 const WORLD_HALF_SIZE = MAP_BOUNDS.maxX;
 const OBJECT_MIN_DISTANCE = 420;

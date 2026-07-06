@@ -130,6 +130,7 @@ import {
 import { 取出Boss召喚 } from "../Boss召喚佇列";
 import { currentSafeRadius } from "../../world/網格侵蝕";
 import { 更新戰場音樂情境 } from "../../audio/音樂管理";
+import { 播放音效 } from "../../audio/音效管理";
 
 function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
@@ -934,9 +935,11 @@ export function 建立世界地圖層(): HTMLElement {
 
   function 處理寶箱結果(chest: WorldChestInstance, result: ChestOpenResult): void {
     if (!result.ok || !result.drop) {
+      播放音效("交易失敗");
       顯示技能提示(result.reason ?? "無法開啟寶箱");
       return;
     }
+    播放音效("寶箱開啟");
     const drop = result.drop;
     for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count);
     背包.加入原石(drop.gems);
@@ -991,6 +994,7 @@ export function 建立世界地圖層(): HTMLElement {
     }
     const picked = 拾取死亡遺落物(drop.id);
     if (!picked) return;
+    播放音效("撿取重要");
     背包.取回遺落材料(picked.materials);
     const count = picked.materials.reduce((sum, item) => sum + item.count, 0);
     syncDeathDrops();
@@ -1001,6 +1005,7 @@ export function 建立世界地圖層(): HTMLElement {
     if (Math.hypot(drop.x - playerPos.x, drop.y - playerPos.y) > 190) return false;
     const picked = 拾取資源掉落物(drop.id);
     if (!picked) return false;
+    播放音效("撿取");
     for (const material of picked.materials) 背包.加入材料(material.no, material.count);
     if (picked.gems > 0) 背包.加入原石(picked.gems);
     記錄對局掉落(picked.gems, picked.materials.reduce((sum, item) => sum + item.count, 0));
@@ -1155,6 +1160,7 @@ export function 建立世界地圖層(): HTMLElement {
     const summary = 取得正式小隊摘要();
     const dmg = summary.playerMaxHp * EROSION_DAMAGE_RATIO_PER_TICK * dt;
     if (dmg > 0) {
+      播放音效("縮圈灼傷"); // 模組內建 0.9s 節流，持續掉血時形成脈動壓力
       const applied = Math.min(summary.playerHp, dmg);
       手動設定正式玩家生命(summary.playerHp - applied);
       記錄對局傷害(0, applied);
@@ -1166,6 +1172,7 @@ export function 建立世界地圖層(): HTMLElement {
    * 保留真實 T3/T4，讓尺寸、碰撞與立繪都能表達 Boss 階級。
    */
   function 生成Boss到場(def: MonsterDef, bossKind: "guardian" | "cola", bossWorld?: World): void {
+    播放音效("Boss登場");
     const angle = Math.random() * Math.PI * 2;
     const dist = def.tier === 4 ? 1500 : 980;
     const spawnX = Math.max(activePlayableBounds.minX, Math.min(activePlayableBounds.maxX, playerPos.x + Math.cos(angle) * dist));
@@ -1639,6 +1646,7 @@ export function 建立世界地圖層(): HTMLElement {
       projectilePool.remove(hit.projectile.id);
     }
     if (玩家承傷 > 0) {
+      播放音效("受擊");
       const appliedDamage = Math.min(summary.playerHp, 玩家承傷);
       設當前玩家生命(summary.playerHp - appliedDamage);
       if (!訓練道場中) 記錄對局傷害(0, appliedDamage);
@@ -1674,6 +1682,7 @@ export function 建立世界地圖層(): HTMLElement {
 
   function 處理正式陣亡(): void {
     if (訓練道場中 || !正式玩家已陣亡()) return;
+    播放音效("死亡復活"); // 內含「全隊倒下 → 中央廣場復活」完整聲音序列
     const deathPosition = { ...playerPos };
     const penalty = 背包.套用死亡懲罰();
     新增死亡遺落物(deathPosition.x, deathPosition.y, penalty.遺落材料);
@@ -1817,6 +1826,7 @@ export function 建立世界地圖層(): HTMLElement {
       collisionTickCarry += dt;
       發送戰鬥Tick進度(collisionTickCarry / TICK_SECONDS);
       while (collisionTickCarry >= TICK_SECONDS) {
+        播放音效("碰撞命中");
         let squadDamageTaken = 0;
         let enemyWeight = 0;
         for (const { monster, touchedLayers } of contacts) {
@@ -1881,6 +1891,7 @@ export function 建立世界地圖層(): HTMLElement {
     collisionTickCarry += dt;
     發送戰鬥Tick進度(collisionTickCarry / TICK_SECONDS);
     while (collisionTickCarry >= TICK_SECONDS) {
+      播放音效("碰撞命中");
       // 接觸期間，玩家每 Tick 承受所有接觸怪物的 ATK 加總（§1.3）。
       let squadDamageTaken = 0;
       for (const { monster, touchedLayers } of contacts) {
@@ -2075,6 +2086,8 @@ export function 建立世界地圖層(): HTMLElement {
       if (!event.repeat && !訓練道場中) {
         const nearbyPickup = 拾取附近所有資源();
         if (nearbyPickup.materials > 0 || nearbyPickup.gems > 0) {
+          // 一般撿取聲由 嘗試拾取資源掉落 逐堆發出；這裡只補死亡遺落回收的重要撿取聲。
+          if (nearbyPickup.deathPiles > 0) 播放音效("撿取重要");
           顯示技能提示(`已拾取附近資源｜材料 ${nearbyPickup.materials}｜原石 ${nearbyPickup.gems}`);
           return;
         }

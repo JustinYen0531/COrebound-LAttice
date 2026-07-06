@@ -39,53 +39,98 @@ type 折皺層設定 = {
   opacity: number;
   scale: number;
   rotationOffset: number;
-  blendMode: string;
 };
 
 const 折皺層列表: 折皺層設定[] = [
-  { sizeBase: 300, sizeRange: 120, offsetRange: 150, opacity: 0.78, scale: 1.72, rotationOffset: 0, blendMode: "multiply" },
-  { sizeBase: 210, sizeRange: 90, offsetRange: 110, opacity: 0.62, scale: 1.84, rotationOffset: 67, blendMode: "multiply" },
-  { sizeBase: 148, sizeRange: 72, offsetRange: 72, opacity: 0.46, scale: 1.96, rotationOffset: 131, blendMode: "darken" },
-  { sizeBase: 104, sizeRange: 56, offsetRange: 42, opacity: 0.3, scale: 2.08, rotationOffset: 211, blendMode: "darken" },
+  { sizeBase: 300, sizeRange: 120, offsetRange: 150, opacity: 0.78, scale: 1.72, rotationOffset: 0 },
+  { sizeBase: 210, sizeRange: 90, offsetRange: 110, opacity: 0.62, scale: 1.84, rotationOffset: 67 },
+  { sizeBase: 148, sizeRange: 72, offsetRange: 72, opacity: 0.46, scale: 1.96, rotationOffset: 131 },
+  { sizeBase: 104, sizeRange: 56, offsetRange: 42, opacity: 0.3, scale: 2.08, rotationOffset: 211 },
 ];
 
-function 確保折皺濾鏡(defs: SVGDefsElement): string {
-  const filterId = "world-tile-wrinkle-contrast";
-  if (defs.querySelector(`#${filterId}`)) return filterId;
+// ── 折皺對比預烘焙 ───────────────────────────────────────────────
+// 舊版在每一片折皺覆層 path 上掛 SVG 濾鏡（去彩度＋對比拉高＋alpha gamma）
+// 再用 mix-blend-mode 疊到磁磚上。全地圖近 3600 片覆層 = 近 3600 個獨立的
+// 濾鏡＋混色表面，瀏覽器每次重繪都得逐一重算，實測是高細節/中細節模式
+// 地圖與物件閃爍、掉幀的最大元凶。
+// 這裡改成：載入折皺圖後用 canvas 做一次等效的像素運算（SVG 濾鏡預設在
+// linearRGB 色彩空間運作，所以先轉線性、算完再轉回 sRGB），並且把混色也
+// 一併烘進圖裡——濾鏡後的折皺是灰階圖，灰度 g 的 multiply 疊色在不透明
+// 底上等價於「黑色、alpha = α×(1−g) 的普通疊圖」，因此輸出一張黑色陰影圖，
+// 覆層直接用普通繪製即可，完全不需要執行期濾鏡與 mix-blend-mode。
 
-  const filter = document.createElementNS(SVG_NS, "filter");
-  filter.setAttribute("id", filterId);
-  filter.setAttribute("x", "-20%");
-  filter.setAttribute("y", "-20%");
-  filter.setAttribute("width", "140%");
-  filter.setAttribute("height", "140%");
+function srgb轉線性(value: number): number {
+  const v = value / 255;
+  return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+}
 
-  const desaturate = document.createElementNS(SVG_NS, "feColorMatrix");
-  desaturate.setAttribute("type", "saturate");
-  desaturate.setAttribute("values", "0");
-  filter.appendChild(desaturate);
+function 線性轉srgb(value: number): number {
+  const v = value <= 0.0031308 ? value * 12.92 : 1.055 * Math.pow(value, 1 / 2.4) - 0.055;
+  return Math.max(0, Math.min(255, Math.round(v * 255)));
+}
 
-  const contrast = document.createElementNS(SVG_NS, "feComponentTransfer");
-  const alpha = document.createElementNS(SVG_NS, "feFuncA");
-  alpha.setAttribute("type", "gamma");
-  alpha.setAttribute("amplitude", "1.22");
-  alpha.setAttribute("exponent", "0.88");
-  alpha.setAttribute("offset", "0");
-  contrast.appendChild(alpha);
-
-  const channelSlope = "1.24";
-  const channelOffset = "-0.08";
-  ["R", "G", "B"].forEach((channel) => {
-    const fn = document.createElementNS(SVG_NS, `feFunc${channel}`);
-    fn.setAttribute("type", "linear");
-    fn.setAttribute("slope", channelSlope);
-    fn.setAttribute("intercept", channelOffset);
-    contrast.appendChild(fn);
+function 載入圖片(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`載入折皺圖失敗：${url}`));
+    image.src = url;
   });
+}
 
-  filter.appendChild(contrast);
-  defs.appendChild(filter);
-  return filterId;
+async function 烘焙折皺對比(url: string): Promise<string> {
+  const image = await 載入圖片(url);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("無法建立 2d canvas");
+  context.drawImage(image, 0, 0);
+  const data = context.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = data.data;
+  for (let index = 0; index < pixels.length; index += 4) {
+    // feColorMatrix saturate=0：linearRGB 亮度加權去彩度。
+    const gray =
+      0.2126 * srgb轉線性(pixels[index]) +
+      0.7152 * srgb轉線性(pixels[index + 1]) +
+      0.0722 * srgb轉線性(pixels[index + 2]);
+    // feComponentTransfer linear：slope 1.24、intercept -0.08（RGB 同值）。
+    const boosted = Math.max(0, Math.min(1, gray * 1.24 - 0.08));
+    const channel = 線性轉srgb(boosted);
+    // feFuncA gamma：amplitude 1.22、exponent 0.88、offset 0。
+    const alpha = Math.min(1, 1.22 * Math.pow(pixels[index + 3] / 255, 0.88));
+    // multiply 疊色等價轉換：黑色 + alpha×(1−g)。darken 層以同式近似
+    //（folds 多為深色、覆層不透明度低，視覺差異可忽略）。
+    pixels[index] = 0;
+    pixels[index + 1] = 0;
+    pixels[index + 2] = 0;
+    pixels[index + 3] = Math.max(0, Math.min(255, Math.round(alpha * (1 - channel / 255) * 255)));
+  }
+  context.putImageData(data, 0, 0);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("烘焙折皺圖輸出失敗");
+  return URL.createObjectURL(blob);
+}
+
+const 烘焙後折皺網址: Partial<Record<World, string>> = {};
+let 烘焙完成 = false;
+const 待處理磁磚: SVGPathElement[] = [];
+
+async function 預先烘焙全部折皺圖(): Promise<void> {
+  await Promise.all(
+    (Object.keys(世界折皺) as World[]).map(async (world) => {
+      try {
+        烘焙後折皺網址[world] = await 烘焙折皺對比(世界折皺[world]);
+      } catch {
+        // 烘焙失敗（例如圖檔缺失）就退回原圖：材質對比較淡，但不影響遊玩，
+        // 也絕不退回逐覆層濾鏡的舊路（那正是效能問題來源）。
+        烘焙後折皺網址[world] = 世界折皺[world];
+      }
+    }),
+  );
+  烘焙完成 = true;
+  const queued = 待處理磁磚.splice(0);
+  queued.forEach(建立折皺覆層);
 }
 
 function 建立折皺圖樣(
@@ -113,7 +158,7 @@ function 建立折皺圖樣(
   pattern.setAttribute("patternTransform", `rotate(${rotation})`);
 
   const image = document.createElementNS(SVG_NS, "image");
-  image.setAttribute("href", 世界折皺[world]);
+  image.setAttribute("href", 烘焙後折皺網址[world] ?? 世界折皺[world]);
   image.setAttribute("x", String(-size * 0.24));
   image.setAttribute("y", String(-size * 0.24));
   image.setAttribute("width", String(size * config.scale));
@@ -124,8 +169,9 @@ function 建立折皺圖樣(
   return patternId;
 }
 
-function 建立折皺覆層(tile: SVGPathElement, index: number): void {
+function 建立折皺覆層(tile: SVGPathElement, _index?: number): void {
   if (tile.dataset.wrinkleApplied === "true") return;
+  if (!tile.isConnected) return;
   const world = 取得磁磚世界(tile);
   const svg = tile.ownerSVGElement;
   if (!world || !svg) return;
@@ -136,11 +182,10 @@ function 建立折皺覆層(tile: SVGPathElement, index: number): void {
     svg.prepend(defs);
   }
 
-  const pathData = tile.getAttribute("d") ?? `${world}-${index}`;
+  const pathData = tile.getAttribute("d") ?? world;
   const hash = 穩定雜湊(pathData);
-  const filterId = 確保折皺濾鏡(defs);
   const overlays = 折皺層列表.map((config, layerIndex) => {
-    const patternId = 建立折皺圖樣(defs, world, hash, index, layerIndex, config);
+    const patternId = 建立折皺圖樣(defs!, world, hash, 0, layerIndex, config);
     const overlay = tile.cloneNode(false) as SVGPathElement;
     overlay.removeAttribute("class");
     overlay.removeAttribute("style");
@@ -148,8 +193,9 @@ function 建立折皺覆層(tile: SVGPathElement, index: number): void {
     overlay.setAttribute("fill", `url(#${patternId})`);
     overlay.setAttribute("fill-opacity", String(config.opacity));
     overlay.setAttribute("stroke", "none");
-    overlay.setAttribute("filter", `url(#${filterId})`);
-    overlay.setAttribute("style", `mix-blend-mode:${config.blendMode};pointer-events:none`);
+    // 混色效果已烘進黑色陰影圖（見上方說明），這裡用普通繪製即可；
+    // 逐覆層 mix-blend-mode 會讓瀏覽器無法快取地圖圖層，是閃爍主因之一。
+    overlay.setAttribute("style", "pointer-events:none");
     overlay.dataset.wrinkleOverlay = "true";
     return overlay;
   });
@@ -161,10 +207,12 @@ function 掃描世界磁磚(root: ParentNode): void {
   const tiles: SVGPathElement[] = [];
   if (root instanceof SVGPathElement && root.matches(世界磁磚選擇器)) tiles.push(root);
   root.querySelectorAll<SVGPathElement>(世界磁磚選擇器).forEach((tile) => tiles.push(tile));
-  tiles.forEach(建立折皺覆層);
+  if (烘焙完成) tiles.forEach(建立折皺覆層);
+  else 待處理磁磚.push(...tiles);
 }
 
 export function 啟用世界瓷磚折皺(): void {
+  void 預先烘焙全部折皺圖();
   掃描世界磁磚(document);
   const observer = new MutationObserver((records) => {
     for (const record of records) {

@@ -55,8 +55,11 @@ const 監聽者 = new Set<() => void>();
 function 讀取初始音量(): number {
   try {
     const raw = window.localStorage.getItem(VOLUME_STORAGE_KEY);
-    const parsed = Number(raw);
-    if (Number.isFinite(parsed)) return Math.max(0, Math.min(1, parsed));
+    // Number(null) === 0：缺鍵要先擋掉，否則首次遊玩音樂音量會被誤判為 0（無聲）。
+    if (raw !== null) {
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed)) return Math.max(0, Math.min(1, parsed));
+    }
   } catch {
     // ignore
   }

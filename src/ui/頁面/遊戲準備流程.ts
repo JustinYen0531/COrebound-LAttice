@@ -17,6 +17,43 @@ function 雙語(中文: string, 英文: string): string {
   return 選文(應用程式狀態.額外.語言, 中文, 英文);
 }
 
+function 成員顯示名(member: (typeof MEMBERS)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? member.nameZh : member.nameEn;
+}
+
+function 隊長顯示名(隊長: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? 隊長.名稱 : 隊長.名稱英;
+}
+
+function 隊長代號(隊長: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? 隊長.代號 : 隊長.代號英;
+}
+
+function 隊長一句話(隊長: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? 隊長.一句話設計 : 隊長.一句話設計英;
+}
+
+function 隊長控制效果(隊長: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? 隊長.控制效果 : 隊長.控制效果英;
+}
+
+function 隊長主動技能(隊長: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? 隊長.主動位移技能 : 隊長.主動位移技能英;
+}
+
+function 隊長週期技能(隊長: (typeof 隊長清單)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? 隊長.週期技能 : 隊長.週期技能英;
+}
+
+function 世界顯示名(world: string): string {
+  return {
+    geometry: 雙語("幾何世界", "Geometry"),
+    organic: 雙語("有機世界", "Organic"),
+    fractal: 雙語("分形世界", "Fractal"),
+    mechanical: 雙語("機械世界", "Mechanical"),
+  }[world] ?? world;
+}
+
 const 隊長立繪來源: Record<string, string> = {
   conductor: "/assets/transparent-portraits/captains/conductor_form1.png",
   operator: "/assets/transparent-portraits/captains/operator_form1.png",
@@ -63,8 +100,8 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
     隊長立繪.style.setProperty("--角色色", 隊長.代表色);
     隊長立繪.innerHTML = `
       <div class="準備流程-立繪角色標籤">${雙語("隊長", "Captain")}</div>
-      <div class="準備流程-隊長立繪裁切"><img src="${隊長立繪來源[隊長.id]}" alt="${隊長.名稱}" /></div>
-      <div class="準備流程-立繪名稱"><strong>${隊長.名稱}</strong><span>${隊長.代號}</span></div>
+      <div class="準備流程-隊長立繪裁切"><img src="${隊長立繪來源[隊長.id]}" alt="${隊長顯示名(隊長)}" /></div>
+      <div class="準備流程-立繪名稱"><strong>${隊長顯示名(隊長)}</strong><span>${隊長代號(隊長)}</span></div>
     `;
     隊伍立繪.appendChild(隊長立繪);
 
@@ -80,8 +117,8 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
       立繪卡.className = `準備流程-立繪卡 準備流程-立繪卡--${entry.layer}`;
       立繪卡.innerHTML = `
         <div class="準備流程-立繪角色標籤">${層級標籤[entry.layer]}</div>
-        <img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${member.nameZh}" />
-        <div class="準備流程-立繪名稱"><strong>${member.nameZh}</strong><span>${member.nameEn}</span></div>
+        <img src="/assets/transparent-portraits/members/${member.id}_s1.png" alt="${成員顯示名(member)}" />
+        <div class="準備流程-立繪名稱"><strong>${成員顯示名(member)}</strong><span>${member.nameEn}</span></div>
       `;
       隊伍立繪.appendChild(立繪卡);
     });
@@ -90,12 +127,12 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
     const 說明 = document.createElement("div");
     說明.className = "隊長說明卡";
     說明.innerHTML = `
-      <h4>${隊長.名稱}　<span class="淡字">${隊長.代號}</span></h4>
-      <p>${隊長.一句話設計}</p>
+      <h4>${隊長顯示名(隊長)}　<span class="淡字">${隊長代號(隊長)}</span></h4>
+      <p>${隊長一句話(隊長)}</p>
       <ul>
-        <li>${雙語("控制效果", "Control Effect")}: ${隊長.控制效果}</li>
-        <li>${雙語("主動位移技能", "Active Mobility Skill")}: ${隊長.主動位移技能}</li>
-        <li>${雙語("週期技能", "Periodic Skill")}: ${隊長.週期技能}</li>
+        <li>${雙語("控制效果", "Control Effect")}: ${隊長控制效果(隊長)}</li>
+        <li>${雙語("主動位移技能", "Active Mobility Skill")}: ${隊長主動技能(隊長)}</li>
+        <li>${雙語("週期技能", "Periodic Skill")}: ${隊長週期技能(隊長)}</li>
       </ul>
     `;
     預覽容器.appendChild(說明);
@@ -105,7 +142,7 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
     const btn = document.createElement("button");
     btn.className = "隊長卡片";
     btn.style.setProperty("--隊長色", 隊長.代表色);
-    btn.innerHTML = `<strong>${隊長.名稱}</strong><span>${隊長.代號}</span>`;
+    btn.innerHTML = `<strong>${隊長顯示名(隊長)}</strong><span>${隊長代號(隊長)}</span>`;
     btn.classList.toggle("作用中", 隊長.id === 選中隊長id);
     btn.onclick = () => {
       選中隊長id = 隊長.id;
@@ -147,7 +184,7 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
       const member = MEMBERS.find((entry) => entry.no === current.memberNo);
       const 卡片 = document.createElement("label");
       卡片.className = `準備流程-選角卡 準備流程-選角卡--${layer}`;
-      卡片.innerHTML = `<div class="準備流程-選角卡標題"><span>${層級標籤[layer]}</span><strong>${member?.nameZh ?? ""}</strong></div>`;
+      卡片.innerHTML = `<div class="準備流程-選角卡標題"><span>${層級標籤[layer]}</span><strong>${member ? 成員顯示名(member) : ""}</strong></div>`;
 
       const 下拉 = document.createElement("select");
       下拉.className = "二級按鈕";
@@ -155,7 +192,7 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
         const option = document.createElement("option");
         option.value = String(candidate.no);
         option.selected = candidate.no === current.memberNo;
-        option.textContent = `${String(candidate.no).padStart(2, "0")}. ${candidate.nameZh} (${candidate.nameEn})`;
+        option.textContent = `${String(candidate.no).padStart(2, "0")}. ${成員顯示名(candidate)}`;
         下拉.appendChild(option);
       });
       下拉.onchange = () => {
@@ -166,7 +203,7 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
 
       const 補充 = document.createElement("div");
       補充.className = "準備流程-選角補充";
-      補充.textContent = member ? `${member.nameEn} ｜ ${雙語("世界", "World")}: ${member.world}` : "";
+      補充.textContent = member ? `${member.nameEn} | ${雙語("世界", "World")}: ${世界顯示名(member.world)}` : "";
       卡片.appendChild(補充);
       選擇列.appendChild(卡片);
     });

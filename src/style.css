@@ -332,18 +332,28 @@ button.禁用:hover {
 
 /* ---------- 主畫面 ---------- */
 .主畫面-root {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
   display: flex;
   flex-direction: column;
   gap: 28px;
-  padding-top: 0;
+  width: 100vw;
+  min-height: 100vh;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #04070d;
 }
 .主畫面-封面區 {
   position: relative;
+  width: 100vw;
   min-height: 100vh;
-  margin: -32px -32px 0;
+  margin: 0;
 }
 .主畫面-世界展示 {
   position: relative;
+  width: 100vw;
   min-height: 100vh;
 }
 .主畫面-進度摘要 {
@@ -370,32 +380,191 @@ button.禁用:hover {
   display: grid;
   justify-items: center;
   gap: 12px;
+  width: min(94vw, 1120px);
   transform: translate(-50%, -50%);
   transition: top 0.45s ease, transform 0.45s ease;
 }
 .主畫面-標題.選單展開,
 .主畫面-已進場 .主畫面-標題 {
-  top: 28px;
+  top: 30px;
   transform: translateX(-50%);
 }
 .主畫面-標題按鈕 {
+  position: relative;
+  z-index: 2;
   display: grid;
   justify-items: center;
-  gap: 10px;
+  gap: 2px;
   padding: 0;
   background: transparent;
   border: none;
   box-shadow: none;
+  outline: none;
+  appearance: none;
+  clip-path: none;
+}
+.主畫面-標題按鈕:hover,
+.主畫面-標題按鈕:focus,
+.主畫面-標題按鈕:focus-visible,
+.主畫面-標題按鈕:active {
+  transform: none;
+  color: inherit;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+  clip-path: none;
+}
+.主畫面-標題按鈕::before,
+.主畫面-標題按鈕::after,
+.主畫面-標題按鈕:hover::before,
+.主畫面-標題按鈕:hover::after,
+.主畫面-標題按鈕:focus-visible::before,
+.主畫面-標題按鈕:focus-visible::after {
+  content: none !important;
+  display: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+/* 天空繁星：20 名角色三星立繪散佈上半天空，各自呼吸閃爍。
+   整層在進場時以 0.5s 淡入出現（主畫面繁星淡入），星星本身則無限期
+   在 半透明↔不透明 之間呼吸；每顆的週期/相位不同，形成互補的明滅。 */
+.主畫面-繁星群 {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  overflow: visible;
+  animation: 主畫面繁星淡入 0.5s ease both;
+}
+.主畫面-繁星 {
+  position: absolute;
+  width: var(--繁星尺寸, 72px);
+  height: auto;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+  opacity: var(--繁星最小, 0.14);
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.34)) brightness(1.05);
+  animation: 主畫面繁星閃爍 var(--繁星週期, 5s) ease-in-out var(--繁星延遲, 0s) infinite;
+  will-change: opacity, transform;
+}
+@keyframes 主畫面繁星淡入 {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes 主畫面繁星閃爍 {
+  0%,
+  100% {
+    opacity: var(--繁星最小, 0.14);
+    transform: translate(-50%, -50%) scale(0.965);
+  }
+  50% {
+    opacity: var(--繁星最大, 0.62);
+    transform: translate(-50%, -50%) scale(1.035);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .主畫面-繁星 {
+    animation: none;
+    opacity: calc((var(--繁星最小, 0.14) + var(--繁星最大, 0.62)) / 2);
+  }
+}
+.主畫面-世界Buff群 {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  overflow: visible;
+}
+.主畫面-世界Buff {
+  position: absolute;
+  width: clamp(140px, 15vw, 230px);
+  height: auto;
+  object-fit: contain;
+  opacity: 0.82;
+  filter:
+    drop-shadow(0 20px 24px rgba(0, 0, 0, 0.38))
+    brightness(1.02);
+  animation: 主畫面Buff懸浮 5.8s ease-in-out infinite;
+  transition:
+    transform 0.72s ease,
+    opacity 0.5s ease;
+}
+.主畫面-世界Buff--幾何 {
+  left: 18%;
+  top: 5%;
+  animation-delay: -0.6s;
+}
+.主畫面-世界Buff--有機 {
+  left: 6%;
+  top: 33%;
+  animation-delay: -2.1s;
+}
+.主畫面-世界Buff--分形 {
+  right: 18%;
+  top: 5%;
+  animation-delay: -1.4s;
+}
+.主畫面-世界Buff--機械 {
+  right: 6%;
+  top: 33%;
+  animation-delay: -3.2s;
+}
+.主畫面-隊長群 {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  overflow: visible;
+}
+.主畫面-隊長立繪 {
+  position: absolute;
+  width: clamp(116px, 12vw, 176px);
+  height: auto;
+  object-fit: contain;
+  object-position: center bottom;
+  opacity: 0.92;
+  filter:
+    drop-shadow(0 18px 20px rgba(0, 0, 0, 0.34))
+    brightness(1.04);
+  transform: translateX(-50%);
+  transform-origin: center bottom;
+  animation: 主畫面隊長站立呼吸 5.2s ease-in-out infinite;
+}
+.主畫面-隊長立繪--左外 {
+  left: 12%;
+  bottom: 10%;
+  animation-delay: -0.4s;
+}
+.主畫面-隊長立繪--左內 {
+  left: 28%;
+  bottom: 10.5%;
+  animation-delay: -1.8s;
+}
+.主畫面-隊長立繪--右內 {
+  left: 72%;
+  bottom: 10.5%;
+  animation-delay: -2.6s;
+}
+.主畫面-隊長立繪--右外 {
+  left: 88%;
+  bottom: 10%;
+  animation-delay: -3.4s;
 }
 .主畫面-Logo圖 {
-  width: min(78vw, 980px);
-  max-height: 56vh;
+  width: min(76vw, 900px);
+  max-height: 46vh;
   object-fit: contain;
   display: block;
   filter:
     drop-shadow(0 26px 36px rgba(0, 0, 0, 0.34))
     brightness(0.92);
-  opacity: 0.94;
+  opacity: 0.7;
   transition: transform 0.25s ease, filter 0.25s ease, opacity 0.25s ease;
   transform-origin: center center;
   animation: 主畫面Logo呼吸 4.8s ease-in-out infinite;
@@ -404,10 +573,49 @@ button.禁用:hover {
 .主畫面-已進場 .主畫面-Logo圖 {
   animation: none;
 }
+.主畫面-選單展開 .主畫面-世界Buff,
+.主畫面-已進場 .主畫面-世界Buff,
+.主畫面-選單展開 .主畫面-隊長立繪,
+.主畫面-已進場 .主畫面-隊長立繪 {
+  animation: none;
+  opacity: 0;
+}
+.主畫面-選單展開 .主畫面-世界Buff--幾何,
+.主畫面-已進場 .主畫面-世界Buff--幾何 {
+  transform: translate(-68vw, -48vh) rotate(-18deg);
+}
+.主畫面-選單展開 .主畫面-世界Buff--有機,
+.主畫面-已進場 .主畫面-世界Buff--有機 {
+  transform: translate(-72vw, 24vh) rotate(-12deg);
+}
+.主畫面-選單展開 .主畫面-世界Buff--分形,
+.主畫面-已進場 .主畫面-世界Buff--分形 {
+  transform: translate(68vw, -48vh) rotate(18deg);
+}
+.主畫面-選單展開 .主畫面-世界Buff--機械,
+.主畫面-已進場 .主畫面-世界Buff--機械 {
+  transform: translate(72vw, 24vh) rotate(12deg);
+}
+.主畫面-選單展開 .主畫面-隊長立繪--左外,
+.主畫面-已進場 .主畫面-隊長立繪--左外 {
+  transform: translateX(-50%) translate(-40vw, 18vh) rotate(-10deg);
+}
+.主畫面-選單展開 .主畫面-隊長立繪--左內,
+.主畫面-已進場 .主畫面-隊長立繪--左內 {
+  transform: translateX(-50%) translate(-30vw, 22vh) rotate(-8deg);
+}
+.主畫面-選單展開 .主畫面-隊長立繪--右內,
+.主畫面-已進場 .主畫面-隊長立繪--右內 {
+  transform: translateX(-50%) translate(30vw, 22vh) rotate(8deg);
+}
+.主畫面-選單展開 .主畫面-隊長立繪--右外,
+.主畫面-已進場 .主畫面-隊長立繪--右外 {
+  transform: translateX(-50%) translate(40vw, 18vh) rotate(10deg);
+}
 .主畫面-標題按鈕:hover .主畫面-Logo圖,
 .主畫面-標題按鈕:focus-visible .主畫面-Logo圖 {
   transform: translateY(-4px) scale(1.018);
-  opacity: 1;
+  opacity: 0.7;
   filter:
     drop-shadow(0 30px 46px rgba(0, 0, 0, 0.42))
     drop-shadow(0 0 24px rgba(255, 239, 196, 0.22))
@@ -417,14 +625,42 @@ button.禁用:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 9px 14px;
+  gap: 16px;
+  min-width: min(500px, calc(100vw - 48px));
+  padding: 8px 16px;
+  color: #fff6dc;
+  font-size: 1.28rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow: visible;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  clip-path: none;
+  backdrop-filter: none;
+  text-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.86),
+    0 0 18px rgba(255, 238, 190, 0.32);
+  box-shadow: none;
+  opacity: 0.64;
+  animation: 主畫面CTA呼吸 2.8s ease-in-out infinite;
+}
+.主畫面-標題副文::before,
+.主畫面-標題副文::after {
+  content: "";
+  width: clamp(34px, 7vw, 96px);
+  height: 3px;
   border-radius: 999px;
-  color: rgba(247, 243, 234, 0.92);
-  font-size: 0.92rem;
-  letter-spacing: 0.04em;
-  background: rgba(8, 10, 16, 0.48);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(8px);
+  background: currentColor;
+  box-shadow: 0 0 12px rgba(255, 238, 190, 0.32);
+}
+.主畫面-標題.選單展開 .主畫面-標題副文,
+.主畫面-已進場 .主畫面-標題副文 {
+  animation: none;
+  opacity: 0.86;
 }
 @keyframes 主畫面Logo呼吸 {
   0%,
@@ -441,51 +677,162 @@ button.禁用:hover {
       brightness(0.98);
   }
 }
+@keyframes 主畫面CTA呼吸 {
+  0%,
+  100% {
+    opacity: 0.58;
+    filter: brightness(0.96);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.14);
+  }
+}
+@keyframes 主畫面Buff懸浮 {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-13px) rotate(1.5deg);
+  }
+}
+@keyframes 主畫面隊長站立呼吸 {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5px) scale(1.012);
+  }
+}
 .主畫面-下拉選單 {
   display: none;
-  width: min(360px, calc(100vw - 32px));
-  padding: 14px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background:
-    linear-gradient(180deg, rgba(11, 12, 18, 0.92), rgba(11, 12, 18, 0.74)),
-    rgba(9, 10, 14, 0.82);
-  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(12px);
+  position: relative;
+  width: min(390px, calc(100vw - 32px));
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  transition: width 0.38s ease;
 }
 .主畫面-標題.選單展開 .主畫面-下拉選單 {
   display: block;
 }
+.主畫面-下拉選單.有子選單 {
+  width: min(800px, calc(100vw - 32px));
+}
 .主畫面-下拉按鈕列 {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 11px;
+  align-items: center;
+  width: min(390px, calc(100vw - 32px));
+  margin: 0 auto;
+  transition: transform 0.38s cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+.主畫面-下拉選單.有子選單 .主畫面-下拉按鈕列 {
+  transform: translateX(-205px);
+}
+.主畫面-Play子選單 {
+  position: absolute;
+  left: calc(50% + 22px);
+  top: 8px;
+  z-index: 2;
+  display: grid;
+  gap: 14px;
+  width: min(300px, calc(100vw - 48px));
+  padding-top: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(46px) scale(0.94);
+  transform-origin: left top;
+  transition:
+    opacity 0.26s ease,
+    transform 0.38s cubic-bezier(0.18, 0.88, 0.3, 1.18);
+}
+.主畫面-下拉選單.有子選單 .主畫面-Play子選單 {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0) scale(1);
+}
+.主畫面-子選項按鈕 {
+  min-height: 62px;
+  padding: 15px 22px;
+  color: #201407;
+  font-size: 1.05rem;
+  font-weight: 900;
+  text-align: center;
+  border: 1px solid rgba(88, 57, 24, 0.34);
+  border-radius: 9px 6px 10px 7px / 7px 11px 6px 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 242, 0.98), rgba(235, 215, 175, 0.96)),
+    #f0d9a8;
+  clip-path: polygon(2% 8%, 17% 3%, 40% 6%, 65% 2%, 92% 7%, 99% 18%, 97% 88%, 82% 96%, 55% 93%, 31% 98%, 8% 91%, 0 76%);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+.主畫面-子選項按鈕:nth-child(1) {
+  transform: rotate(1.1deg);
+}
+.主畫面-子選項按鈕:nth-child(2) {
+  transform: rotate(-1.2deg);
+}
+.主畫面-子選項按鈕:hover {
+  border-color: rgba(126, 38, 28, 0.46);
+  filter: brightness(1.05);
 }
 .主畫面-下拉按鈕 {
-  text-align: left;
-  padding: 13px 15px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.07);
-  color: #f6f1e6;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  width: 100%;
+  min-height: 48px;
+  padding: 13px 20px;
+  text-align: center;
+  color: #21170c;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(70, 48, 22, 0.28);
+  border-radius: 8px 5px 9px 6px / 7px 10px 6px 9px;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 239, 0.95), rgba(231, 218, 188, 0.92)),
+    #efe0b8;
+  clip-path: polygon(2% 10%, 17% 4%, 39% 7%, 65% 3%, 91% 7%, 99% 18%, 96% 88%, 80% 96%, 57% 92%, 32% 97%, 9% 91%, 0 75%);
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+.主畫面-下拉按鈕:nth-child(odd) {
+  transform: rotate(-1.5deg);
+}
+.主畫面-下拉按鈕:nth-child(even) {
+  transform: rotate(1.2deg);
+}
+.主畫面-下拉按鈕:nth-child(odd):hover {
+  transform: rotate(-1.5deg) translateY(-1px);
+}
+.主畫面-下拉按鈕:nth-child(even):hover {
+  transform: rotate(1.2deg) translateY(-1px);
 }
 .主畫面-下拉按鈕:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.13);
+  background:
+    linear-gradient(180deg, rgba(255, 254, 245, 0.98), rgba(240, 225, 192, 0.96)),
+    #f5e6bd;
 }
 .主畫面-下拉按鈕.作用中 {
-  background: rgba(182, 46, 38, 0.24);
-  border-color: rgba(214, 79, 66, 0.42);
+  color: #6a1d16;
+  border-color: rgba(126, 38, 28, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 226, 0.98), rgba(234, 207, 165, 0.96)),
+    #ecd0a0;
 }
 .主畫面-下拉按鈕-次要 {
-  opacity: 0.82;
+  opacity: 0.76;
 }
 .主畫面-世界舞台場景 {
   position: relative;
   min-height: 100vh;
-  perspective: 1800px;
   background: #04070d;
 }
 .主畫面-世界舞台場景::before {
@@ -501,19 +848,15 @@ button.禁用:hover {
 .主畫面-世界轉台 {
   position: relative;
   min-height: 100vh;
-  transform-style: preserve-3d;
-  transition: transform 1.8s cubic-bezier(0.72, -0.04, 0.25, 1.02);
-}
-.主畫面-世界轉台.翻轉中 {
-  transform: rotateX(180deg);
+  z-index: 3;
 }
 .主畫面-世界面 {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  backface-visibility: hidden;
-  transform-style: preserve-3d;
   background: #04070d;
+  opacity: 0;
+  transition: opacity 1.8s ease;
 }
 .主畫面-世界面::before {
   content: "";
@@ -527,10 +870,17 @@ button.禁用:hover {
   z-index: 2;
 }
 .主畫面-世界面-正 {
-  transform: rotateX(0deg) translateZ(1px);
+  z-index: 1;
+  opacity: 1;
 }
 .主畫面-世界面-背 {
-  transform: rotateX(-180deg) translateZ(1px);
+  z-index: 2;
+}
+.主畫面-世界轉台.翻轉中 .主畫面-世界面-正 {
+  opacity: 0;
+}
+.主畫面-世界轉台.翻轉中 .主畫面-世界面-背 {
+  opacity: 1;
 }
 .主畫面-世界影片 {
   width: 100%;
@@ -541,38 +891,76 @@ button.禁用:hover {
 }
 .主畫面-世界資訊 {
   position: absolute;
-  left: 24px;
-  bottom: 24px;
-  z-index: 4;
+  left: 28px;
+  bottom: 30px;
+  z-index: 8;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  max-width: min(520px, calc(100vw - 56px));
 }
 .主畫面-世界標籤 {
   align-self: flex-start;
-  padding: 8px 14px 7px;
+  padding: 9px 16px 8px;
   border-radius: 999px;
   background:
-    linear-gradient(180deg, rgba(255, 249, 232, 0.95), rgba(221, 205, 172, 0.92)),
-    #dec998;
-  border: 1px solid rgba(79, 55, 24, 0.26);
-  color: #2b1f0f;
-  font-size: 0.92rem;
+    linear-gradient(180deg, rgba(255, 253, 244, 1), rgba(238, 225, 196, 0.98)),
+    #f6e7be;
+  border: 1px solid rgba(70, 46, 18, 0.46);
+  color: #201407;
+  font-size: 1rem;
+  font-weight: 800;
   letter-spacing: 0.08em;
   box-shadow:
-    0 10px 18px rgba(20, 18, 15, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    0 16px 34px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 .主畫面-世界描述 {
   margin: 0;
-  max-width: 480px;
-  padding: 12px 14px;
-  color: #191612;
-  background: rgba(243, 235, 220, 0.82);
-  border: 1px solid rgba(38, 35, 30, 0.16);
-  border-radius: 14px 18px 15px 20px;
-  line-height: 1.45;
-  box-shadow: 0 8px 20px rgba(20, 18, 15, 0.12);
+  padding: 15px 18px;
+  color: #120d08;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.98), rgba(241, 231, 211, 0.96)),
+    #f8efdc;
+  border: 1px solid rgba(38, 28, 16, 0.36);
+  border-radius: 16px 20px 17px 22px;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.55;
+  box-shadow:
+    0 18px 38px rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+.主畫面-投稿標記 {
+  position: absolute;
+  right: 28px;
+  bottom: 30px;
+  z-index: 8;
+  display: grid;
+  gap: 5px;
+  max-width: min(410px, calc(100vw - 56px));
+  padding: 14px 18px;
+  color: #1b1309;
+  text-align: right;
+  border-radius: 16px 20px 17px 22px;
+  border: 1px solid rgba(70, 46, 18, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 246, 0.96), rgba(238, 226, 202, 0.9)),
+    #f3e6c8;
+  box-shadow:
+    0 18px 38px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+.主畫面-投稿標記 strong {
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+.主畫面-投稿標記 span {
+  color: #6a1d16;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
 }
 .主畫面-任意處提示 {
   position: absolute;
@@ -609,6 +997,29 @@ button.禁用:hover {
   display: flex;
   gap: 18px;
   align-items: flex-start;
+  width: min(1120px, calc(100vw - 48px));
+  margin: 0 auto 36px;
+}
+.主畫面-root--子頁開啟 {
+  display: block;
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(247, 242, 229, 0.94), rgba(232, 223, 202, 0.94)),
+    var(--bg);
+}
+.主畫面-root--子頁開啟 .主畫面-版面 {
+  display: block;
+  min-height: 100vh;
+  padding: 32px 0 48px;
+}
+.主畫面-子頁返回按鈕 {
+  margin-bottom: 18px;
+}
+.主畫面-root--子頁開啟 .主畫面-子頁容器 {
+  width: 100%;
+  min-height: 0;
+  opacity: 1;
+  transform: none;
 }
 .主畫面-版面.圖鑑模式,
 .主畫面-版面.圖鑑模式 .主畫面-子頁容器 {
@@ -700,7 +1111,7 @@ button.禁用:hover {
 
 @media (max-width: 980px) {
   .主畫面-封面區 {
-    margin: -24px -24px 0;
+    margin: 0;
   }
 
   .主畫面-世界轉台 {
@@ -710,7 +1121,12 @@ button.禁用:hover {
 
 @media (max-width: 640px) {
   .主畫面-封面區 {
-    margin: -16px -16px 0;
+    margin: 0;
+  }
+
+  .主畫面-版面 {
+    width: calc(100vw - 24px);
+    margin-bottom: 24px;
   }
 
   .主畫面-標題.選單展開,
@@ -729,8 +1145,55 @@ button.禁用:hover {
   }
 
   .主畫面-Logo圖 {
-    width: min(90vw, 720px);
-    max-height: 42vh;
+    width: min(88vw, 680px);
+    max-height: 38vh;
+  }
+
+  .主畫面-標題副文 {
+    gap: 10px;
+    min-width: min(340px, calc(100vw - 24px));
+    padding: 10px 8px;
+    font-size: 1rem;
+  }
+
+  .主畫面-標題副文::before,
+  .主畫面-標題副文::after {
+    width: clamp(22px, 9vw, 46px);
+  }
+
+  .主畫面-下拉選單.有子選單 {
+    width: min(390px, calc(100vw - 24px));
+  }
+
+  .主畫面-下拉選單.有子選單 .主畫面-下拉按鈕列 {
+    transform: none;
+  }
+
+  .主畫面-Play子選單 {
+    position: static;
+    width: 100%;
+    margin-top: 14px;
+    padding: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+
+  .主畫面-下拉選單.有子選單 .主畫面-Play子選單 {
+    transform: translateY(0) scale(1);
+  }
+
+  .主畫面-世界Buff {
+    width: clamp(86px, 22vw, 136px);
+    opacity: 0.7;
+  }
+
+  .主畫面-世界Buff--幾何,
+  .主畫面-世界Buff--有機 {
+    left: 4%;
+  }
+
+  .主畫面-世界Buff--分形,
+  .主畫面-世界Buff--機械 {
+    right: 4%;
   }
 
   .主畫面-任意處提示 {

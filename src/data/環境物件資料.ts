@@ -32,16 +32,20 @@ export interface EnvObjectInstance {
   world: World;
   category: 環境物件類別;
   nameZh: string;
+  nameEn: string;
   iconPath: string;
   x: number;
   y: number;
   destructible: boolean;
   weight?: number;
   mechanicText: string;
+  mechanicTextEn: string;
   portalGroup: string;
   portalTargetId: string;
   portalTargetNameZh: string;
+  portalTargetNameEn: string;
   portalLabel: string;
+  portalLabelEn: string;
 }
 
 // ============================================================
@@ -306,16 +310,20 @@ function buildEnvObjects(): EnvObjectInstance[] {
       world: catalog.world,
       category: catalog.category,
       nameZh: catalog.nameZh,
+      nameEn: catalog.nameEn,
       iconPath: catalog.iconPath,
       x: point.x,
       y: point.y,
       destructible: catalog.destructible,
       weight: catalog.weight,
       mechanicText: catalog.mechanicText,
+      mechanicTextEn: catalog.mechanicText,
       portalGroup: "",
       portalTargetId: "",
       portalTargetNameZh: "",
+      portalTargetNameEn: "",
       portalLabel: "",
+      portalLabelEn: "",
     });
   }
 
@@ -337,6 +345,12 @@ function buildEnvObjects(): EnvObjectInstance[] {
     fractal: "分形",
     mechanical: "機械",
   };
+  const 世界名稱英: Record<World, string> = {
+    geometry: "Geometry",
+    organic: "Organic",
+    fractal: "Fractal",
+    mechanical: "Mechanical",
+  };
 
   for (const [worldA, indexA, worldB, indexB] of 跨世界配對組) {
     const a = 依世界索引取得實例(worldA, indexA);
@@ -344,17 +358,25 @@ function buildEnvObjects(): EnvObjectInstance[] {
     if (!a || !b) continue;
     const group = `${worldA}_${indexA + 1}_to_${worldB}_${indexB + 1}`;
     a.nameZh = `${世界名稱[worldA]}通${世界名稱[worldB]}門`;
+    a.nameEn = `${世界名稱英[worldA]} Gate to ${世界名稱英[worldB]}`;
     b.nameZh = `${世界名稱[worldB]}通${世界名稱[worldA]}門`;
+    b.nameEn = `${世界名稱英[worldB]} Gate to ${世界名稱英[worldA]}`;
     a.portalGroup = group;
     a.portalTargetId = b.id;
     a.portalTargetNameZh = b.nameZh;
+    a.portalTargetNameEn = b.nameEn;
     a.portalLabel = `傳送到 ${b.nameZh}`;
+    a.portalLabelEn = `Warp to ${b.nameEn}`;
     a.mechanicText = `靠近後按 E，傳送到 ${b.nameZh} 的對應傳送門。`;
+    a.mechanicTextEn = `Move close and press E to warp to the linked gate at ${b.nameEn}.`;
     b.portalGroup = group;
     b.portalTargetId = a.id;
     b.portalTargetNameZh = a.nameZh;
+    b.portalTargetNameEn = a.nameEn;
     b.portalLabel = `傳送到 ${a.nameZh}`;
+    b.portalLabelEn = `Warp to ${a.nameEn}`;
     b.mechanicText = `靠近後按 E，傳送到 ${a.nameZh} 的對應傳送門。`;
+    b.mechanicTextEn = `Move close and press E to warp to the linked gate at ${a.nameEn}.`;
   }
 
   return instances;
