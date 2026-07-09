@@ -76,6 +76,43 @@ export function 確保初始補給(): void {
   加入藥水("energy_small", 1);
 }
 
+function 確保材料至少(materialNo: number, count: number): void {
+  加入材料(materialNo, Math.max(0, count - 取材料(materialNo)));
+}
+
+function 確保碎片至少(family: Family, count: number): void {
+  加入碎片(family, Math.max(0, count - 取碎片(family)));
+}
+
+function 確保藥水至少(id: PotionId, count: number): void {
+  加入藥水(id, Math.max(0, count - 取藥水(id)));
+}
+
+/** Tutorial 正式進場的基礎包；補到最低數量，避免重複刷資源。 */
+export function 套用Tutorial開局基礎包(): void {
+  狀態.原石 = Math.max(狀態.原石, 180);
+
+  確保材料至少(1, 6);
+  確保材料至少(2, 6);
+  確保材料至少(3, 3);
+  確保材料至少(4, 1);
+
+  確保材料至少(7, 2);
+  確保材料至少(8, 2);
+  確保材料至少(13, 2);
+  確保材料至少(14, 2);
+  確保材料至少(19, 2);
+  確保材料至少(20, 2);
+
+  for (const family of Object.keys(狀態.碎片) as Family[]) {
+    確保碎片至少(family, 35);
+  }
+
+  確保藥水至少("hp_small", 1);
+  確保藥水至少("energy_small", 1);
+  確保藥水至少("hybrid_small", 1);
+}
+
 export interface 死亡懲罰結果 {
   原石損失: number;
   遺落材料: Array<{ no: number; count: number }>;

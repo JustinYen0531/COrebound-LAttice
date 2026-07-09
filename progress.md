@@ -123,3 +123,4 @@ TODO
 - 2026-07-09: New Game 準備頁新增難度與接力模式 placeholder。第一層仍是 Showcase / 從零開始；從零開始底下可選 Tutorial、Easy、Normal、Hard、Expert，並可開啟一命接力通關。狀態與進場事件已帶出 difficulty / oneLifeRelay，但尚未實作正式數值調整、四隊長連續通關結算、下一輪難度強化與輪迴 Buff。
 - 2026-07-09: New Game 準備頁改成二段式設定。Showcase 畫面只顯示 Starting Approach 與預設隊伍；點 Start From Nothing 後才切入 Start From Nothing Options，不再同時顯示兩層。Tutorial 難度卡改為 Tutorial COLA / 小型 COLA 語氣與較輕量樣式，保留通關目標但降低壓迫感。
 - 2026-07-09: Tutorial 素材門檻第一版已寫入教學草稿。需要素材才能推進的示範動作都有明確數字：雕像初始化 3 份 1★ 普通 + 1 份 1★ 高級 + 10 家族碎片、商店補給 55 原石、熔爐 2 份 1★ 普通、第一次 1 -> 2 星升級 5 份 1★ 高級 + 3 份 2★ 普通 + 1 份 2★ 高級 + 25 家族碎片、武器示範 10 家族碎片 + 100 原石、Tutorial COLA 前準備至少 1 名 2★ + 2 瓶補給 + 150 原石。Tutorial 模式下怪物、寶箱與 COLA 結算取得的材料數量變為 2 倍；原石與任務性物品不加倍。
+- 2026-07-09: Tutorial 開局基礎包已接成正式進場資源補足。Start from Nothing + Tutorial 進場時會把背包補到最低量：幾何 1★ 普通 6、1★ 高級 6、2★ 普通 3、2★ 高級 1；有機/分形/機械各給 1★ 普通 2 + 1★ 高級 2；每個家族碎片至少 35；原石至少 180；生命/能量/小混合補給各至少 1。採補到最低數量，不固定重複發放，避免重新進場刷資源。`npm run build` 靜態建置通過；依使用者要求未執行瀏覽器確認。

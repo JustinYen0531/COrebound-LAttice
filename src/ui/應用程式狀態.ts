@@ -12,7 +12,7 @@ import { 重置正式戰場 } from "./正式戰場狀態";
 import { 重置死亡遺落物 } from "./死亡遺落狀態";
 import { 重置資源掉落物 } from "./資源掉落狀態";
 import { 重置Boss召喚佇列 } from "./Boss召喚佇列";
-import { 確保初始補給 } from "../economy/背包狀態";
+import { 套用Tutorial開局基礎包, 確保初始補給 } from "../economy/背包狀態";
 import { 套用起始成員配置, 套用Showcase預設隊伍 } from "../progression/養成狀態";
 import { SHOWCASE_PRESETS, 尋找Showcase預設 } from "../progression/Showcase預設隊伍";
 import type { 語言代碼 } from "./語系";
@@ -339,7 +339,8 @@ class 應用程式狀態機 {
         if (預設) 套用Showcase預設隊伍(預設);
         else 套用起始成員配置();
       }
-      確保初始補給();
+      if (教學進場) 套用Tutorial開局基礎包();
+      else 確保初始補給();
       初始化正式玩家生命();
       開始新對局();
       重置世界寶箱();
