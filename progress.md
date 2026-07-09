@@ -120,3 +120,4 @@ TODO
 - 2026-07-06: 修正大型建築互動判定與遠距點擊傳送 bug。功能建築改由實際外緣加緩衝距離判斷；進入範圍後建築上方直接顯示 `E · INTERACT`，可按 E 或點擊建築進入互動，範圍外點擊只顯示靠近提示，不再自動搬動玩家位置。
 - 2026-07-06: Management 的 Squad 頁右欄新增 `Equipped Weapons` 簡易展示區，會依目前正式小隊的家族武器解鎖狀態顯示 Shield、Multishot、Straight、Mine 的實際星級，以及 Equipped / Locked 狀態；本次只補可讀性，不新增武器操作。
 - 2026-07-06: 新增 itch.io 專用靜態封裝流程。正式建置改用相對資產基底；`npm run package:itch` 會先執行建置，再於獨立 staging 副本將所有非 ASCII 檔名改為穩定安全名稱、同步修正程式與樣式中的資產引用，最後確認 ZIP 根目錄含 `index.html`、使用標準路徑分隔且所有封包路徑皆為 ASCII；依使用者要求不執行瀏覽器確認。
+- 2026-07-09: New Game 準備頁新增難度與接力模式 placeholder。第一層仍是 Showcase / 從零開始；從零開始底下可選 Tutorial、Easy、Normal、Hard、Expert，並可開啟一命接力通關。狀態與進場事件已帶出 difficulty / oneLifeRelay，但尚未實作正式數值調整、四隊長連續通關結算、下一輪難度強化與輪迴 Buff。

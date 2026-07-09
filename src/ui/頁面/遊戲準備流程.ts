@@ -3,7 +3,7 @@
  * @description New Game / Continue Game / 再來一場 共用的賽前準備頁：選隊長 + 小隊圓盤預覽（共用元件 B）。
  * 對應統一版文件 1.1 裁定：「編排小隊」不設獨立主按鈕，改在此流程與管理介面／小隊共用元件。
  */
-import { 應用程式狀態 } from "../應用程式狀態";
+import { 應用程式狀態, type 新遊戲難度 } from "../應用程式狀態";
 import { 隊長清單 } from "../資料/隊長清單";
 import { 選文 } from "../語系";
 import { MEMBERS } from "../../data/成員資料庫";
@@ -77,6 +77,64 @@ const 隊長立繪來源: Record<string, string> = {
   architect: "/assets/transparent-portraits/captains/architect_form1.png",
 };
 
+const 難度選項: Array<{
+  id: 新遊戲難度;
+  icon: string;
+  titleZh: string;
+  titleEn: string;
+  descZh: string;
+  descEn: string;
+}> = [
+  {
+    id: "tutorial",
+    icon: "◎",
+    titleZh: "Tutorial",
+    titleEn: "Tutorial",
+    descZh: "最低壓力的任務式完整通關。",
+    descEn: "Guided full clear with the lowest pressure.",
+  },
+  {
+    id: "easy",
+    icon: "I",
+    titleZh: "Easy",
+    titleEn: "Easy",
+    descZh: "保留容錯，適合熟悉系統。",
+    descEn: "Forgiving runs for learning the systems.",
+  },
+  {
+    id: "normal",
+    icon: "II",
+    titleZh: "Normal",
+    titleEn: "Normal",
+    descZh: "標準資源、戰鬥與路線壓力。",
+    descEn: "Baseline resource, combat, and route pressure.",
+  },
+  {
+    id: "hard",
+    icon: "III",
+    titleZh: "Hard",
+    titleEn: "Hard",
+    descZh: "更高敵壓與更緊的資源壓力。",
+    descEn: "Higher enemy pressure and tighter resources.",
+  },
+  {
+    id: "expert",
+    icon: "IV",
+    titleZh: "Expert",
+    titleEn: "Expert",
+    descZh: "最高壓力，留給熟悉路線後挑戰。",
+    descEn: "Maximum pressure for mastered routes.",
+  },
+];
+
+function 難度標題(難度: (typeof 難度選項)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? 難度.titleZh : 難度.titleEn;
+}
+
+function 難度說明(難度: (typeof 難度選項)[number]): string {
+  return 應用程式狀態.額外.語言 === "zh" ? 難度.descZh : 難度.descEn;
+}
+
 export function 渲染遊戲準備流程(容器: HTMLElement) {
   容器.innerHTML = "";
   const state = 應用程式狀態.畫面;
@@ -88,12 +146,15 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   const 來源標籤 = state.來源 === "再來一場" ? 雙語("再來一場", "Rematch") : state.來源;
   root.innerHTML = `<h2>${雙語("賽前準備", "Pre-Match Setup")} (${雙語("來源", "Source")}: ${來源標籤})</h2>`;
 
-  if (state.教學模式) {
+  const 目前難度 = 應用程式狀態.額外.新遊戲難度;
+  const 目前是教學難度 = 應用程式狀態.額外.開場模式 === "none" && 目前難度 === "tutorial";
+
+  if (目前是教學難度) {
     const 教學提示 = document.createElement("section");
     教學提示.className = "準備流程-教學提示";
     教學提示.innerHTML = `
-      <strong>${state.首次教學 ? 雙語("第一次遊玩：教學模式已開啟", "First Run: Tutorial Mode Enabled") : 雙語("教學模式已開啟", "Tutorial Mode Enabled")}</strong>
-      <span>${雙語("這一局會走新手引導架構；開場方式預設為 No Starting Boost，但仍可改選 Showcase。", "This run uses the beginner guidance structure. No Starting Boost is selected by default, but Showcase is still available.")}</span>
+      <strong>${state.首次教學 ? 雙語("第一次遊玩：Tutorial 已選擇", "First Run: Tutorial Selected") : 雙語("Tutorial 難度已選擇", "Tutorial Difficulty Selected")}</strong>
+      <span>${雙語("這一局會走新手引導架構；開場方式預設為從零開始，但仍可改選 Showcase。", "This run uses the beginner guidance structure. Start From Nothing is selected by default, but Showcase is still available.")}</span>
     `;
     root.appendChild(教學提示);
   }
@@ -221,8 +282,8 @@ const 顯示起始成員選擇 = state.來源 !== "Continue Game";
     模式切換區.innerHTML = `
       <div class="準備流程-區塊標題">${雙語("開場方式", "Starting Approach")}</div>
       <div class="準備流程-區塊說明">
-        ${state.教學模式
-          ? 雙語("教學模式會保留引導狀態；你可以用 Showcase 較快看見系統，也可以維持 No Starting Boost 從零開始。", "Tutorial mode keeps guidance enabled. Use Showcase to see systems faster, or keep No Starting Boost to learn from scratch.")
+        ${目前是教學難度
+          ? 雙語("教學模式會保留引導狀態；你可以用 Showcase 較快看見系統，也可以維持從零開始。", "Tutorial mode keeps guidance enabled. Use Showcase to see systems faster, or keep Start From Nothing.")
           : 雙語("挑一套已驗證過的預設隊伍立刻探索，或不要任何加成、從零慢慢養成。", "Jump in with a validated preset squad, or skip every boost and grow your team from scratch.")}
       </div>
     `;
@@ -243,7 +304,7 @@ const 顯示起始成員選擇 = state.來源 !== "Continue Game";
     const 從零按鈕 = document.createElement("button");
     從零按鈕.type = "button";
     從零按鈕.className = `準備流程-模式按鈕 ${目前開場模式 === "none" ? "作用中" : ""}`;
-    從零按鈕.innerHTML = `<strong>🌱 ${雙語("不要開場加成", "No Starting Boost")}</strong><small>${雙語("從零開始，自己手動挑 3 名初始成員慢慢養成", "Start from scratch — manually pick 3 starting members and grow at your own pace")}</small>`;
+    從零按鈕.innerHTML = `<strong>🌱 ${雙語("從零開始", "Start From Nothing")}</strong><small>${雙語("不使用 Showcase 預設，改由你選擇難度、接力模式與 3 名初始成員。", "Skip Showcase presets and choose difficulty, relay mode, and 3 starting members yourself.")}</small>`;
     從零按鈕.onclick = () => {
       應用程式狀態.設定開場模式("none");
       渲染遊戲準備流程(容器);
@@ -285,6 +346,50 @@ const 顯示起始成員選擇 = state.來源 !== "Continue Game";
       預設區.appendChild(預設卡列);
       隊伍設定區.appendChild(預設區);
     } else {
+      const 難度區 = document.createElement("section");
+      難度區.className = "準備流程-難度區";
+      難度區.innerHTML = `
+        <div class="準備流程-區塊標題">${雙語("從零開始細項", "Start From Nothing Options")}</div>
+        <div class="準備流程-區塊說明">
+          ${雙語("這裡先是 placeholder 架構：難度、接力模式與進場事件已接好，之後再接完整數值、通關紀錄與輪迴 Buff。", "This is a placeholder structure: difficulty, relay mode, and run-start metadata are wired. Full tuning, clear records, and reincarnation buffs can connect later.")}
+        </div>
+      `;
+      const 難度列 = document.createElement("div");
+      難度列.className = "準備流程-難度列";
+      難度選項.forEach((難度) => {
+        const 按鈕 = document.createElement("button");
+        按鈕.type = "button";
+        按鈕.className = `準備流程-難度按鈕 準備流程-難度按鈕--${難度.id} ${目前難度 === 難度.id ? "作用中" : ""}`;
+        按鈕.innerHTML = `
+          <span class="準備流程-難度圖標">${難度.icon}</span>
+          <strong>${難度標題(難度)}</strong>
+          <small>${難度說明(難度)}</small>
+        `;
+        按鈕.onclick = () => {
+          應用程式狀態.設定新遊戲難度(難度.id);
+          渲染遊戲準備流程(容器);
+        };
+        難度列.appendChild(按鈕);
+      });
+      難度區.appendChild(難度列);
+
+      const 接力列 = document.createElement("label");
+      接力列.className = "準備流程-一命通關";
+      接力列.innerHTML = `
+        <input type="checkbox" ${應用程式狀態.額外.一命通關模式 ? "checked" : ""} />
+        <span class="準備流程-一命勾選"></span>
+        <strong>${雙語("一命接力通關", "One-Life Relay")}</strong>
+        <small>
+          ${雙語("一次接力完成四位隊長。每次通關不是重來，而是交棒到下一位隊長；世界難度提高，你也獲得一個輪迴 Buff。", "Clear all four captains in one relay. Each clear passes the baton instead of restarting; the world grows harder and you gain a reincarnation buff.")}
+        </small>
+      `;
+      接力列.querySelector<HTMLInputElement>("input")!.onchange = (event) => {
+        應用程式狀態.設定一命通關模式((event.currentTarget as HTMLInputElement).checked);
+        渲染遊戲準備流程(容器);
+      };
+      難度區.appendChild(接力列);
+      隊伍設定區.appendChild(難度區);
+
       const 選角區 = document.createElement("section");
       選角區.className = "準備流程-選角區";
       選角區.innerHTML = `

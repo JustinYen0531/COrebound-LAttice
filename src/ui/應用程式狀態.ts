@@ -19,6 +19,7 @@ import type { 語言代碼 } from "./語系";
 import { EROSION_START_SECOND } from "../data/戰鬥原語";
 
 export type 開場模式 = "showcase" | "none";
+export type 新遊戲難度 = "tutorial" | "easy" | "normal" | "hard" | "expert";
 
 type 滑動面板 = "無" | "左" | "右";
 export type 世界地板細節模式 = "smooth" | "medium" | "high";
@@ -35,6 +36,8 @@ interface 額外狀態 {
   世界地板細節模式: 世界地板細節模式;
   遊玩紀錄數: number;
   新遊戲教學模式: boolean;
+  新遊戲難度: 新遊戲難度;
+  一命通關模式: boolean;
   目前對局教學模式: boolean;
   Showcase模式: boolean;
   ShowcaseGodMode: boolean;
@@ -123,6 +126,8 @@ class 應用程式狀態機 {
     世界地板細節模式: 讀取世界地板細節模式偏好(),
     遊玩紀錄數: 讀取遊玩紀錄數(),
     新遊戲教學模式: false,
+    新遊戲難度: "normal",
+    一命通關模式: false,
     目前對局教學模式: false,
     Showcase模式: false,
     ShowcaseGodMode: false,
@@ -192,8 +197,11 @@ class 應用程式狀態機 {
   設定新遊戲教學模式(啟用: boolean) {
     if (!this.有遊玩紀錄()) {
       this.額外.新遊戲教學模式 = true;
+      this.額外.新遊戲難度 = "tutorial";
     } else {
       this.額外.新遊戲教學模式 = 啟用;
+      if (啟用) this.額外.新遊戲難度 = "tutorial";
+      else if (this.額外.新遊戲難度 === "tutorial") this.額外.新遊戲難度 = "normal";
     }
     this.通知();
   }
@@ -206,6 +214,17 @@ class 應用程式狀態機 {
     this.額外.遊玩紀錄數 += 1;
     寫入遊玩紀錄數(this.額外.遊玩紀錄數);
     if (this.額外.遊玩紀錄數 > 0) this.額外.新遊戲教學模式 = false;
+  }
+
+  設定新遊戲難度(難度: 新遊戲難度) {
+    this.額外.新遊戲難度 = 難度;
+    this.額外.新遊戲教學模式 = 難度 === "tutorial";
+    this.通知();
+  }
+
+  設定一命通關模式(啟用: boolean) {
+    this.額外.一命通關模式 = 啟用;
+    this.通知();
   }
 
   // ---- 世界時鐘：R3，不因為切換 UI 層而暫停 ----
@@ -241,6 +260,10 @@ class 應用程式狀態機 {
     const 首次教學 = 來源 === "New Game" && !this.有遊玩紀錄();
     const 教學模式 = 來源 === "New Game" && (首次教學 || 選項.教學模式 === true);
     if (來源 === "New Game" || 來源 === "再來一場") {
+      if (來源 === "New Game") {
+        if (教學模式) this.額外.新遊戲難度 = "tutorial";
+        else if (this.額外.新遊戲難度 === "tutorial") this.額外.新遊戲難度 = "normal";
+      }
       if (教學模式) {
         this.額外.開場模式 = "none";
         this.額外.Showcase模式 = false;
@@ -263,6 +286,7 @@ class 應用程式狀態機 {
     this.額外.開場模式 = 模式;
     this.額外.Showcase模式 = 模式 === "showcase";
     if (模式 !== "showcase") this.額外.ShowcaseGodMode = false;
+    if (模式 === "showcase") this.額外.一命通關模式 = false;
     if (模式 === "showcase" && !this.額外.選中Showcase預設ID) {
       this.額外.選中Showcase預設ID = SHOWCASE_PRESETS[0]?.id ?? null;
     }
@@ -293,7 +317,10 @@ class 應用程式狀態機 {
 
   確認進場(訓練道場 = false) {
     const 進場來源 = this.畫面.層 === "遊戲準備流程" ? this.畫面.來源 : null;
-    const 教學進場 = this.畫面.層 === "遊戲準備流程" && this.畫面.教學模式 === true;
+    const 教學進場 =
+      this.畫面.層 === "遊戲準備流程" &&
+      this.額外.開場模式 === "none" &&
+      this.額外.新遊戲難度 === "tutorial";
     this.額外.世界時鐘秒數 = 0;
     this.額外.縮圈警戒 = false;
     this.額外.滑動面板 = "無";
@@ -322,7 +349,14 @@ class 應用程式狀態機 {
       重置資源掉落物();
       重置Boss召喚佇列();
     }
-    window.dispatchEvent(new CustomEvent("combat-run-reset", { detail: { mode: 訓練道場 ? "dojo" : "formal", tutorialMode: 教學進場 } }));
+    window.dispatchEvent(new CustomEvent("combat-run-reset", {
+      detail: {
+        mode: 訓練道場 ? "dojo" : "formal",
+        tutorialMode: 教學進場,
+        difficulty: this.額外.新遊戲難度,
+        oneLifeRelay: this.額外.開場模式 === "none" && this.額外.一命通關模式,
+      },
+    }));
     this.更新畫面({ 層: "操作頁面", 訓練道場 });
   }
 

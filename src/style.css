@@ -1498,6 +1498,98 @@ button.禁用:hover {
   box-shadow: inset 0 0 0 1px #d8b84a, 0 0 14px color-mix(in srgb, #d8b84a 35%, transparent);
 }
 
+.準備流程-難度區 {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, #4a8ee8 28%, var(--line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, #4a8ee8 10%, transparent), transparent 56%),
+    color-mix(in srgb, var(--bg-panel) 94%, transparent);
+}
+.準備流程-難度列 {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+.準備流程-難度按鈕 {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 6px;
+  min-height: 118px;
+  padding: 10px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-top: 3px solid color-mix(in srgb, #4a8ee8 58%, var(--line));
+  background: color-mix(in srgb, var(--bg-panel-2) 92%, transparent);
+  cursor: pointer;
+}
+.準備流程-難度按鈕 strong {
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+.準備流程-難度按鈕 small {
+  color: var(--ink-dim);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+.準備流程-難度圖標 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid color-mix(in srgb, #4a8ee8 34%, var(--line));
+  background: color-mix(in srgb, #4a8ee8 10%, transparent);
+  color: #315d9b;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.準備流程-難度按鈕.作用中 {
+  border-color: #4a8ee8;
+  box-shadow: inset 0 0 0 1px #4a8ee8, 0 0 14px color-mix(in srgb, #4a8ee8 28%, transparent);
+}
+.準備流程-難度按鈕--tutorial.作用中 { border-color: #3bbf6d; box-shadow: inset 0 0 0 1px #3bbf6d, 0 0 14px color-mix(in srgb, #3bbf6d 28%, transparent); }
+.準備流程-難度按鈕--expert.作用中 { border-color: #d84f4f; box-shadow: inset 0 0 0 1px #d84f4f, 0 0 14px color-mix(in srgb, #d84f4f 28%, transparent); }
+.準備流程-一命通關 {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, #d8b84a 42%, var(--line));
+  background: color-mix(in srgb, #d8b84a 10%, transparent);
+  cursor: pointer;
+}
+.準備流程-一命通關 input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.準備流程-一命勾選 {
+  grid-row: span 2;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border: 2px solid color-mix(in srgb, #d8b84a 64%, #7a5c17);
+  background: var(--bg-panel-2);
+}
+.準備流程-一命通關 input:checked + .準備流程-一命勾選 {
+  background:
+    linear-gradient(135deg, transparent 42%, #7a5c17 42% 58%, transparent 58%),
+    linear-gradient(45deg, transparent 42%, #7a5c17 42% 58%, transparent 58%),
+    #f5d86b;
+}
+.準備流程-一命通關 strong {
+  color: #6f5013;
+  font-size: 0.86rem;
+}
+.準備流程-一命通關 small {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
 .準備流程-預設區 {
   display: grid;
   gap: 10px;
@@ -1566,6 +1658,7 @@ button.禁用:hover {
 
 @media (max-width: 620px) {
   .準備流程-選擇列 { grid-template-columns: 1fr; }
+  .準備流程-難度列 { grid-template-columns: 1fr; }
   .準備流程-選角區 { min-height: auto; }
   .準備流程-隊伍立繪 {
     grid-template-columns: repeat(2, 1fr);
