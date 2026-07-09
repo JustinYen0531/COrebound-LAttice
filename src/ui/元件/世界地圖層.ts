@@ -181,6 +181,10 @@ function 怪物尺寸倍率(inst: 可見怪物實例): number {
   return inst.monsterNo === finalBoss().no ? 0.7 : 1;
 }
 
+function Tutorial材料倍率(): number {
+  return 應用程式狀態.額外.目前對局教學模式 ? 2 : 1;
+}
+
 function 訓練槽位圈層(slotId: number): 玩家戰鬥圈層 {
   if (slotId <= 2) return "inner";
   if (slotId <= 5) return "middle";
@@ -1142,14 +1146,16 @@ export function 建立世界地圖層(): HTMLElement {
     }
     播放音效("寶箱開啟");
     const drop = result.drop;
-    for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count);
+    const materialMultiplier = Tutorial材料倍率();
+    const materialTotal = drop.materials.reduce((total, entry) => total + entry.count * materialMultiplier, 0);
+    for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count * materialMultiplier);
     背包.加入原石(drop.gems);
-    記錄對局掉落(drop.gems, drop.materials.reduce((total, entry) => total + entry.count, 0));
+    記錄對局掉落(drop.gems, materialTotal);
     標記世界寶箱已開啟(chest.id);
     syncWorldChests(true);
     顯示技能提示(雙語(
-      `禪繞寶箱｜原石 ${drop.gems}｜材料 ${drop.materials.reduce((total, entry) => total + entry.count, 0)}`,
-      `Zen Chest | Gems ${drop.gems} | Materials ${drop.materials.reduce((total, entry) => total + entry.count, 0)}`,
+      `禪繞寶箱｜原石 ${drop.gems}｜材料 ${materialTotal}`,
+      `Zen Chest | Gems ${drop.gems} | Materials ${materialTotal}`,
     ));
   }
 
@@ -1329,12 +1335,14 @@ export function 建立世界地圖層(): HTMLElement {
       if (m.bossKind === "cola") {
         if (!訓練道場中) {
           const drop = rollMonsterDrop(finalBoss(), true);
-          for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count);
+          const materialMultiplier = Tutorial材料倍率();
+          const materialTotal = drop.materials.reduce((total, entry) => total + entry.count * materialMultiplier, 0);
+          for (const entry of drop.materials) 背包.加入材料(entry.material.no, entry.count * materialMultiplier);
           if (drop.keyItem) 背包.加入材料(drop.keyItem.no, 1);
           背包.加入原石(drop.gems);
           記錄對局掉落(
             drop.gems,
-            drop.materials.reduce((total, entry) => total + entry.count, 0) + (drop.keyItem ? 1 : 0),
+            materialTotal + (drop.keyItem ? 1 : 0),
             Boolean(drop.keyItem),
           );
           結束對局("victory", "擊敗 COLA，取得 COrebound 核心鑰匙");
@@ -1357,9 +1365,10 @@ export function 建立世界地圖層(): HTMLElement {
       }
       const enraged = def.world !== "core" && 世界已狂暴查詢(def.world);
       const drop = rollMonsterDrop(def, enraged);
+      const materialMultiplier = Tutorial材料倍率();
       新增資源掉落物(m.pos.x, m.pos.y, {
         gems: drop.gems,
-        materials: drop.materials.map((entry) => ({ no: entry.material.no, count: entry.count })),
+        materials: drop.materials.map((entry) => ({ no: entry.material.no, count: entry.count * materialMultiplier })),
       });
       syncResourceDrops();
     }
