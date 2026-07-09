@@ -87,11 +87,11 @@ const 難度選項: Array<{
 }> = [
   {
     id: "tutorial",
-    icon: "◎",
-    titleZh: "Tutorial",
-    titleEn: "Tutorial",
-    descZh: "最低壓力的任務式完整通關。",
-    descEn: "Guided full clear with the lowest pressure.",
+    icon: "C",
+    titleZh: "Tutorial COLA",
+    titleEn: "Tutorial COLA",
+    descZh: "小型 COLA，引導式通關，壓迫感較低。",
+    descEn: "A smaller COLA clear with gentle guidance.",
   },
   {
     id: "easy",
@@ -277,44 +277,38 @@ const 顯示起始成員選擇 = state.來源 !== "Continue Game";
   隊伍設定區.appendChild(隊長區);
 
   if (顯示起始成員選擇) {
-    const 模式切換區 = document.createElement("section");
-    模式切換區.className = "準備流程-模式切換區";
-    模式切換區.innerHTML = `
-      <div class="準備流程-區塊標題">${雙語("開場方式", "Starting Approach")}</div>
-      <div class="準備流程-區塊說明">
-        ${目前是教學難度
-          ? 雙語("教學模式會保留引導狀態；你可以用 Showcase 較快看見系統，也可以維持從零開始。", "Tutorial mode keeps guidance enabled. Use Showcase to see systems faster, or keep Start From Nothing.")
-          : 雙語("挑一套已驗證過的預設隊伍立刻探索，或不要任何加成、從零慢慢養成。", "Jump in with a validated preset squad, or skip every boost and grow your team from scratch.")}
-      </div>
-    `;
-    const 切換列 = document.createElement("div");
-    切換列.className = "準備流程-模式切換列";
-
     const 目前開場模式 = 應用程式狀態.額外.開場模式;
 
-    const showcase按鈕 = document.createElement("button");
-    showcase按鈕.type = "button";
-    showcase按鈕.className = `準備流程-模式按鈕 ${目前開場模式 === "showcase" ? "作用中" : ""}`;
-    showcase按鈕.innerHTML = `<strong>⚡ ${雙語("Showcase 快速上手", "Showcase Quick Start")}</strong><small>${雙語("三套已驗證的預設隊伍，選了就能直接探索", "3 validated preset squads — pick one and explore right away")}</small>`;
-    showcase按鈕.onclick = () => {
-      應用程式狀態.設定開場模式("showcase");
-      渲染遊戲準備流程(容器);
-    };
-
-    const 從零按鈕 = document.createElement("button");
-    從零按鈕.type = "button";
-    從零按鈕.className = `準備流程-模式按鈕 ${目前開場模式 === "none" ? "作用中" : ""}`;
-    從零按鈕.innerHTML = `<strong>🌱 ${雙語("從零開始", "Start From Nothing")}</strong><small>${雙語("不使用 Showcase 預設，改由你選擇難度、接力模式與 3 名初始成員。", "Skip Showcase presets and choose difficulty, relay mode, and 3 starting members yourself.")}</small>`;
-    從零按鈕.onclick = () => {
-      應用程式狀態.設定開場模式("none");
-      渲染遊戲準備流程(容器);
-    };
-
-    切換列.append(showcase按鈕, 從零按鈕);
-    模式切換區.appendChild(切換列);
-    隊伍設定區.appendChild(模式切換區);
-
     if (目前開場模式 === "showcase") {
+      const 模式切換區 = document.createElement("section");
+      模式切換區.className = "準備流程-模式切換區";
+      模式切換區.innerHTML = `
+        <div class="準備流程-區塊標題">${雙語("開場方式", "Starting Approach")}</div>
+        <div class="準備流程-區塊說明">
+          ${雙語("挑一套已驗證過的預設隊伍立刻探索，或不要任何加成、從零慢慢養成。", "Jump in with a validated preset squad, or skip every boost and grow your team from scratch.")}
+        </div>
+      `;
+      const 切換列 = document.createElement("div");
+      切換列.className = "準備流程-模式切換列";
+
+      const showcase按鈕 = document.createElement("button");
+      showcase按鈕.type = "button";
+      showcase按鈕.className = "準備流程-模式按鈕 作用中";
+      showcase按鈕.innerHTML = `<strong>⚡ ${雙語("Showcase 快速上手", "Showcase Quick Start")}</strong><small>${雙語("三套已驗證的預設隊伍，選了就能直接探索", "3 validated preset squads — pick one and explore right away")}</small>`;
+
+      const 從零按鈕 = document.createElement("button");
+      從零按鈕.type = "button";
+      從零按鈕.className = "準備流程-模式按鈕";
+      從零按鈕.innerHTML = `<strong>🌱 ${雙語("從零開始", "Start From Nothing")}</strong><small>${雙語("不使用 Showcase 預設，改由你選擇難度、接力模式與 3 名初始成員。", "Skip Showcase presets and choose difficulty, relay mode, and 3 starting members yourself.")}</small>`;
+      從零按鈕.onclick = () => {
+        應用程式狀態.設定開場模式("none");
+        渲染遊戲準備流程(容器);
+      };
+
+      切換列.append(showcase按鈕, 從零按鈕);
+      模式切換區.appendChild(切換列);
+      隊伍設定區.appendChild(模式切換區);
+
       const 預設區 = document.createElement("section");
       預設區.className = "準備流程-預設區";
       預設區.innerHTML = `
@@ -349,11 +343,16 @@ const 顯示起始成員選擇 = state.來源 !== "Continue Game";
       const 難度區 = document.createElement("section");
       難度區.className = "準備流程-難度區";
       難度區.innerHTML = `
+        <div class="準備流程-返回列"><button type="button" class="三級按鈕" data-back-starting>${雙語("返回開場方式", "Back to Starting Approach")}</button></div>
         <div class="準備流程-區塊標題">${雙語("從零開始細項", "Start From Nothing Options")}</div>
         <div class="準備流程-區塊說明">
           ${雙語("這裡先是 placeholder 架構：難度、接力模式與進場事件已接好，之後再接完整數值、通關紀錄與輪迴 Buff。", "This is a placeholder structure: difficulty, relay mode, and run-start metadata are wired. Full tuning, clear records, and reincarnation buffs can connect later.")}
         </div>
       `;
+      難度區.querySelector<HTMLButtonElement>("[data-back-starting]")!.onclick = () => {
+        應用程式狀態.設定開場模式("showcase");
+        渲染遊戲準備流程(容器);
+      };
       const 難度列 = document.createElement("div");
       難度列.className = "準備流程-難度列";
       難度選項.forEach((難度) => {

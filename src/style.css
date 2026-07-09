@@ -1507,6 +1507,10 @@ button.禁用:hover {
     linear-gradient(135deg, color-mix(in srgb, #4a8ee8 10%, transparent), transparent 56%),
     color-mix(in srgb, var(--bg-panel) 94%, transparent);
 }
+.準備流程-返回列 {
+  display: flex;
+  justify-content: flex-start;
+}
 .準備流程-難度列 {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1549,7 +1553,24 @@ button.禁用:hover {
   border-color: #4a8ee8;
   box-shadow: inset 0 0 0 1px #4a8ee8, 0 0 14px color-mix(in srgb, #4a8ee8 28%, transparent);
 }
-.準備流程-難度按鈕--tutorial.作用中 { border-color: #3bbf6d; box-shadow: inset 0 0 0 1px #3bbf6d, 0 0 14px color-mix(in srgb, #3bbf6d 28%, transparent); }
+.準備流程-難度按鈕--tutorial {
+  min-height: 106px;
+  border-top-color: color-mix(in srgb, #3bbf6d 48%, var(--line));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #3bbf6d 8%, transparent), transparent 72%),
+    color-mix(in srgb, var(--bg-panel-2) 94%, transparent);
+}
+.準備流程-難度按鈕--tutorial .準備流程-難度圖標 {
+  width: 24px;
+  height: 24px;
+  border-color: color-mix(in srgb, #3bbf6d 46%, var(--line));
+  background: color-mix(in srgb, #3bbf6d 12%, transparent);
+  color: #2d7c4c;
+  font-size: 0.68rem;
+}
+.準備流程-難度按鈕--tutorial strong { font-size: 0.82rem; }
+.準備流程-難度按鈕--tutorial small { font-size: 0.66rem; }
+.準備流程-難度按鈕--tutorial.作用中 { border-color: #3bbf6d; box-shadow: inset 0 0 0 1px #3bbf6d, 0 0 10px color-mix(in srgb, #3bbf6d 22%, transparent); }
 .準備流程-難度按鈕--expert.作用中 { border-color: #d84f4f; box-shadow: inset 0 0 0 1px #d84f4f, 0 0 14px color-mix(in srgb, #d84f4f 28%, transparent); }
 .準備流程-一命通關 {
   display: grid;
