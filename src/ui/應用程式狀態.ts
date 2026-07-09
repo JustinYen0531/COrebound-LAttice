@@ -24,10 +24,18 @@ type 滑動面板 = "無" | "左" | "右";
 export type 世界地板細節模式 = "smooth" | "medium" | "high";
 const LANGUAGE_STORAGE_KEY = "cola-ui-language";
 const DETAILED_WORLD_FLOORS_STORAGE_KEY = "cola-detailed-world-floors";
+const PLAY_RECORD_COUNT_STORAGE_KEY = "cola-play-record-count";
+
+type 遊戲準備流程選項 = {
+  教學模式?: boolean;
+};
 
 interface 額外狀態 {
   語言: 語言代碼;
   世界地板細節模式: 世界地板細節模式;
+  遊玩紀錄數: number;
+  新遊戲教學模式: boolean;
+  目前對局教學模式: boolean;
   Showcase模式: boolean;
   ShowcaseGodMode: boolean;
   Showcase移動倍率: number;
@@ -78,6 +86,24 @@ function 讀取世界地板細節模式偏好(): 世界地板細節模式 {
   }
 }
 
+function 讀取遊玩紀錄數(): number {
+  try {
+    const raw = window.localStorage.getItem(PLAY_RECORD_COUNT_STORAGE_KEY);
+    const parsed = raw === null ? 0 : Number(raw);
+    return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function 寫入遊玩紀錄數(次數: number): void {
+  try {
+    window.localStorage.setItem(PLAY_RECORD_COUNT_STORAGE_KEY, String(Math.max(0, Math.floor(次數))));
+  } catch {
+    // ignore storage failures in preview/sandbox contexts
+  }
+}
+
 export const 背包分類清單 = ["材料", "消耗品", "任務物", "追蹤中"] as const;
 export const 地圖分類清單 = ["縮影", "互動點", "危險區", "事件區"] as const;
 export const 圖鑑資料查詢類分頁 = [
@@ -95,6 +121,9 @@ class 應用程式狀態機 {
   額外: 額外狀態 = {
     語言: 讀取初始語言(),
     世界地板細節模式: 讀取世界地板細節模式偏好(),
+    遊玩紀錄數: 讀取遊玩紀錄數(),
+    新遊戲教學模式: false,
+    目前對局教學模式: false,
     Showcase模式: false,
     ShowcaseGodMode: false,
     Showcase移動倍率: 1,
@@ -156,6 +185,29 @@ class 應用程式狀態機 {
     this.通知();
   }
 
+  有遊玩紀錄(): boolean {
+    return this.額外.遊玩紀錄數 > 0;
+  }
+
+  設定新遊戲教學模式(啟用: boolean) {
+    if (!this.有遊玩紀錄()) {
+      this.額外.新遊戲教學模式 = true;
+    } else {
+      this.額外.新遊戲教學模式 = 啟用;
+    }
+    this.通知();
+  }
+
+  切換新遊戲教學模式() {
+    this.設定新遊戲教學模式(!this.額外.新遊戲教學模式);
+  }
+
+  private 記錄正式遊玩開始() {
+    this.額外.遊玩紀錄數 += 1;
+    寫入遊玩紀錄數(this.額外.遊玩紀錄數);
+    if (this.額外.遊玩紀錄數 > 0) this.額外.新遊戲教學模式 = false;
+  }
+
   // ---- 世界時鐘：R3，不因為切換 UI 層而暫停 ----
   啟動世界時鐘() {
     setInterval(() => {
@@ -185,15 +237,26 @@ class 應用程式狀態機 {
   }
 
   // ---- 遊戲準備流程 / 進場 ----
-  進入遊戲準備流程(來源: "New Game" | "Continue Game" | "再來一場") {
+  進入遊戲準備流程(來源: "New Game" | "Continue Game" | "再來一場", 選項: 遊戲準備流程選項 = {}) {
+    const 首次教學 = 來源 === "New Game" && !this.有遊玩紀錄();
+    const 教學模式 = 來源 === "New Game" && (首次教學 || 選項.教學模式 === true);
     if (來源 === "New Game" || 來源 === "再來一場") {
-      // 預設打開 Showcase 快速上手：多數 Game Jam 試玩者不會花時間研究養成，
-      // 直接給一套已驗證過的隊伍最省心。想從零開始的人可在頁面上切到「不要開場加成」。
-      this.額外.開場模式 = "showcase";
-      this.額外.Showcase模式 = true;
-      if (!this.額外.選中Showcase預設ID) this.額外.選中Showcase預設ID = SHOWCASE_PRESETS[0]?.id ?? null;
+      if (教學模式) {
+        this.額外.開場模式 = "none";
+        this.額外.Showcase模式 = false;
+        this.額外.ShowcaseGodMode = false;
+      } else {
+        // 預設打開 Showcase 快速上手：多數 Game Jam 試玩者不會花時間研究養成，
+        // 直接給一套已驗證過的隊伍最省心。想從零開始的人可在頁面上切到「不要開場加成」。
+        this.額外.開場模式 = "showcase";
+        this.額外.Showcase模式 = true;
+        if (!this.額外.選中Showcase預設ID) this.額外.選中Showcase預設ID = SHOWCASE_PRESETS[0]?.id ?? null;
+      }
     }
-    this.更新畫面({ 層: "遊戲準備流程", 來源 });
+    if (來源 === "Continue Game") {
+      this.額外.新遊戲教學模式 = false;
+    }
+    this.更新畫面({ 層: "遊戲準備流程", 來源, 教學模式, 首次教學 });
   }
 
   設定開場模式(模式: 開場模式) {
@@ -230,6 +293,7 @@ class 應用程式狀態機 {
 
   確認進場(訓練道場 = false) {
     const 進場來源 = this.畫面.層 === "遊戲準備流程" ? this.畫面.來源 : null;
+    const 教學進場 = this.畫面.層 === "遊戲準備流程" && this.畫面.教學模式 === true;
     this.額外.世界時鐘秒數 = 0;
     this.額外.縮圈警戒 = false;
     this.額外.滑動面板 = "無";
@@ -237,9 +301,12 @@ class 應用程式狀態機 {
     if (訓練道場) {
       this.額外.Showcase模式 = false;
       this.額外.ShowcaseGodMode = false;
+      this.額外.目前對局教學模式 = false;
     }
     // 正式遊玩進場時把玩家生命補滿（訓練道場另由其狀態自行管理）。
     if (!訓練道場) {
+      this.額外.目前對局教學模式 = 教學進場;
+      this.記錄正式遊玩開始();
       if (進場來源 !== "Continue Game") {
         const 預設 = this.額外.開場模式 === "showcase" ? 尋找Showcase預設(this.額外.選中Showcase預設ID) : undefined;
         if (預設) 套用Showcase預設隊伍(預設);
@@ -255,7 +322,7 @@ class 應用程式狀態機 {
       重置資源掉落物();
       重置Boss召喚佇列();
     }
-    window.dispatchEvent(new CustomEvent("combat-run-reset", { detail: { mode: 訓練道場 ? "dojo" : "formal" } }));
+    window.dispatchEvent(new CustomEvent("combat-run-reset", { detail: { mode: 訓練道場 ? "dojo" : "formal", tutorialMode: 教學進場 } }));
     this.更新畫面({ 層: "操作頁面", 訓練道場 });
   }
 

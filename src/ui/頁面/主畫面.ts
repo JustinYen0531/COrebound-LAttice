@@ -79,6 +79,36 @@ function 打開內建教學視窗() {
   打開教學視窗(取得教學頁面());
 }
 
+function 以目前教學偏好開始新遊戲() {
+  應用程式狀態.進入遊戲準備流程("New Game", {
+    教學模式: 應用程式狀態.額外.新遊戲教學模式,
+  });
+}
+
+function 建立新遊戲教學切換按鈕(className: string): HTMLButtonElement | null {
+  if (!應用程式狀態.有遊玩紀錄()) return null;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  const 更新文字 = () => {
+    const 開啟 = 應用程式狀態.額外.新遊戲教學模式;
+    button.textContent = 開啟
+      ? 雙語("教學模式：開", "Tutorial: On")
+      : 雙語("需要教學嗎？", "Need Tutorial?");
+    button.setAttribute(
+      "aria-pressed",
+      開啟 ? "true" : "false",
+    );
+  };
+  更新文字();
+  button.onclick = (event) => {
+    event.stopPropagation();
+    應用程式狀態.切換新遊戲教學模式();
+    更新文字();
+  };
+  return button;
+}
+
 const 世界Buff立繪清單 = [
   { className: "幾何", src: "/assets/images/enemies/bosses/幾何BOSS.png", alt: "Geometry boss portrait" },
   { className: "有機", src: "/assets/images/enemies/bosses/有機BOSS.png", alt: "Organic boss portrait" },
@@ -349,7 +379,7 @@ function 建立主畫面封面區(state: { 子頁: 主畫面分頁 }): HTMLEleme
   新遊戲按鈕.textContent = 雙語("新遊戲", "New Game");
   新遊戲按鈕.onclick = (event) => {
     event.stopPropagation();
-    應用程式狀態.進入遊戲準備流程("New Game");
+    以目前教學偏好開始新遊戲();
   };
 
   const 繼續遊戲按鈕 = document.createElement("button");
@@ -360,7 +390,12 @@ function 建立主畫面封面區(state: { 子頁: 主畫面分頁 }): HTMLEleme
     event.stopPropagation();
     應用程式狀態.進入遊戲準備流程("Continue Game");
   };
-  Play子選單.append(新遊戲按鈕, 繼續遊戲按鈕);
+  const 教學切換按鈕 = 建立新遊戲教學切換按鈕("主畫面-子選項按鈕");
+  Play子選單.append(
+    新遊戲按鈕,
+    ...(教學切換按鈕 ? [教學切換按鈕] : []),
+    繼續遊戲按鈕,
+  );
 
   // 新增的 Guide 子選單
   const Guide子選單 = document.createElement("div");
@@ -557,7 +592,9 @@ function 開始遊玩子頁(): HTMLElement {
   const newGame = document.createElement("button");
   newGame.className = "一級按鈕";
   newGame.textContent = 雙語("新遊戲", "New Game");
-  newGame.onclick = () => 應用程式狀態.進入遊戲準備流程("New Game");
+  newGame.onclick = 以目前教學偏好開始新遊戲;
+
+  const tutorialToggle = 建立新遊戲教學切換按鈕("二級按鈕");
 
   const continueGame = document.createElement("button");
   continueGame.className = "二級按鈕";
@@ -570,7 +607,12 @@ function 開始遊玩子頁(): HTMLElement {
   multiplayer.disabled = true;
   multiplayer.title = 雙語("這個入口先保留，之後再接多人流程。", "Entry reserved for now; the multiplayer flow will be wired up later.");
 
-  list.append(newGame, continueGame, multiplayer);
+  list.append(
+    newGame,
+    ...(tutorialToggle ? [tutorialToggle] : []),
+    continueGame,
+    multiplayer,
+  );
   el.appendChild(list);
   return el;
 }

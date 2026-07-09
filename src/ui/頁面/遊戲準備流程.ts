@@ -88,6 +88,16 @@ export function 渲染遊戲準備流程(容器: HTMLElement) {
   const 來源標籤 = state.來源 === "再來一場" ? 雙語("再來一場", "Rematch") : state.來源;
   root.innerHTML = `<h2>${雙語("賽前準備", "Pre-Match Setup")} (${雙語("來源", "Source")}: ${來源標籤})</h2>`;
 
+  if (state.教學模式) {
+    const 教學提示 = document.createElement("section");
+    教學提示.className = "準備流程-教學提示";
+    教學提示.innerHTML = `
+      <strong>${state.首次教學 ? 雙語("第一次遊玩：教學模式已開啟", "First Run: Tutorial Mode Enabled") : 雙語("教學模式已開啟", "Tutorial Mode Enabled")}</strong>
+      <span>${雙語("這一局會走新手引導架構；開場方式預設為 No Starting Boost，但仍可改選 Showcase。", "This run uses the beginner guidance structure. No Starting Boost is selected by default, but Showcase is still available.")}</span>
+    `;
+    root.appendChild(教學提示);
+  }
+
   const 版面 = document.createElement("div");
   版面.className = "準備流程-版面";
 
@@ -211,7 +221,9 @@ const 顯示起始成員選擇 = state.來源 !== "Continue Game";
     模式切換區.innerHTML = `
       <div class="準備流程-區塊標題">${雙語("開場方式", "Starting Approach")}</div>
       <div class="準備流程-區塊說明">
-        ${雙語("挑一套已驗證過的預設隊伍立刻探索，或不要任何加成、從零慢慢養成。", "Jump in with a validated preset squad, or skip every boost and grow your team from scratch.")}
+        ${state.教學模式
+          ? 雙語("教學模式會保留引導狀態；你可以用 Showcase 較快看見系統，也可以維持 No Starting Boost 從零開始。", "Tutorial mode keeps guidance enabled. Use Showcase to see systems faster, or keep No Starting Boost to learn from scratch.")
+          : 雙語("挑一套已驗證過的預設隊伍立刻探索，或不要任何加成、從零慢慢養成。", "Jump in with a validated preset squad, or skip every boost and grow your team from scratch.")}
       </div>
     `;
     const 切換列 = document.createElement("div");

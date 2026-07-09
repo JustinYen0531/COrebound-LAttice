@@ -27,7 +27,7 @@ export const 職責顏色標籤: Record<職責顏色, { 色票: string; 說明: 
 /** App 最上層状态機的所有可能畫面 */
 export type 畫面狀態 =
   | { 層: "主畫面"; 子頁: 主畫面分頁 }
-  | { 層: "遊戲準備流程"; 來源: "New Game" | "Continue Game" | "再來一場" }
+  | { 層: "遊戲準備流程"; 來源: "New Game" | "Continue Game" | "再來一場"; 教學模式?: boolean; 首次教學?: boolean }
   | { 層: "操作頁面"; 訓練道場: boolean }
   | {
       層: "管理介面";
