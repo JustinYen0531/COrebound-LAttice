@@ -9,6 +9,7 @@ import { 選文 } from "../語系";
 import { 取得音樂狀態, 切換音樂靜音, 訂閱音樂狀態, 設定音樂音量 } from "../../audio/音樂管理";
 import { 取得音效狀態, 切換音效靜音, 訂閱音效狀態, 設定音效音量, 播放音效, 音效百分比轉音量, 音效音量轉百分比 } from "../../audio/音效管理";
 import { marked } from "marked";
+import { 教學內容Markdown } from "../資料/教學內容";
 
 const 主按鈕清單: 主畫面分頁[] = ["開始遊玩", "圖鑑", "遊玩記錄", "新手入門", "設定"];
 type 世界鍵 = "geometry" | "organic" | "fractal" | "mechanical";
@@ -66,6 +67,17 @@ const 世界封面清單: 世界封面資料[] = [
 
 const 主畫面翻轉秒數 = 7;
 const 主畫面翻轉動畫毫秒 = 1800;
+
+function 取得教學頁面(): string[] {
+  return 教學內容Markdown
+    .split(/\r?\n---\s*\r?\n/)
+    .map((page) => page.trim())
+    .filter((page) => page.length > 0);
+}
+
+function 打開內建教學視窗() {
+  打開教學視窗(取得教學頁面());
+}
 
 const 世界Buff立繪清單 = [
   { className: "幾何", src: "/assets/images/enemies/bosses/幾何BOSS.png", alt: "Geometry boss portrait" },
@@ -358,17 +370,9 @@ function 建立主畫面封面區(state: { 子頁: 主畫面分頁 }): HTMLEleme
   Tutorial按鈕.type = "button";
   Tutorial按鈕.className = "主畫面-子選項按鈕";
   Tutorial按鈕.textContent = 雙語("教學", "Tutorial");
-  Tutorial按鈕.onclick = async (event) => {
+  Tutorial按鈕.onclick = (event) => {
     event.stopPropagation();
-    try {
-      const res = await fetch("/教學.md");
-      if (!res.ok) throw new Error("fetch failed");
-      const text = await res.text();
-      const pages = text.split(/\r?\n---\r?\n/);
-      打開教學視窗(pages);
-    } catch (e) {
-      alert("Tutorial file not found!");
-    }
+    打開內建教學視窗();
   };
 
   const Dojo按鈕 = document.createElement("button");
@@ -603,17 +607,7 @@ function 新手入門子頁(): HTMLElement {
   const guide = document.createElement("button");
   guide.className = "一級按鈕";
   guide.textContent = 雙語("教學", "Tutorial");
-  guide.onclick = async () => {
-    try {
-      const res = await fetch("/教學.md");
-      if (!res.ok) throw new Error("fetch failed");
-      const text = await res.text();
-      const pages = text.split(/\n---\s*\n/).filter((p) => p.trim().length > 0);
-      打開教學視窗(pages);
-    } catch (e) {
-      alert("Tutorial file not found!");
-    }
-  };
+  guide.onclick = 打開內建教學視窗;
 
   const dojo = document.createElement("button");
   dojo.className = "二級按鈕";
